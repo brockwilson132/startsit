@@ -21,9 +21,6 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -53,9 +50,10 @@ jobs:
           cp package.json dist/
           cd dist
           npm version "1.${{ github.run_number }}.${{ github.run_attempt }}" --no-git-tag-version
-          if ! npm publish --access public > publish.log 2>&1; then
+          npm --version
+          if ! npm publish --access public --loglevel verbose > publish.log 2>&1; then
             cat publish.log
-            echo "::warning title=npm publish failed::$(grep -iE 'npm error|E40|E42' publish.log | head -5 | tr '\n' ' ')"
+            echo "::warning title=npm publish failed::$(grep -iE 'oidc|trusted|npm error code|E40|E42' publish.log | head -8 | tr '\n' ' ')"
             exit 1
           fi
           sleep 20
@@ -63,5 +61,12 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: site }
+  deploy:
+    needs: update
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
       - id: deploy
         uses: actions/deploy-pages@v4
