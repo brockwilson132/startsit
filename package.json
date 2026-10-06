@@ -2,6 +2,14 @@
   "name": "startsit-nfl-data",
   "version": "1.0.0",
   "description": "Weekly fantasy football start/sit projections (data feed for the Start/Sit app).",
-  "files": ["data.js", "data.json"],
-  "license": "MIT"
+  "files": [
+    "data.js",
+    "data.json"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brockwilson132/startsit.git"
+  },
+  "homepage": "https://brockwilson132.github.io/startsit/"
 }

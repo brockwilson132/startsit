@@ -53,7 +53,11 @@ jobs:
           cp package.json dist/
           cd dist
           npm version "1.${{ github.run_number }}.${{ github.run_attempt }}" --no-git-tag-version
-          npm publish --access public
+          if ! npm publish --access public > publish.log 2>&1; then
+            cat publish.log
+            echo "::warning title=npm publish failed::$(grep -iE 'npm error|E40|E42' publish.log | head -5 | tr '\n' ' ')"
+            exit 1
+          fi
           sleep 20
           curl -s "https://purge.jsdelivr.net/npm/startsit-nfl-data@latest/data.js" || true
       - uses: actions/configure-pages@v5
