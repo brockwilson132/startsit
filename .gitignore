@@ -1,0 +1,6 @@
+cache/
+dist/
+site/
+__pycache__/
+*.png
+!icon.png

@@ -1,0 +1,62 @@
+name: Update projections
+on:
+  schedule:
+    # times are UTC. Tue: after Monday night. Wed–Fri: injury reports. Sat. Sun 11:30am ET before kickoff.
+    - cron: '0 12 * * 2'
+    - cron: '0 22 * * 3,4,5'
+    - cron: '0 16 * * 6'
+    - cron: '30 15 * * 0'
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ['app.html', 'pipeline.py', 'build_site.py', '.github/workflows/update.yml']
+permissions:
+  contents: write
+  pages: write
+  id-token: write   # GitHub Pages deploy + npm trusted publishing (no tokens stored)
+concurrency:
+  group: update
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: actions/cache@v4
+        with:
+          path: cache
+          key: nfl-cache-${{ github.run_id }}
+          restore-keys: nfl-cache-
+      - run: pip install -r requirements.txt
+      - run: python pipeline.py
+      - run: python build_site.py
+      - name: Save weekly snapshots (used to score model vs experts)
+        run: |
+          git config user.name "startsit-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add history
+          git diff --cached --quiet || git commit -m "snapshot $(date -u +%F)"
+          git push
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+      - id: deploy
+        uses: actions/deploy-pages@v4
+      # Live feed for the private claude.ai copy of the app. Optional: Pages works without it.
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', registry-url: 'https://registry.npmjs.org' }
+      - name: Publish data to npm
+        continue-on-error: true
+        run: |
+          npm install -g npm@latest
+          cp package.json dist/
+          cd dist
+          npm version "1.${{ github.run_number }}.${{ github.run_attempt }}" --no-git-tag-version
+          npm publish --access public
+          sleep 20
+          curl -s "https://purge.jsdelivr.net/npm/startsit-nfl-data@latest/data.js" || true
