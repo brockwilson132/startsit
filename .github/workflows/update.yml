@@ -42,11 +42,6 @@ jobs:
           git add history
           git diff --cached --quiet || git commit -m "snapshot $(date -u +%F)"
           git push
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with: { path: site }
-      - id: deploy
-        uses: actions/deploy-pages@v4
       # Live feed for the private claude.ai copy of the app. Optional: Pages works without it.
       - uses: actions/setup-node@v4
         with: { node-version: '24', registry-url: 'https://registry.npmjs.org' }
@@ -60,3 +55,8 @@ jobs:
           npm publish --access public
           sleep 20
           curl -s "https://purge.jsdelivr.net/npm/startsit-nfl-data@latest/data.js" || true
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+      - id: deploy
+        uses: actions/deploy-pages@v4
