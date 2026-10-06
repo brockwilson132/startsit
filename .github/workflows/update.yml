@@ -1,4 +1,5 @@
 name: Update projections
+# Runs on the schedule below, on manual "Run workflow", and when the app or pipeline changes.
 on:
   schedule:
     # times are UTC. Tue: after Monday night. Wed–Fri: injury reports. Sat. Sun 11:30am ET before kickoff.
