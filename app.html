@@ -214,6 +214,8 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);font-si
 .notes .n.up{border-left:4px solid var(--up)}.notes .n.dn,.notes .n.warn{border-left:4px solid var(--flag)}
 .rise{color:var(--up);font-size:12px}.per{display:block;font:500 12px var(--body);color:var(--muted)}
 #wvWrap,#compare{scroll-margin-top:70px}
+.finalbar{display:flex;gap:8px;align-items:center;background:var(--chip);border-radius:8px;padding:8px 10px;font-size:14px;margin-top:12px}
+.finalbar>b{font:800 13px var(--display);background:var(--ink);color:var(--paper);padding:1px 6px;border-radius:3px}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){.lane .ball{transition:none}}
 @media (max-width:460px){.part{grid-template-columns:64px 1fr 48px}.pts{font-size:34px}}
@@ -280,26 +282,32 @@ function loadLive(){const s=document.createElement('script');s.src=LIVE_URL+'?t=
   document.head.appendChild(s)}
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let S=store.get('ss_scoring','proj'); if(!['proj','half','std'].includes(S))S='proj';
-function defaultPicks(){const w=P.filter(p=>p.pos==='WR'&&p.status!=='Out');return [w[9]?.id,w[10]?.id].filter(Boolean)}
+function defaultPicks(){const w=P.filter(p=>p.pos==='WR'&&!p.status&&!p.bye).sort((a,b)=>(a.final-b.final)||(b.proj-a.proj));return [w[9]?.id,w[10]?.id].filter(Boolean)}
 let picks=store.get('ss_picks_w'+M.week,null);
 if(!Array.isArray(picks)||!picks.every(id=>byId[id])) picks=defaultPicks();
 let rankPos='ALL', defPos='WR', tab='compare';
 const $=s=>document.querySelector(s);
 const fmt=(n,d=1)=>(Math.round(n*10**d)/10**d).toFixed(d);
-const scale=p=>p[S]/p.proj;
+const scale=p=>p.proj>0?p[S]/p.proj:1;
 const val=p=>p[S];
-const fmtTime=p=>{const [h,m]=p.time.split(':').map(Number);const hh=((h+11)%12)+1;return `${p.day.slice(0,3)} ${hh}:${String(m).padStart(2,'0')}${h>=12?'p':'a'}`};
-const vs=p=>(p.home?'vs ':'@ ')+p.opp;
+const fmtTime=p=>{if(p.bye)return `on bye in Week ${M.week}`;if(p.final)return 'final';if(!p.time)return '';const [h,m]=p.time.split(':').map(Number);const hh=((h+11)%12)+1;return `${p.day.slice(0,3)} ${hh}:${String(m).padStart(2,'0')}${h>=12?'p':'a'}`};
+const vs=p=>p.bye?'':(p.home?'vs ':'@ ')+p.opp;
+const actual=p=>p.act==null?null:(S==='std'?p.act_s:S==='half'?p.act_h:p.act);
+const inactive=p=>['Out','IR','Exempt'].includes(p.status);
+const live=p=>!p.bye&&!p.final&&!inactive(p);
 function inj(p){
+  if(p.status==='IR')return {lvl:'out',tag:'IR',txt:`On injured reserve${p.injury?' ('+p.injury+')':''}. Out for at least a few more weeks.`};
+  if(p.status==='Exempt')return {lvl:'out',tag:'NOT ACTIVE',txt:`On the league's exempt list. Not eligible to play right now.`};
   if(p.status==='Out')return {lvl:'out',tag:'OUT',txt:`Ruled out${p.injury?' ('+p.injury+')':''}. Don't start him.`};
   if(p.status==='Doubtful')return {lvl:'bad',tag:'DOUBTFUL',txt:`Doubtful${p.injury?' ('+p.injury+')':''}. Unlikely to play.`};
   const pr=p.practice.startsWith('Did Not')?'didn\'t practice':p.practice.startsWith('Limited')?'limited in practice':'';
   if(p.status==='Questionable')return {lvl:'warn',tag:'QUESTIONABLE',txt:`Questionable${p.injury?' ('+p.injury+')':''}${pr?', '+pr:''}. Check before kickoff.`};
   if(p.miss&&pr)return {lvl:'warn',tag:'INJURY',txt:`Missed last week and ${pr} this week. Check his status.`};
   if(p.miss)return {lvl:'warn',tag:'FLAG',txt:`Didn't play last week. Check his status.`};
+  if(p.new)return {lvl:'warn',tag:'NO GAMES',txt:`Hasn't played yet this season. The projection leans on last season, so check his role.`};
   if(pr==='didn\'t practice')return {lvl:'warn',tag:'PRACTICE',txt:`Didn't practice this week. Could be rest or an injury.`};
   return null}
-function experts(p){if(p.ecr==null)return null;const gap=p.ecr-p.rank;return {gap,big:Math.abs(gap)>=12}}
+function experts(p){if(p.ecr==null||p.rank==null)return null;const gap=p.ecr-p.rank;return {gap,big:Math.abs(gap)>=12}}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 function erf(x){const t=1/(1+.3275911*Math.abs(x));const y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x);return x>=0?y:-y}
 const Phi=z=>.5*(1+erf(z/Math.SQRT2));
@@ -319,7 +327,7 @@ const q=$('#q'), res=$('#results'); let hits=[], active=0;
 function norm(s){return s.toLowerCase().normalize('NFD').replace(/[^a-z0-9 ]/g,'')}
 function search(){const t=norm(q.value.trim()); if(!t){res.hidden=true;return}
   hits=P.filter(p=>norm(p.name).includes(t)||p.team.toLowerCase()===t).slice(0,8); active=0;
-  res.innerHTML=hits.length?hits.map((p,i)=>`<button data-id="${p.id}" class="${i===0?'active':''}"><span>${esc(p.name)} <small>${p.pos}, ${p.team}</small></span><small>${fmt(val(p))}</small></button>`).join(''):'<div style="padding:12px 14px;color:var(--muted)">No player with that name has a Week '+M.week+' projection.</div>';
+  res.innerHTML=hits.length?hits.map((p,i)=>`<button data-id="${p.id}" class="${i===0?'active':''}"><span>${esc(p.name)} <small>${p.pos}, ${p.team}</small></span><small>${p.bye?'BYE':p.status==='IR'||p.status==='Exempt'?'OUT':fmt(val(p))}</small></button>`).join(''):'<div style="padding:12px 14px;color:var(--muted)">No player with that name has a Week '+M.week+' projection.</div>';
   res.hidden=false; res.querySelectorAll('button').forEach(b=>b.onclick=()=>add(b.dataset.id))}
 q.addEventListener('input',search);
 q.addEventListener('keydown',e=>{if(res.hidden)return;const bs=[...res.querySelectorAll('button')];
@@ -338,10 +346,14 @@ function renderCompare(){
   $('#chosen').querySelectorAll('button').forEach(b=>b.onclick=()=>remove(b.dataset.id));
   const out=$('#cmpOut');
   if(ps.length<2){
-    const sug=P.filter(p=>!picks.includes(p.id)).slice(0,6);
+    const sug=P.filter(p=>!picks.includes(p.id)&&live(p)&&!p.status).slice(0,6);
     out.innerHTML=`<div class="empty"><strong style="color:var(--ink)">Add ${ps.length?'one more player':'two or more players'} you're deciding between.</strong><br>Search above, or tap a suggestion.<div class="sugg">${sug.map(p=>`<button data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div></div>`+(ps.length?cardsHTML(ps):'');
     out.querySelectorAll('.sugg button').forEach(b=>b.onclick=()=>add(b.dataset.id)); return}
-  const [a,b]=ps; const diff=val(a)-val(b);
+  const done=ps.filter(p=>!live(p)), open_=ps.filter(live);
+  if(done.length&&open_.length<2){
+    const msg=p=>inactive(p)?`${esc(p.name)} is out this week.`:p.bye?`${esc(p.name)} is on bye this week.`:actual(p)!=null?`${esc(p.name)}'s game is over: he scored ${fmt(actual(p))}.`:`${esc(p.name)}'s game is over.`;
+    out.innerHTML=`<div class="verdict"><h2>${open_.length===1?`Start ${esc(open_[0].name)}.`:'Nothing left to decide.'}</h2><p>${done.map(msg).join(' ')}${open_.length===1?'':' Lineups lock at kickoff, so compare players whose games haven\'t started.'}</p></div>`+cardsHTML(ps);return}
+  const [a,b]=open_; const diff=val(a)-val(b);
   const pr=Phi(diff/Math.sqrt(sd(a)**2+sd(b)**2));
   const lastName=n=>n.split(' ').slice(1).join(' ')||n;
   let head,why;
@@ -352,10 +364,11 @@ function renderCompare(){
   else if(ia){head=`Start ${esc(a.name)}, if he plays.`;why+=` ${esc(lastName(a.name))} has an injury flag, so confirm he's active before lineups lock.`}
   const ea=experts(a);if(a.status!=='Out'&&ea&&ea.big&&ea.gap>0)why+=` Experts rank him much lower (${a.pos}${a.ecr}), which usually means injury or role news the stats can't see yet.`;
   if(a.pos!==b.pos) why+=` Different positions, so only compare these if they're competing for a flex spot.`;
-  const maxHi=Math.max(...ps.map(p=>p.hi*scale(p))); const top=Math.max(20,Math.ceil(maxHi/10)*10);
+  if(done.length)why+=' '+done.map(p=>inactive(p)?`${esc(p.name)} is out.`:p.bye?`${esc(p.name)} is on bye.`:`${esc(p.name)} already played${actual(p)!=null?' ('+fmt(actual(p))+' pts)':''}.`).join(' ');
+  const maxHi=Math.max(...open_.map(p=>p.hi*scale(p))); const top=Math.max(20,Math.ceil(maxHi/10)*10);
   const x=v=>Math.min(100,v/top*100);
   let lines='';for(let v=0;v<=top;v+=5){lines+=`<div class="yl ${v%10?'minor':''}" style="left:${x(v)}%"></div>`;if(v%10===0&&v>0&&v<top)lines+=`<div class="num" style="left:${x(v)}%">${v}</div>`}
-  const lanes=ps.map((p,i)=>{const pv=val(p),lo=p.lo*scale(p),hi=p.hi*scale(p);const xp=x(pv);const cls=xp<18?'l':xp>82?'r':'';
+  const lanes=open_.map((p,i)=>{const pv=val(p),lo=p.lo*scale(p),hi=p.hi*scale(p);const xp=x(pv);const cls=xp<18?'l':xp>82?'r':'';
     return `<div class="lane ${i===0?'lead':''}"><div class="band" style="left:${x(lo)}%;width:${x(hi)-x(lo)}%"></div><div class="ball" style="left:${xp}%"></div><div class="tag ${cls}" style="left:${cls==='l'?Math.max(1,xp-2):xp}%">${esc(lastName(p.name))} ${fmt(pv)}</div></div>`}).join('');
   out.innerHTML=`<div class="verdict"><h2>${head}</h2><p>${why}</p></div>
   <div class="field" role="img" aria-label="Projected points with likely range">${lines}${lanes}</div>
@@ -363,31 +376,35 @@ function renderCompare(){
 }
 function cardsHTML(ps){
   return `<div class="cards">${ps.map(p=>{const k=scale(p);
+    if(p.bye)return `<article class="card"><div class="card-top"><div><h3>${esc(p.name)}</h3><div class="sub">${p.pos}, ${p.team}, on bye in Week ${M.week}</div></div><div class="pts">BYE</div></div><p class="sub" style="margin:10px 0 0">Averages <b>${fmt(p.base)}</b> pts/g. He's back next week; use Waivers to see his rest-of-season outlook.</p></article>`;
+    if(inactive(p)){const i=inj(p);return `<article class="card"><div class="card-top"><div><h3>${esc(p.name)}</h3><div class="sub">${p.pos}, ${p.team}</div></div><div class="pts">OUT</div></div>${i?`<div class="flag ${i.lvl}"><b>${i.tag}</b><span>${i.txt}</span></div>`:''}${p.base?`<p class="sub" style="margin:10px 0 0">Averaged <b>${fmt(p.base)}</b> pts/g when playing. Use Waivers to see his rest-of-season outlook.</p>`:''}</article>`}
+    const isK=p.pos==='K', fromX=p.src==='experts';
     const baseV=(p.form+p.usage)*k;
     const mxB=Math.max(...ps.map(q=>(q.form+q.usage)*scale(q)),1);
-    const adj=[['Matchup',p.matchup*k,'Opponent-adjusted defense vs his position'],['Vegas',p.vegas*k,'Implied team total vs league average']];
+    const adj=[isK?['Indoors',p.matchup*k,'Kicking in a dome or closed roof']:['Matchup',p.matchup*k,'Opponent-adjusted defense vs his position'],['Vegas',p.vegas*k,'Implied team total vs league average']];
     const rows=`<div class="part" title="Who he is before this week's game"><span class="lbl">Baseline</span><div class="track"><div class="fill" style="left:0;width:${Math.min(100,baseV/mxB*100)}%"></div></div><span class="v">${fmt(baseV)}</span></div>
-      <div class="basenote">Scoring <b>${fmt(p.base*k)}</b> pts/g, usage worth <b>${fmt(p.xfp*k)}</b> pts/g</div>
+      <div class="basenote">${isK?`Scoring <b>${fmt(p.base)}</b> pts/g, blended with last season`:`Scoring <b>${fmt(p.base*k)}</b> pts/g, usage worth <b>${fmt(p.xfp*k)}</b> pts/g`}</div>
       <div class="adjhead">This week</div>`+adj.map(([l,v,tt])=>{const w=Math.min(50,Math.abs(v)/6*50);
       return `<div class="part" title="${tt}"><span class="lbl">${l}</span><div class="track ctr"><div class="fill ${v<0?'neg':'pos-adj'}" style="${v<0?'right:50%':'left:50%'};width:${w}%"></div></div><span class="v">${v>0?'+':''}${fmt(v)}</span></div>`}).join('');
-    const role=(p.pos==='QB'?`<span><b>${fmt(p.att,0)}</b> pass att/g</span><span><b>${fmt(p.car)}</b> carries/g</span>`:p.pos==='RB'?`<span><b>${fmt(p.car)}</b> carries/g</span><span><b>${fmt(p.tgt)}</b> targets/g</span>`:`<span><b>${fmt(p.tgt)}</b> targets/g</span>`)
-      +`<span><b>${fmt(p.rz)}</b> red-zone looks/g</span>`+(p.pos!=='QB'?`<span><b>${p.snap}%</b> of snaps${Math.abs(p.trend)>=8?` <em class="${p.trend>0?'up':'dn'}">${p.trend>0?'▲ rising':'▼ falling'}</em>`:''}</span>`:'');
+    const role=isK?`<span><b>${fmt(p.fga)}</b> FG tries/g</span><span><b>${fmt(p.pata)}</b> extra points/g</span><span><b>${fmt(p.fg50*17,0)}</b> 50+ yd makes per 17 games</span>`:(p.pos==='QB'?`<span><b>${fmt(p.att,0)}</b> pass att/g</span><span><b>${fmt(p.car)}</b> carries/g</span>`:p.pos==='RB'?`<span><b>${fmt(p.car)}</b> carries/g</span><span><b>${fmt(p.tgt)}</b> targets/g</span>`:`<span><b>${fmt(p.tgt)}</b> targets/g</span>`)
+      +(isK?'':`<span><b>${fmt(p.rz)}</b> red-zone looks/g</span>`)+(p.pos!=='QB'&&!isK?`<span><b>${p.snap}%</b> of snaps${Math.abs(p.trend)>=8?` <em class="${p.trend>0?'up':'dn'}">${p.trend>0?'▲ rising':'▼ falling'}</em>`:''}</span>`:'');
     return `<article class="card"><div class="card-top"><div><h3>${esc(p.name)}</h3><div class="sub">${p.pos}, ${p.team} ${vs(p)}, ${fmtTime(p)}</div></div><div class="pts">${fmt(val(p))}<small>${fmt(p.lo*k)} to ${fmt(p.hi*k)}</small></div></div>
+    ${p.final?`<div class="finalbar"><b>FINAL</b><span>${actual(p)!=null?`Scored <b>${fmt(actual(p))}</b> vs ${fmt(val(p))} projected.`:'Game is over; points post overnight.'}</span></div>`:''}
     ${(()=>{const i=inj(p);return i?`<div class="flag ${i.lvl}"><b>${i.tag}</b><span>${i.txt}</span></div>`:''})()}
     ${(()=>{const e=experts(p);if(!e)return '';const mx=Math.max(p.rank,p.ecr,12);const pos=v=>Math.min(100,(v-1)/(mx-1)*100);
       return `<div class="vsx"><div class="vsx-top"><span><i class="k m"></i>Model <b>${p.pos}${p.rank}</b></span><span><i class="k e"></i>Experts <b>${p.pos}${p.ecr}</b></span><span class="vsx-hint">← better</span></div>
       <div class="vsx-track"><span class="vsx-m" style="left:${pos(p.rank)}%"></span><span class="vsx-e" style="left:${pos(p.ecr)}%"></span></div>
       ${e.big?`<div class="vsx-note">${e.gap>0?'Experts are much lower on him. Usually injury or role news.':'Experts are much higher on him. The model may be missing something.'}</div>`:''}</div>`})()}
-    <div class="parts">${rows}</div>
-    <div class="facts">${role}<span>Team implied total <b>${fmt(p.imp)}</b></span><span>${p.opp} allows <b>${p.xdef>0?'+':''}${fmt(p.xdef,0)}%</b> to ${p.pos}s</span></div></article>`}).join('')}</div>`}
+    ${fromX?`<p class="sub" style="margin:12px 0 0">No NFL stats yet, so this uses the expert projection instead of the model.</p>`:`<div class="parts">${rows}</div>
+    <div class="facts">${role}<span>Team implied total <b>${fmt(p.imp)}</b></span>${isK?(p.dome?'<span>Indoors this week</span>':''):`<span>${p.opp} allows <b>${p.xdef>0?'+':''}${fmt(p.xdef,0)}%</b> to ${p.pos}s</span>`}</div>`}</article>`}).join('')}</div>`}
 
 /* rankings */
 function renderRank(){
-  $('#posf').innerHTML=['ALL','QB','RB','WR','TE','FLEX'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('');
+  $('#posf').innerHTML=['ALL','QB','RB','WR','TE','K','FLEX'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('');
   $('#posf').querySelectorAll('button').forEach(b=>b.onclick=()=>{rankPos=b.dataset.p;renderRank()});
-  const list=P.filter(p=>rankPos==='ALL'||(rankPos==='FLEX'?p.pos!=='QB':p.pos===rankPos)).sort((a,b)=>val(b)-val(a)).slice(0,80);
+  const list=P.filter(p=>!p.bye&&!inactive(p)&&(rankPos==='ALL'?p.pos!=='K':rankPos==='FLEX'?['RB','WR','TE'].includes(p.pos):p.pos===rankPos)).sort((a,b)=>val(b)-val(a)).slice(0,80);
   $('#rankBody').innerHTML=list.map((p,i)=>{const z=p.xdef;const bg=z>8?'var(--up)':z<-8?'var(--down)':'var(--chip)';const fg=Math.abs(z)>8?'#fff':'var(--ink)';
-    return `<tr class="row" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${(()=>{const i=inj(p);return i?` <span class="itag ${i.lvl}" title="${esc(i.txt)}">${i.lvl==='out'?'OUT':i.lvl==='bad'?'D':'⚑'}</span>`:''})()}<small>${rankPos==='ALL'||rankPos==='FLEX'?p.pos+', ':''}${p.team} ${vs(p)}${p.ecr!=null?`, experts ${p.pos}${p.ecr}`:''}</small></td><td><span class="mu" style="background:${bg};color:${fg}" title="${p.opp} allows ${fmt(z,0)}% vs expected to ${p.pos}s">${z>0?'+':''}${fmt(z,0)}%</span></td><td class="num">${fmt(val(p))}</td><td><button class="addbtn" aria-label="${picks.includes(p.id)?'Remove from':'Add to'} compare" aria-pressed="${picks.includes(p.id)}" data-id="${p.id}">${picks.includes(p.id)?'✓':'+'}</button></td></tr>`}).join('');
+    return `<tr class="row" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${(()=>{const i=inj(p);return i?` <span class="itag ${i.lvl}" title="${esc(i.txt)}">${i.lvl==='out'?i.tag.split(' ')[0]:i.lvl==='bad'?'D':'⚑'}</span>`:''})()}<small>${rankPos==='ALL'||rankPos==='FLEX'?p.pos+', ':''}${p.team} ${vs(p)}${p.ecr!=null?`, experts ${p.pos}${p.ecr}`:''}</small></td><td>${p.pos==='K'?(p.dome?'<span class="mu" style="background:var(--chip)" title="Indoors">dome</span>':''):`<span class="mu" style="background:${bg};color:${fg}" title="${p.opp} allows ${fmt(z,0)}% vs expected to ${p.pos}s">${z>0?'+':''}${fmt(z,0)}%</span>`}</td><td class="num">${fmt(val(p))}${p.final?`<small class="per">${actual(p)!=null?'scored '+fmt(actual(p)):'final'}</small>`:''}</td><td><button class="addbtn" aria-label="${picks.includes(p.id)?'Remove from':'Add to'} compare" aria-pressed="${picks.includes(p.id)}" data-id="${p.id}">${picks.includes(p.id)?'✓':'+'}</button></td></tr>`}).join('');
   $('#rankBody').querySelectorAll('.addbtn').forEach(b=>b.onclick=e=>{e.stopPropagation();toggle(b.dataset.id)});
   $('#rankBody').querySelectorAll('tr.row').forEach(r=>r.onclick=()=>toggle(r.dataset.id));
 }
@@ -415,14 +432,14 @@ function renderHow(){
 }
 const HOW={
 build(){
-  const p=byId[howPlayer]||byId[picks[0]]||P[0]; howPlayer=p.id; const k=scale(p);
+  const okP=q=>q&&q.pos!=='K'&&!q.bye&&q.src!=='experts'&&q.proj>0;const p=[byId[howPlayer],byId[picks[0]],...P].find(okP); howPlayer=p.id; const k=scale(p);
   const steps=[['Baseline',(p.form+p.usage)*k,`Who ${p.name.split(' ').slice(-1)} is: points scored blended with what his usage is worth.`],
                ['Matchup',p.matchup*k,`${p.opp} allows ${p.xdef>0?'+':''}${fmt(p.xdef,0)}% vs expected to ${p.pos}s.`],
                ['Vegas',p.vegas*k,`${p.team} is expected to score ${fmt(p.imp)}, vs a ${fmt(M.league_imp)} league average.`]];
   const total=val(p); const top=Math.max(total,(p.form+p.usage)*k)*1.08; let run=0;
   const bars=steps.map(([l,v,t],j)=>{const start=j===0?0:run; run+=v; const a=Math.min(start,run),w=Math.abs(v);
     return `<div class="wf-row"><span class="wf-l">${l}</span><div class="wf-track"><div class="wf-bar ${j===0?'b':v<0?'n':'p'}" style="left:${a/top*100}%;width:${Math.max(.6,w/top*100)}%"></div></div><span class="wf-v">${j&&v>0?'+':''}${fmt(v)}</span></div><p class="wf-t">${t}</p>`}).join('');
-  const opts=[...P].sort((a,b)=>a.name.localeCompare(b.name)).map(q=>`<option value="${q.id}" ${q.id===p.id?'selected':''}>${esc(q.name)} (${q.pos}, ${q.team})</option>`).join('');
+  const opts=P.filter(q=>q.pos!=='K'&&!q.bye&&q.src!=='experts'&&q.proj>0).sort((a,b)=>a.name.localeCompare(b.name)).map(q=>`<option value="${q.id}" ${q.id===p.id?'selected':''}>${esc(q.name)} (${q.pos}, ${q.team})</option>`).join('');
   return `<h2>Baseline, then this week</h2>
   <p>Every projection starts with who the player is, then adjusts for this week's game.</p>
   <label class="sel">Pick any player <select id="howSel">${opts}</select></label>
@@ -470,7 +487,7 @@ acc(){
   return `<h2>Does it pick the right player?</h2>
   <p>The test: two players at the same position whose season averages were within 3 points. Which one scores more? A coin flip gets 50%, so the bars start there.</p>
   <h3 class="h3">Last season <small>(${bt.test}, never seen in training)</small></h3>
-  <div class="filters" id="apos">${['ALL','QB','RB','WR','TE'].map(q=>`<button data-p="${q}" aria-pressed="${q===accPos}">${q==='ALL'?'All':q}</button>`).join('')}</div>
+  <div class="filters" id="apos">${['ALL','QB','RB','WR','TE'].concat(by.K?['K']:[]).map(q=>`<button data-p="${q}" aria-pressed="${q===accPos}">${q==='ALL'?'All':q}</button>`).join('')}</div>
   <div class="acc">${bar('Season average',pos[0],'n')}${bar('This model',pos[1],'m')}</div>
   ${M.ros_backtest?`<h3 class="h3">Rest of season <small>(used for waivers)</small></h3><div class="acc">${bar('Season average',M.ros_backtest.close_naive,'n')}${bar('This model',M.ros_backtest.close_model,'m')}</div><p class="cap">Same test, but over the rest of the ${bt.test} season instead of one week. Usage predicts the long run even better than it predicts next week.</p>`:''}
   <h3 class="h3">This season so far</h3>
@@ -560,10 +577,10 @@ function renderWaiver(){
     html=`<div class="empty"><strong style="color:var(--ink)">${!d&&!a?'Pick who you\'d drop and who you\'d add.':!d?'Now pick who you\'d drop.':'Now pick who you\'d add, or tap one below.'}</strong><br>Projections run through Week 18, including bye weeks.</div>`;
   }
   // best available
-  const pool=W.filter(p=>(p.own==null?p.vor<0:p.own<50)&&p.id!==wv.drop&&(wvPos==='ALL'||p.pos===wvPos))
+  const pool=W.filter(p=>(p.own==null?p.vor<0:p.own<50)&&(wvPos!=='ALL'||p.pos!=='K')&&p.id!==wv.drop&&(wvPos==='ALL'||p.pos===wvPos))
     .sort((x,y)=>wvPos==='ALL'?vorT(y)-vorT(x):rosT(y)-rosT(x)).slice(0,12);
   html+=`<h3 class="h3" style="margin-top:28px">Best available</h3><p class="cap" style="margin-top:-4px">Rostered in fewer than half of leagues. Number is projected points through Week 18${wvPos==='ALL'?', ranked against a typical starter at each position so QBs don\'t crowd out everyone else':''}.</p>
-  <div class="filters" id="wvf">${['ALL','QB','RB','WR','TE'].map(q=>`<button data-p="${q}" aria-pressed="${q===wvPos}">${q==='ALL'?'All':q}</button>`).join('')}</div>
+  <div class="filters" id="wvf">${['ALL','QB','RB','WR','TE','K'].map(q=>`<button data-p="${q}" aria-pressed="${q===wvPos}">${q==='ALL'?'All':q}</button>`).join('')}</div>
   <table><tbody>${pool.map((p,i)=>`<tr class="row" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${p.trend>=8?' <span class="rise" title="Snap share rising">▲</span>':''}<small>${p.pos}, ${p.team} · ${p.own==null?'unranked':p.own+'% rostered'}${byeWk(p)?` · bye Wk ${byeWk(p)}`:''}</small></td><td class="num">${fmt(rosT(p),0)}<small class="per">${fmt(p.ppg*wsc(p))}/g</small></td><td><button class="addbtn" data-id="${p.id}" aria-pressed="${wv.add===p.id}" aria-label="Set as add">${wv.add===p.id?'✓':'+'}</button></td></tr>`).join('')}</tbody></table>`;
   $('#wvOut').innerHTML=html;
   $('#wvf').querySelectorAll('button').forEach(b=>b.onclick=()=>{wvPos=b.dataset.p;renderWaiver()});

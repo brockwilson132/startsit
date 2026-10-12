@@ -6,9 +6,10 @@ season so far, and writes data.js for the app.
 Run:  python pipeline.py            (auto-detect season/week)
       python pipeline.py --offline  (use files already in ./cache)
 """
-import os, sys, json, datetime as dt, urllib.request
+import os, sys, re, json, datetime as dt, urllib.request
 import numpy as np, pandas as pd
 from numpy.linalg import lstsq
+import kickers
 
 POS = ['QB', 'RB', 'WR', 'TE']
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
@@ -50,6 +51,7 @@ print('Projecting', SEASON, 'week', WEEK)
 frames = []
 for y in SEASONS:
     frames.append(pd.read_csv(fetch(f'{NV}/stats_player/stats_player_week_{y}.csv', f'w{y}.csv', refresh=y == SEASON), low_memory=False))
+kd = kickers.load(frames)
 d = pd.concat(frames)
 d = d[(d.season_type == 'REG') & d.position.isin(POS)].copy()
 for c in ['targets', 'carries', 'attempts', 'receiving_air_yards']:
@@ -92,6 +94,10 @@ tg = pd.concat([
     g[['season', 'week', 'home_team', 'away_team', 'home_imp']].rename(columns={'home_team': 'team', 'away_team': 'opp_team', 'home_imp': 'imp'}),
     g[['season', 'week', 'away_team', 'home_team', 'away_imp']].rename(columns={'away_team': 'team', 'home_team': 'opp_team', 'away_imp': 'imp'})])
 LEAGUE_IMP = float(tg.imp.mean())
+roof = {}
+for r in g.itertuples():
+    v = 1 if r.roof in ('dome', 'closed') else 0
+    roof[(r.season, r.week, r.home_team)] = roof[(r.season, r.week, r.away_team)] = v
 posavg = d[d.season >= SEASON - 2].groupby(['season', 'week', 'team', 'position']).ppr.sum().groupby('position').mean()
 
 # ---------------------------------------------------------------- as-of features
@@ -277,6 +283,24 @@ print('backtest', {k: (round(v, 2) if isinstance(v, float) else v) for k, v in b
 # ---------------------------------------------------------------- final model: fit on S-2 and S-1
 model = Model().fit(pd.concat([train, test]))
 
+# ---------------------------------------------------------------- kickers: fit on S-2, test on S-1, then refit on both
+def kbuild(s):
+    out_ = []
+    for w in range(3, 19):
+        rows_ = kd[(kd.season == s) & (kd.week == w)][['season', 'week', 'player_id', 'team', 'kpts']]
+        if len(rows_):
+            out_.append(kickers.frame(kd, tg, roof, s, w, rows_))
+    f_ = pd.concat(out_).dropna(subset=['imp', 'naive', 'base'])
+    return f_.assign(position='K', ppr=f_.kpts)
+
+
+ktr, kte = kbuild(SEASON - 2), kbuild(SEASON - 1)
+kte = kte.assign(proj=kickers.KModel().fit(ktr, LEAGUE_IMP).predict(kte))
+bt['bypos']['K'] = [pairs(kte, 'naive', 3)[0] * 100, pairs(kte, 'proj', 3)[0] * 100]
+print('kicker backtest', [round(x, 1) for x in bt['bypos']['K']])
+kmodel = kickers.KModel().fit(pd.concat([ktr, kte]), LEAGUE_IMP)
+kicker_asof = kickers.asof(kd, SEASON, WEEK)
+
 # ---------------------------------------------------------------- live season scoring (as-of projections, no leakage)
 live = None
 if WEEK > 2:
@@ -309,72 +333,195 @@ if ex_rows:
                   mae_model=float(np.mean(abs(e.ppr - e.model))), mae_expert=float(np.mean(abs(e.ppr - e.fp_pts))),
                   pair_model=pairs(e, 'model')[0] * 100, pair_expert=pairs(e, 'fp_pts')[0] * 100, n=int(len(e)))
 
-# ---------------------------------------------------------------- project the upcoming week
+# ---------------------------------------------------------------- project the current week
+# The fantasy week runs Thursday to Monday. Every game in WEEK is shown, including ones
+# already played (marked final, with actual points), so no team drops out mid-week.
 cur = d[d.season == SEASON]
-last = cur.sort_values('week').groupby('player_id').last()
-kick = {}
-for _, r in unplayed[unplayed.week == WEEK].iterrows():
+wk_games = games[(games.season == SEASON) & (games.week == WEEK)]
+kick, final = {}, {}
+for _, r in wk_games.iterrows():
+    done = not pd.isna(r.home_score)
     kick[r.home_team] = (r.away_team, 1, r.gameday, r.gametime, r.weekday)
     kick[r.away_team] = (r.home_team, 0, r.gameday, r.gametime, r.weekday)
-rows = []
-for pid, r in last.iterrows():
-    if r.team in kick:
-        rows.append(dict(season=SEASON, week=WEEK, player_id=pid, player_display_name=r.player_display_name, position=r.position,
-                         team=r.team, opponent_team=kick[r.team][0]))
-up = model.apply(frame(SEASON, WEEK, pd.DataFrame(rows)))
-up = up[up.n_cur >= 1]
+    final[r.home_team] = final[r.away_team] = done
+all_teams = set(tg[tg.season == SEASON].team)
+bye_teams = all_teams - set(kick)
+
+# player universe = current NFL rosters (right team after trades; injured reserve known),
+# not just "who has recorded a stat", so returning and traded players aren't missed
+ro = pd.read_csv(fetch(f'{NV}/weekly_rosters/roster_weekly_{SEASON}.csv', f'roster{SEASON}.csv'), low_memory=False)
+ro = ro[ro.position.isin(POS + ['K'])].sort_values('week').groupby('gsis_id').last().reset_index()
+ro = ro[ro.status.isin(['ACT', 'INA', 'RES', 'EXE'])]
+stat_names = pd.concat([d, kd]).sort_values(['season', 'week']).groupby('player_id').player_display_name.last()
+ro['pname'] = ro.gsis_id.map(stat_names).fillna(ro.full_name)
+ON_IR = set(ro[ro.status == 'RES'].gsis_id)
+EXEMPT = set(ro[ro.status == 'EXE'].gsis_id)
+universe = ro.rename(columns={'gsis_id': 'player_id'})[['player_id', 'pname', 'position', 'team']]
+universe = universe[universe.team.isin(all_teams)]
 
 # injuries: latest report this week
 inj = pd.read_csv(fetch(f'{NV}/injuries/injuries_{SEASON}.csv', f'inj{SEASON}.csv'))
 iw = inj[(inj.season == SEASON) & (inj.week == WEEK)]
 status = dict(zip(iw.gsis_id, iw.report_status.fillna('')))
+for pid in ON_IR:
+    if status.get(pid, '') in ('', 'Questionable'):
+        status[pid] = 'IR'
+for pid in EXEMPT:
+    status[pid] = 'Exempt'   # league exempt/suspension list: not eligible to play
 practice = dict(zip(iw.gsis_id, iw.practice_status.fillna('')))
 injury = dict(zip(iw.gsis_id, iw.report_primary_injury.fillna('')))
-prev_wk = cur[cur.week == WEEK - 1]
+prev_wk = pd.concat([cur, kd[kd.season == SEASON]])
+prev_wk = prev_wk[prev_wk.week == WEEK - 1]
 played_prev, teams_prev = set(prev_wk.player_id), set(prev_wk.team)
+played_season = set(cur.player_id) | set(kd[kd.season == SEASON].player_id)
+
+# actual points for games already played this week
+act_rows = cur[cur.week == WEEK].set_index('player_id')
+act = {pid: (float(r.ppr), float(r.half), float(r['std'])) for pid, r in act_rows.iterrows()}
+for pid, v in kd[(kd.season == SEASON) & (kd.week == WEEK)].set_index('player_id').kpts.items():
+    act[pid] = (float(v),) * 3
 
 # expert consensus
 fp = pd.read_csv(fetch('https://raw.githubusercontent.com/dynastyprocess/data/master/files/fp_latest_weekly.csv', 'fp.csv'))
-fp = fp[fp.page.isin(['qb', 'ppr-rb', 'ppr-wr', 'ppr-te'])]
+fp = fp[fp.page.isin(['qb', 'ppr-rb', 'ppr-wr', 'ppr-te', 'k'])]
 fmap = ids[['fantasypros_id', 'gsis_id']].dropna()
 fmap['fantasypros_id'] = fmap.fantasypros_id.astype(int)
 fp = fp.merge(fmap, on='fantasypros_id', how='left')
+# the ID table misses some players (often rookies and kickers): fall back to name + position
+def _norm(n):
+    n = re.sub(r"[^a-z ]", "", str(n).lower().replace('-', ' '))
+    return re.sub(r" (jr|sr|ii|iii|iv|v)$", "", n).strip()
+_by_name = {(_norm(r.pname), r.position): r.player_id for r in universe.itertuples()}
+_miss = fp.gsis_id.isna()
+fp.loc[_miss, 'gsis_id'] = [_by_name.get((_norm(n), p_)) for n, p_ in zip(fp.loc[_miss, 'player_name'], fp.loc[_miss, 'pos'])]
+# second fallback for nicknames (Matt / Matthew): first initial + last name + position + team
+_TEAM = {'LAR': 'LA', 'JAC': 'JAX', 'WSH': 'WAS', 'LVR': 'LV'}
+def _k2(n, p_, t):
+    w = _norm(n).split()
+    return (w[0][:1], w[-1], p_, _TEAM.get(t, t)) if w else None
+_by_k2 = {}
+for r in universe.itertuples():
+    _by_k2.setdefault(_k2(r.pname, r.position, r.team), []).append(r.player_id)
+_miss = fp.gsis_id.isna()
+fp.loc[_miss, 'gsis_id'] = [(lambda c: c[0] if c and len(c) == 1 else None)(_by_k2.get(_k2(n, p_, t)))
+                            for n, p_, t in zip(fp.loc[_miss, 'player_name'], fp.loc[_miss, 'pos'], fp.loc[_miss, 'team'])]
 fp_rank = dict(zip(fp.gsis_id, fp.pos_rank))
 fp_pts = dict(zip(fp.gsis_id, fp.r2p_pts))
 fp_fresh = str(fp.scrape_date.max()) if len(fp) else None
 
+
+def ecr_num(er):
+    m = re.search(r'(\d+)$', er) if isinstance(er, str) else None
+    return int(m.group(1)) if m else None
+
+
+# skill players
+sk = universe[universe.position.isin(POS) & universe.team.isin(kick)]
+rows = [dict(season=SEASON, week=WEEK, player_id=r.player_id, player_display_name=r.pname, position=r.position,
+             team=r.team, opponent_team=kick[r.team][0]) for r in sk.itertuples()]
+up = model.apply(frame(SEASON, WEEK, pd.DataFrame(rows)).dropna(subset=['base_ppr', 'imp']))
+up['kind'] = 'skill'
+no_hist = sk[~sk.player_id.isin(up.player_id)]
+
+# kickers
+ka = kicker_asof
+kk = universe[(universe.position == 'K') & universe.team.isin(kick)]
+krows = pd.DataFrame([dict(season=SEASON, week=WEEK, player_id=r.player_id, team=r.team) for r in kk.itertuples()])
+kf = kickers.frame(kd, tg, roof, SEASON, WEEK, krows).dropna(subset=['base', 'imp']) if len(krows) else pd.DataFrame()
+if len(kf):
+    kf['proj'] = kmodel.predict(kf)
+    kf['c_form'], kf['c_vegas'], kf['c_match'] = kmodel.parts(kf)
+    kf['position'] = 'K'
+
 out = []
-up = up.sort_values('proj', ascending=False)
-up['pos_rank'] = up.groupby('position').proj.rank(ascending=False, method='first').astype(int)
-pos_count = up[up.proj >= 4].groupby('position').size()
-for _, r in up.iterrows():
-    stt = status.get(r.player_id, '')
-    proj = 0.0 if stt == 'Out' else float(r.proj)
-    if r.proj < 4:
+
+
+def base_entry(pid, name, pos, team):
+    o, h, day, tm, wd = kick.get(team, (None, 0, None, None, None))
+    stt = status.get(pid, '')
+    a = act.get(pid) if final.get(team) else None
+    er = fp_rank.get(pid)
+    return dict(id=pid, name=name, pos=pos, team=team, opp=o, home=h, day=wd, date=day, time=tm,
+                final=bool(final.get(team, False)), bye=team in bye_teams,
+                act=None if a is None else round(a[0], 1), act_h=None if a is None else round(a[1], 1), act_s=None if a is None else round(a[2], 1),
+                ecr=ecr_num(er), fp=None if pd.isna(fp_pts.get(pid, np.nan)) else float(fp_pts[pid]),
+                status=stt, practice=practice.get(pid, ''), injury=injury.get(pid, ''),
+                miss=bool(pid not in played_prev and team in teams_prev and team not in bye_teams),
+                new=bool(pid not in played_season and WEEK >= 3))
+
+
+for r in up.itertuples():
+    e = base_entry(r.player_id, r.player_display_name, r.position, r.team)
+    proj = 0.0 if e['status'] in ('Out', 'IR', 'Exempt') else float(r.proj)
+    if r.proj < 1.5 and e['ecr'] is None:
         continue
     lo_, hi_ = Model.range(pd.Series([proj]), pd.Series([r.cv]), model.rm)
     sc_std = r.base_std / r.base_ppr if r.base_ppr > 0 else 1
     sc_half = r.base_half / r.base_ppr if r.base_ppr > 0 else 1
-    o, h, day, tm, wd = kick[r.team]
-    er = fp_rank.get(r.player_id)
-    out.append(dict(
-        id=r.player_id, name=r.player_display_name, pos=r.position, team=r.team, opp=o, home=h, day=wd, date=day, time=tm,
-        proj=round(proj, 2), std=round(proj * sc_std, 2), half=round(proj * sc_half, 2),
-        lo=round(float(lo_.iloc[0]), 1), hi=round(float(hi_.iloc[0]), 1),
-        form=round(r.c_form, 2), usage=round(r.c_usage, 2), matchup=round(r.c_match, 2), vegas=round(r.c_vegas, 2),
-        base=round(r.base_ppr, 1), xfp=round(r.xfp, 1), imp=round(r.imp, 1), xdef=round(r.x_def * 100, 1),
-        tgt=round(r.u_targets, 1), car=round(r.u_carries, 1), att=round(r.u_attempts, 1),
-        rz=round(r.u_rz_tgt + r.u_rz_car, 1), snap=round(r.u_snap * 100), trend=round(r.snap_trend * 100),
-        cv=round(r.cv, 2), gp=int(r.n_cur), rank=int(r.pos_rank),
-        ecr=int(er.lstrip('QBRWTE')) if isinstance(er, str) and er[2:].isdigit() else None,
-        fp=None if pd.isna(fp_pts.get(r.player_id, np.nan)) else float(fp_pts[r.player_id]),
-        status=stt, practice=practice.get(r.player_id, ''), injury=injury.get(r.player_id, ''),
-        miss=bool(r.player_id not in played_prev and r.team in teams_prev)))
+    e.update(proj=round(proj, 2), std=round(proj * sc_std, 2), half=round(proj * sc_half, 2),
+             lo=round(float(lo_.iloc[0]), 1), hi=round(float(hi_.iloc[0]), 1),
+             form=round(r.c_form, 2), usage=round(r.c_usage, 2), matchup=round(r.c_match, 2), vegas=round(r.c_vegas, 2),
+             base=round(r.base_ppr, 1), xfp=round(r.xfp, 1), imp=round(r.imp, 1), xdef=round(r.x_def * 100, 1),
+             tgt=round(r.u_targets, 1), car=round(r.u_carries, 1), att=round(r.u_attempts, 1),
+             rz=round(r.u_rz_tgt + r.u_rz_car, 1), snap=round(r.u_snap * 100), trend=round(r.snap_trend * 100),
+             cv=round(r.cv, 2), gp=int(r.n_cur))
+    out.append(e)
 
-# save a snapshot of this week's model + expert numbers so we can score both after the games
-snap = pd.DataFrame([dict(id=p['id'], pos=p['pos'], model=p['proj'], fp_pts=p['fp']) for p in out])
+# no NFL stats yet (rookies, longtime backups): use the expert projection if experts rank them
+for r in no_hist.itertuples():
+    x = fp_pts.get(r.player_id)
+    if x is None or pd.isna(x):
+        continue
+    e = base_entry(r.player_id, r.pname, r.position, r.team)
+    proj = 0.0 if e['status'] in ('Out', 'IR', 'Exempt') else float(x)
+    e.update(proj=round(proj, 2), std=round(proj * .8, 2), half=round(proj * .9, 2), lo=round(proj * .4, 1), hi=round(proj * 1.6, 1),
+             form=round(proj, 2), usage=0.0, matchup=0.0, vegas=0.0, base=0.0, xfp=0.0, imp=0.0, xdef=0.0,
+             tgt=0, car=0, att=0, rz=0, snap=0, trend=0, cv=0.6, gp=0, src='experts')
+    out.append(e)
+
+for r in (kf.itertuples() if len(kf) else []):
+    name = universe.set_index('player_id').pname.get(r.player_id, r.player_id)
+    e = base_entry(r.player_id, name, 'K', r.team)
+    proj = 0.0 if e['status'] in ('Out', 'IR', 'Exempt') else float(r.proj)
+    lo_, hi_ = kickers.KModel.range(pd.Series([proj]), pd.Series([r.cv]), kmodel.rm)
+    e.update(proj=round(proj, 2), std=round(proj, 2), half=round(proj, 2),
+             lo=round(float(lo_.iloc[0]), 1), hi=round(float(hi_.iloc[0]), 1),
+             form=round(r.c_form, 2), usage=0.0, matchup=round(r.c_match, 2), vegas=round(r.c_vegas, 2),
+             base=round(r.base, 1), xfp=round(r.base, 1), imp=round(r.imp, 1), xdef=0.0,
+             tgt=0, car=0, att=0, rz=0, snap=0, trend=0, cv=round(r.cv, 2), gp=int(r.n_cur),
+             fga=round(r.fga, 1), pata=round(r.pata, 1), fg50=round(r.fg50, 2), dome=int(r.dome))
+    out.append(e)
+
+# players on bye: listed (so they can be found) but not projected this week
+abase = A[(SEASON, WEEK)]
+kbase = kicker_asof
+for r in universe[universe.team.isin(bye_teams)].itertuples():
+    b = (kbase.base.get(r.player_id) if r.position == 'K' else abase.base_ppr.get(r.player_id))
+    if b is None or pd.isna(b) or b < (5 if r.position == 'K' else 6):
+        continue
+    e = base_entry(r.player_id, r.pname, r.position, r.team)
+    e.update(proj=0.0, std=0.0, half=0.0, lo=0.0, hi=0.0, form=0.0, usage=0.0, matchup=0.0, vegas=0.0,
+             base=round(float(b), 1), xfp=0.0, imp=0.0, xdef=0.0, tgt=0, car=0, att=0, rz=0, snap=0, trend=0,
+             cv=0.0, gp=0)
+    out.append(e)
+
+out.sort(key=lambda x: -x['proj'])
+rk = {}
+for e in out:
+    if e['bye'] or e['status'] in ('Out', 'IR', 'Exempt'):
+        e['rank'] = None
+        continue
+    rk[e['pos']] = rk.get(e['pos'], 0) + 1
+    e['rank'] = rk[e['pos']]
+print('this week:', len(out), 'players |', sum(e['final'] for e in out), 'final |', sum(e['bye'] for e in out), 'on bye |',
+      sum(e['pos'] == 'K' for e in out), 'kickers')
+
+# save a snapshot of this week's model + expert numbers so we can score both after the games.
+# Only games not yet played are written; started games keep the numbers saved before kickoff.
+snap = pd.DataFrame([dict(id=p['id'], pos=p['pos'], model=p['proj'], fp_pts=p['fp']) for p in out
+                     if not p['final'] and not p['bye']])
 snap_path = os.path.join(HIST, f'ecr_{SEASON}_{WEEK}.csv')
-if os.path.exists(snap_path):  # keep earlier rows for players whose game already kicked off (e.g. Thursday)
+if os.path.exists(snap_path):
     old = pd.read_csv(snap_path)
     snap = pd.concat([snap, old[~old.id.isin(snap.id)]])
 snap.to_csv(snap_path, index=False)
@@ -466,18 +613,34 @@ oh = pd.concat([oh, now]).sort_values('date').groupby('fantasypros_id').last().r
 oh.to_csv(OWN_PATH, index=False)
 oh = oh.merge(fmap, on='fantasypros_id', how='inner')
 own = dict(zip(oh.gsis_id, oh.player_owned_avg))
-pool = cur.sort_values('week').groupby('player_id').agg(position=('position', 'last'), team=('team', 'last'),
-                                                       pname=('player_display_name', 'last')).reset_index()
+own.update({g_: v_ for g_, v_ in zip(fp.gsis_id, fp.player_owned_avg) if isinstance(g_, str) and not pd.isna(v_)})
+pool = universe[universe.position.isin(POS)]
 pr = ros(SEASON, WEEK, model, pool[['player_id', 'position', 'team']])
 cvmap = A[(SEASON, WEEK)].cv
 inj_out = {k for k, v in status.items() if v == 'Out'}
+IR_WEEKS = 4   # minimum stay on injured reserve; flagged so the user can check the real timeline
 waiver = []
-for _, r in pool.iterrows():
+
+
+def zero_out(wk, pid):
+    if pid in ON_IR:
+        n = 0
+        for i, x in enumerate(wk):
+            if x is not None and n < IR_WEEKS:
+                wk[i] = 0.0
+                n += 1
+    elif pid in EXEMPT:
+        wk = [None if x is None else 0.0 for x in wk]
+    elif pid in inj_out and wk and wk[0] is not None:
+        wk[0] = 0.0
+    return wk
+
+
+for r in pool.itertuples():
     if r.player_id not in pr:
         continue
     wk, core = pr[r.player_id]
-    if r.player_id in inj_out and wk and wk[0] is not None:
-        wk = [0.0] + wk[1:]
+    wk = zero_out(list(wk), r.player_id)
     tot = sum(x for x in wk if x is not None)
     if core < 3.5:
         continue
@@ -490,11 +653,40 @@ for _, r in pool.iterrows():
                        own=None if o_ is None or pd.isna(o_) else round(float(o_)),
                        rs=round(float(a_.base_std / a_.base_ppr), 3) if a_.base_ppr > 0 else 1, rh=round(float(a_.base_half / a_.base_ppr), 3) if a_.base_ppr > 0 else 1,
                        status=status.get(r.player_id, '')))
+
+# kickers, rest of season: baseline scaled by each team's expected scoring, plus dome games
+ts_ = team_strength(SEASON, WEEK)
+fut = games[(games.season == SEASON) & (games.week >= WEEK)]
+sched_k = {}
+for r in fut.itertuples():
+    sched_k[(r.home_team, r.week)] = sched_k[(r.away_team, r.week)] = 1 if r.roof in ('dome', 'closed') else 0
+for r in universe[universe.position == 'K'].itertuples():
+    if r.player_id not in kicker_asof.index:
+        continue
+    b_ = float(kicker_asof.base[r.player_id])
+    xi = ts_.get(r.team, LEAGUE_IMP) / LEAGUE_IMP - 1
+    wk = []
+    for w in range(WEEK, 19):
+        if (r.team, w) not in sched_k:
+            wk.append(None)
+        else:
+            wk.append(max(0.0, kmodel.c[0] * b_ + kmodel.c[1] * b_ * xi + kmodel.c[2] * sched_k[(r.team, w)]))
+    wk = zero_out(wk, r.player_id)
+    core = kmodel.c[0] * b_ + kmodel.c[1] * b_ * xi
+    if core < 4:
+        continue
+    o_ = own.get(r.player_id)
+    waiver.append(dict(id=r.player_id, name=r.pname, pos='K', team=r.team,
+                       wk=[None if x is None else round(x, 1) for x in wk], ros=round(sum(x for x in wk if x is not None), 1),
+                       ppg=round(core, 1), cv=round(float(kicker_asof.cv[r.player_id]), 2), trend=0, snap=0,
+                       own=None if o_ is None or pd.isna(o_) else round(float(o_)), rs=1, rh=1,
+                       status=status.get(r.player_id, '')))
+
 waiver.sort(key=lambda x: -x['ros'])
-# replacement level in a 12-team league (QB12, RB30, WR36, TE12) so "All" can mix positions fairly
-REPL_N = {'QB': 12, 'RB': 30, 'WR': 36, 'TE': 12}
+# replacement level in a 12-team league (QB12, RB30, WR36, TE12, K12) so "All" can mix positions fairly
+REPL_N = {'QB': 12, 'RB': 30, 'WR': 36, 'TE': 12, 'K': 12}
 repl = {}
-for p in POS:
+for p in POS + ['K']:
     v = sorted([x['ppg'] for x in waiver if x['pos'] == p], reverse=True)
     repl[p] = v[min(REPL_N[p], len(v)) - 1] if v else 0
 for x in waiver:

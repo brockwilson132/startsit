@@ -10,7 +10,7 @@ on:
   workflow_dispatch: {}
   push:
     branches: [main]
-    paths: ['app.html', 'pipeline.py', 'build_site.py', '.github/workflows/update.yml']
+    paths: ['app.html', 'pipeline.py', 'kickers.py', 'build_site.py', '.github/workflows/update.yml']
 permissions:
   contents: write
   pages: write
