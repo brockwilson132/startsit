@@ -10,6 +10,7 @@ import os, sys, re, json, datetime as dt, urllib.request
 import numpy as np, pandas as pd
 from numpy.linalg import lstsq
 import kickers
+import defense as dstm
 
 POS = ['QB', 'RB', 'WR', 'TE']
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
@@ -76,6 +77,19 @@ for y in SEASONS:
 rz = pd.concat(rz).fillna(0).reset_index()
 d = d.merge(rz, on=['season', 'week', 'player_id'], how='left')
 d[['rz_tgt', 'rz_car']] = d[['rz_tgt', 'rz_car']].fillna(0)
+
+# team defense scoring per game, from the same play-by-play files
+DST_COLS = ['season', 'week', 'season_type', 'defteam', 'posteam', 'sack', 'interception', 'fumble_lost', 'touchdown',
+            'td_team', 'safety', 'punt_blocked', 'field_goal_result', 'play_type']
+pbp_d = pd.concat([pd.read_parquet(os.path.join(CACHE, f'pbp{y}.parquet'), columns=DST_COLS) for y in SEASONS])
+dw, dgive = dstm.weekly(pbp_d, games[games.season.isin(SEASONS)])
+del pbp_d
+TEAM_NAME = {'ARI': 'Cardinals', 'ATL': 'Falcons', 'BAL': 'Ravens', 'BUF': 'Bills', 'CAR': 'Panthers', 'CHI': 'Bears',
+             'CIN': 'Bengals', 'CLE': 'Browns', 'DAL': 'Cowboys', 'DEN': 'Broncos', 'DET': 'Lions', 'GB': 'Packers',
+             'HOU': 'Texans', 'IND': 'Colts', 'JAX': 'Jaguars', 'KC': 'Chiefs', 'LA': 'Rams', 'LAC': 'Chargers',
+             'LV': 'Raiders', 'MIA': 'Dolphins', 'MIN': 'Vikings', 'NE': 'Patriots', 'NO': 'Saints', 'NYG': 'Giants',
+             'NYJ': 'Jets', 'PHI': 'Eagles', 'PIT': 'Steelers', 'SEA': 'Seahawks', 'SF': '49ers', 'TB': 'Buccaneers',
+             'TEN': 'Titans', 'WAS': 'Commanders'}
 
 # snap share
 sn = []
@@ -301,6 +315,27 @@ print('kicker backtest', [round(x, 1) for x in bt['bypos']['K']])
 kmodel = kickers.KModel().fit(pd.concat([ktr, kte]), LEAGUE_IMP)
 kicker_asof = kickers.asof(kd, SEASON, WEEK)
 
+# ---------------------------------------------------------------- team defenses: fit on S-2, test on S-1, then refit on both
+LEAGUE_GIVE = float(dgive.give.mean())
+
+
+def dbuild(s):
+    out_ = []
+    for w in range(3, 19):
+        r_ = dw[(dw.season == s) & (dw.week == w)][['season', 'week', 'team', 'opp', 'dpts']]
+        if len(r_):
+            out_.append(dstm.frame(dw, dgive, tg, s, w, r_))
+    f_ = pd.concat(out_).dropna(subset=['opp_imp', 'naive'])
+    return f_.assign(position='DST', ppr=f_.dpts)
+
+
+dtr, dte = dbuild(SEASON - 2), dbuild(SEASON - 1)
+dte = dte.assign(proj=dstm.DModel().fit(dtr, LEAGUE_IMP, LEAGUE_GIVE).predict(dte))
+bt['bypos']['DST'] = [pairs(dte, 'naive', 3)[0] * 100, pairs(dte, 'proj', 3)[0] * 100]
+print('defense backtest', [round(x, 1) for x in bt['bypos']['DST']])
+dmodel = dstm.DModel().fit(pd.concat([dtr, dte]), LEAGUE_IMP, LEAGUE_GIVE)
+dst_asof = dstm.asof(dw, dgive, SEASON, WEEK)
+
 # ---------------------------------------------------------------- live season scoring (as-of projections, no leakage)
 live = None
 if WEEK > 2:
@@ -380,10 +415,12 @@ act_rows = cur[cur.week == WEEK].set_index('player_id')
 act = {pid: (float(r.ppr), float(r.half), float(r['std'])) for pid, r in act_rows.iterrows()}
 for pid, v in kd[(kd.season == SEASON) & (kd.week == WEEK)].set_index('player_id').kpts.items():
     act[pid] = (float(v),) * 3
+for t_, v in dw[(dw.season == SEASON) & (dw.week == WEEK)].set_index('team').dpts.items():
+    act['DST-' + t_] = (float(v),) * 3
 
 # expert consensus
 fp = pd.read_csv(fetch('https://raw.githubusercontent.com/dynastyprocess/data/master/files/fp_latest_weekly.csv', 'fp.csv'))
-fp = fp[fp.page.isin(['qb', 'ppr-rb', 'ppr-wr', 'ppr-te', 'k'])]
+fp = fp[fp.page.isin(['qb', 'ppr-rb', 'ppr-wr', 'ppr-te', 'k', 'dst'])]
 fmap = ids[['fantasypros_id', 'gsis_id']].dropna()
 fmap['fantasypros_id'] = fmap.fantasypros_id.astype(int)
 fp = fp.merge(fmap, on='fantasypros_id', how='left')
@@ -405,6 +442,16 @@ for r in universe.itertuples():
 _miss = fp.gsis_id.isna()
 fp.loc[_miss, 'gsis_id'] = [(lambda c: c[0] if c and len(c) == 1 else None)(_by_k2.get(_k2(n, p_, t)))
                             for n, p_, t in zip(fp.loc[_miss, 'player_name'], fp.loc[_miss, 'pos'], fp.loc[_miss, 'team'])]
+# FantasyPros posts the new week's projections a day or two after Monday night. Until then the file
+# still holds last week's numbers, so keep only rows whose kickoff falls inside the week being projected.
+fp_all = fp.copy()
+_gd = pd.to_datetime(wk_games.gameday)
+_lo, _hi = _gd.min() - pd.Timedelta(days=1), _gd.max() + pd.Timedelta(days=2)
+_ko = pd.to_datetime(fp.player_game_kickoff_ts, unit='s', errors='coerce')
+fp = fp[(_ko >= _lo) & (_ko <= _hi)]
+print('expert rows for this week:', len(fp), 'of', len(fp_all))
+_dst = fp.pos == 'DST'
+fp.loc[_dst, 'gsis_id'] = ['DST-' + _TEAM.get(t, t) for t in fp.loc[_dst, 'team']]
 fp_rank = dict(zip(fp.gsis_id, fp.pos_rank))
 fp_pts = dict(zip(fp.gsis_id, fp.r2p_pts))
 fp_fresh = str(fp.scrape_date.max()) if len(fp) else None
@@ -446,8 +493,8 @@ def base_entry(pid, name, pos, team):
                 act=None if a is None else round(a[0], 1), act_h=None if a is None else round(a[1], 1), act_s=None if a is None else round(a[2], 1),
                 ecr=ecr_num(er), fp=None if pd.isna(fp_pts.get(pid, np.nan)) else float(fp_pts[pid]),
                 status=stt, practice=practice.get(pid, ''), injury=injury.get(pid, ''),
-                miss=bool(pid not in played_prev and team in teams_prev and team not in bye_teams),
-                new=bool(pid not in played_season and WEEK >= 3))
+                miss=bool(pos != 'DST' and pid not in played_prev and team in teams_prev and team not in bye_teams),
+                new=bool(pos != 'DST' and pid not in played_season and WEEK >= 3))
 
 
 for r in up.itertuples():
@@ -492,6 +539,29 @@ for r in (kf.itertuples() if len(kf) else []):
              fga=round(r.fga, 1), pata=round(r.pata, 1), fg50=round(r.fg50, 2), dome=int(r.dome))
     out.append(e)
 
+# team defenses
+drows = pd.DataFrame([dict(season=SEASON, week=WEEK, team=t_, opp=kick[t_][0]) for t_ in sorted(kick)])
+dfw = dstm.frame(dw, dgive, tg, SEASON, WEEK, drows).dropna(subset=['opp_imp'])
+dfw['proj'] = dmodel.predict(dfw)
+dfw['c_base'], dfw['c_vegas'], dfw['c_match'] = dmodel.parts(dfw)
+for r in dfw.itertuples():
+    e = base_entry('DST-' + r.team, TEAM_NAME.get(r.team, r.team) + ' D/ST', 'DST', r.team)
+    proj = float(r.proj)
+    e.update(proj=round(proj, 2), std=round(proj, 2), half=round(proj, 2),
+             lo=round(proj - .84 * dmodel.sd, 1), hi=round(proj + .84 * dmodel.sd, 1),
+             form=round(r.c_base, 2), usage=0.0, matchup=round(r.c_match, 2), vegas=round(r.c_vegas, 2),
+             base=round(r.base, 1), xfp=round(r.base, 1), imp=round(r.opp_imp, 1), xdef=0.0,
+             tgt=0, car=0, att=0, rz=0, snap=0, trend=0, cv=round(r.cv, 2), gp=int(r.n_cur),
+             sacks=round(r.sacks, 1), takeaways=round(r.ints + r.fum, 1), pa=round(r.pa, 1),
+             opp_give=round(r.opp_give, 1))
+    out.append(e)
+for t_ in sorted(bye_teams):
+    e = base_entry('DST-' + t_, TEAM_NAME.get(t_, t_) + ' D/ST', 'DST', t_)
+    e.update(proj=0.0, std=0.0, half=0.0, lo=0.0, hi=0.0, form=0.0, usage=0.0, matchup=0.0, vegas=0.0,
+             base=round(float(dst_asof.base.get(t_, 0)), 1), xfp=0.0, imp=0.0, xdef=0.0, tgt=0, car=0, att=0,
+             rz=0, snap=0, trend=0, cv=0.0, gp=0)
+    out.append(e)
+
 # players on bye: listed (so they can be found) but not projected this week
 abase = A[(SEASON, WEEK)]
 kbase = kicker_asof
@@ -516,15 +586,6 @@ for e in out:
 print('this week:', len(out), 'players |', sum(e['final'] for e in out), 'final |', sum(e['bye'] for e in out), 'on bye |',
       sum(e['pos'] == 'K' for e in out), 'kickers')
 
-# save a snapshot of this week's model + expert numbers so we can score both after the games.
-# Only games not yet played are written; started games keep the numbers saved before kickoff.
-snap = pd.DataFrame([dict(id=p['id'], pos=p['pos'], model=p['proj'], fp_pts=p['fp']) for p in out
-                     if not p['final'] and not p['bye']])
-snap_path = os.path.join(HIST, f'ecr_{SEASON}_{WEEK}.csv')
-if os.path.exists(snap_path):
-    old = pd.read_csv(snap_path)
-    snap = pd.concat([snap, old[~old.id.isin(snap.id)]])
-snap.to_csv(snap_path, index=False)
 
 da = dadj(SEASON, WEEK)
 raw = d[(d.season == SEASON) & (d.week < WEEK)].groupby(['opponent_team', 'position', 'week']).ppr.sum().groupby(['opponent_team', 'position']).mean()
@@ -608,12 +669,14 @@ print('ROS backtest', {k: round(v, 2) for k, v in ros_bt.items()})
 # last-known rostered %: players on bye or injured drop out of the weekly rankings, so remember them
 OWN_PATH = os.path.join(HIST, 'ownership.csv')
 oh = pd.read_csv(OWN_PATH) if os.path.exists(OWN_PATH) else pd.DataFrame(columns=['fantasypros_id', 'player_owned_avg', 'date'])
-now = fp[['fantasypros_id', 'player_owned_avg']].dropna().assign(date=str(today))
+now = fp_all[['fantasypros_id', 'player_owned_avg']].dropna().assign(date=str(today))
 oh = pd.concat([oh, now]).sort_values('date').groupby('fantasypros_id').last().reset_index()
 oh.to_csv(OWN_PATH, index=False)
 oh = oh.merge(fmap, on='fantasypros_id', how='inner')
 own = dict(zip(oh.gsis_id, oh.player_owned_avg))
-own.update({g_: v_ for g_, v_ in zip(fp.gsis_id, fp.player_owned_avg) if isinstance(g_, str) and not pd.isna(v_)})
+_fa = fp_all.copy()
+_fa.loc[_fa.pos == 'DST', 'gsis_id'] = ['DST-' + _TEAM.get(t, t) for t in _fa.loc[_fa.pos == 'DST', 'team']]
+own.update({g_: v_ for g_, v_ in zip(_fa.gsis_id, _fa.player_owned_avg) if isinstance(g_, str) and not pd.isna(v_)})
 pool = universe[universe.position.isin(POS)]
 pr = ros(SEASON, WEEK, model, pool[['player_id', 'position', 'team']])
 cvmap = A[(SEASON, WEEK)].cv
@@ -682,11 +745,32 @@ for r in universe[universe.position == 'K'].itertuples():
                        own=None if o_ is None or pd.isna(o_) else round(float(o_)), rs=1, rh=1,
                        status=status.get(r.player_id, '')))
 
+# team defenses, rest of season: baseline plus each future opponent's expected scoring and mistakes
+sched_o = {}
+for r in fut.itertuples():
+    sched_o[(r.home_team, r.week)], sched_o[(r.away_team, r.week)] = r.away_team, r.home_team
+dc = dmodel.c
+for t_ in sorted(all_teams):
+    if t_ not in dst_asof.index:
+        continue
+    b_ = float(dst_asof.base[t_])
+    wk = []
+    for w in range(WEEK, 19):
+        o = sched_o.get((t_, w))
+        wk.append(None if o is None else
+                  dc[0] * b_ + dc[3] + dc[1] * (LEAGUE_IMP - ts_.get(o, LEAGUE_IMP)) + dc[2] * (float(dst_asof.give.get(o, LEAGUE_GIVE)) - LEAGUE_GIVE))
+    g_ = [x for x in wk if x is not None]
+    o_ = own.get('DST-' + t_)
+    waiver.append(dict(id='DST-' + t_, name=TEAM_NAME.get(t_, t_) + ' D/ST', pos='DST', team=t_,
+                       wk=[None if x is None else round(x, 1) for x in wk], ros=round(sum(g_), 1),
+                       ppg=round(float(np.mean(g_)) if g_ else 0, 1), cv=round(float(dst_asof.cv[t_]), 2), trend=0, snap=0,
+                       own=None if o_ is None or pd.isna(o_) else round(float(o_)), rs=1, rh=1, status=''))
+
 waiver.sort(key=lambda x: -x['ros'])
 # replacement level in a 12-team league (QB12, RB30, WR36, TE12, K12) so "All" can mix positions fairly
-REPL_N = {'QB': 12, 'RB': 30, 'WR': 36, 'TE': 12, 'K': 12}
+REPL_N = {'QB': 12, 'RB': 30, 'WR': 36, 'TE': 12, 'K': 12, 'DST': 12}
 repl = {}
-for p in POS + ['K']:
+for p in POS + ['K', 'DST']:
     v = sorted([x['ppg'] for x in waiver if x['pos'] == p], reverse=True)
     repl[p] = v[min(REPL_N[p], len(v)) - 1] if v else 0
 for x in waiver:
@@ -694,10 +778,131 @@ for x in waiver:
 ros_bt['repl'] = {p: round(v, 1) for p, v in repl.items()}
 print('waiver pool', len(waiver))
 
+
+# ---------------------------------------------------------------- live scoreboard: model vs experts vs Vegas
+# Three projections are saved before kickoff each week, then scored once the games are played.
+#   model   = this app's projection
+#   experts = FantasyPros consensus projection
+#   vegas   = the player's average, adjusted only by the Vegas line for that game (sportsbooks don't
+#             publish free player-level fantasy projections, so this is what the game lines alone imply)
+def vegas_bench(season, week, rows):
+    """rows: iterable of (pid, pos, team, opp, imp, opp_imp). Returns dict pid -> projection."""
+    ts_w = team_strength(season, week)
+    a_w = A.get((season, week))
+    k_w = kickers.asof(kd, season, week)
+    d_w = dstm.asof(dw, dgive, season, week)
+    res = {}
+    for pid, pos, team, opp, imp, opp_imp in rows:
+        if pd.isna(imp) or pd.isna(opp_imp):
+            continue
+        if pos == 'DST':
+            b_ = d_w.base.get(team)
+            v = None if b_ is None else b_ * ts_w.get(opp, LEAGUE_IMP) / max(opp_imp, 10)
+        else:
+            b_ = (k_w.base.get(pid) if pos == 'K' else (a_w.base_ppr.get(pid) if a_w is not None else None))
+            v = None if b_ is None or pd.isna(b_) else b_ * imp / ts_w.get(team, LEAGUE_IMP)
+        if v is not None:
+            res[pid] = float(v)
+    return res
+
+
+impk = tg.set_index(['season', 'week', 'team']).imp
+vb_now = vegas_bench(SEASON, WEEK, [(e['id'], e['pos'], e['team'], e['opp'], impk.get((SEASON, WEEK, e['team']), np.nan),
+                                     impk.get((SEASON, WEEK, e['opp']), np.nan)) for e in out if not e['bye']])
+for e in out:
+    v = vb_now.get(e['id'])
+    e['vegas_bench'] = None if v is None else round(0.0 if e['status'] in ('Out', 'IR', 'Exempt') else v, 2)
+
+# snapshot: only games not yet played are written; started games keep the numbers saved before kickoff
+snap = pd.DataFrame([dict(id=p['id'], pos=p['pos'], model=p['proj'], fp_pts=p['fp'], vegas=p['vegas_bench']) for p in out
+                     if not p['final'] and not p['bye']])
+snap_path = os.path.join(HIST, f'ecr_{SEASON}_{WEEK}.csv')
+if os.path.exists(snap_path):
+    old = pd.read_csv(snap_path)
+    snap = pd.concat([snap, old[~old.id.isin(snap.id)]])
+snap.to_csv(snap_path, index=False)
+
+
+def week_actuals(season, week):
+    rows = {}
+    for r in d[(d.season == season) & (d.week == week)].itertuples():
+        rows[r.player_id] = (float(r.ppr), r.team, r.opponent_team)
+    for r in kd[(kd.season == season) & (kd.week == week)].itertuples():
+        rows[r.player_id] = (float(r.kpts), r.team, None)
+    for r in dw[(dw.season == season) & (dw.week == week)].itertuples():
+        rows['DST-' + r.team] = (float(r.dpts), r.team, r.opp)
+    return rows
+
+
+SRC = ['model', 'fp_pts', 'vegas']
+
+
+def score(f):
+    out_ = {}
+    for c in SRC:
+        h = t = 0
+        for _, g_ in f.groupby('pos'):
+            v, a = g_[c].values, g_.act.values
+            i, j = np.triu_indices(len(v), 1)
+            mk = (v[i] != v[j]) & (a[i] != a[j])
+            h += np.sum(((v[i] > v[j]) == (a[i] > a[j]))[mk]); t += mk.sum()
+        out_[c] = dict(pick=round(h / max(t, 1) * 100, 1), mae=round(float(np.mean(abs(f.act - f[c]))), 2))
+    em = np.abs(f.model - f.act)
+    h2h = {}
+    for c, k_ in [('fp_pts', 'experts'), ('vegas', 'vegas')]:
+        eo = np.abs(f[c] - f.act)
+        h2h[k_] = round(float(((em < eo) + 0.5 * (em == eo)).mean() * 100), 1)   # % of players the model was closer
+    return {'model': out_['model'], 'experts': out_['fp_pts'], 'vegas': out_['vegas'], 'h2h': h2h, 'n': int(len(f))}
+
+
+sb_weeks, sb_rows = [], []
+for fn in sorted(os.listdir(HIST), key=lambda x: (len(x), x)):
+    if not fn.startswith(f'ecr_{SEASON}_'):
+        continue
+    w = int(fn.split('_')[2].split('.')[0])
+    if w > WEEK:
+        continue
+    e_ = pd.read_csv(os.path.join(HIST, fn))
+    acts = week_actuals(SEASON, w)
+    if 'vegas' not in e_:
+        e_['vegas'] = np.nan
+    miss_v = e_.vegas.isna()
+    if miss_v.any():   # weeks saved before the Vegas benchmark existed: rebuild it from pre-game data
+        rows_ = []
+        for r in e_[miss_v].itertuples():
+            if r.id in acts and acts[r.id][2] is not None:
+                t_, o_ = acts[r.id][1], acts[r.id][2]
+                rows_.append((r.id, r.pos, t_, o_, impk.get((SEASON, w, t_), np.nan), impk.get((SEASON, w, o_), np.nan)))
+            elif r.id in acts:   # kickers: opponent from the schedule
+                t_ = acts[r.id][1]
+                gm = games[(games.season == SEASON) & (games.week == w) & ((games.home_team == t_) | (games.away_team == t_))]
+                if len(gm):
+                    o_ = gm.away_team.iloc[0] if gm.home_team.iloc[0] == t_ else gm.home_team.iloc[0]
+                    rows_.append((r.id, r.pos, t_, o_, impk.get((SEASON, w, t_), np.nan), impk.get((SEASON, w, o_), np.nan)))
+        vb = vegas_bench(SEASON, w, rows_)
+        e_.loc[miss_v, 'vegas'] = e_.loc[miss_v, 'id'].map(vb)
+    e_['act'] = e_.id.map(lambda x: acts[x][0] if x in acts else np.nan)
+    e_ = e_.dropna(subset=['act', 'model', 'fp_pts', 'vegas'])
+    e_ = e_[(e_.fp_pts >= 3) | e_.pos.isin(['K', 'DST'])]
+    if len(e_) < 20:
+        continue
+    e_['week'] = w
+    sb_rows.append(e_)
+    wk_ = score(e_)
+    wk_['week'], wk_['partial'] = w, bool(w == WEEK)
+    wk_['pos'] = {p_: score(g_) for p_, g_ in e_.groupby('pos') if len(g_) >= 8}
+    sb_weeks.append(wk_)
+scoreboard = None
+if sb_rows:
+    allr = pd.concat(sb_rows)
+    scoreboard = dict(weeks=sb_weeks, total=score(allr),
+                      pos={p_: score(g_) for p_, g_ in allr.groupby('pos') if len(g_) >= 8})
+    print('scoreboard', scoreboard['total'])
+
 meta = dict(season=SEASON, week=WEEK, generated=dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%MZ'),
             updated=today.strftime('%b %-d'), league_imp=round(LEAGUE_IMP, 1), expert_date=fp_fresh,
             coef={p: [round(float(x), 3) for x in model.C[p]] for p in POS}, matchup_coef=round(model.cm, 3),
-            backtest=bt, live=live, expert=expert, ros_backtest=ros_bt, n_injury_reports=int(len(iw)))
+            backtest=bt, live=live, expert=expert, ros_backtest=ros_bt, scoreboard=scoreboard, n_injury_reports=int(len(iw)))
 payload = json.dumps(dict(players=out, defense=defense, waiver=waiver, meta=meta), separators=(',', ':'), default=float)
 open(os.path.join(OUT, 'data.json'), 'w').write(payload)
 open(os.path.join(OUT, 'data.js'), 'w').write('window.SS_DATA=' + payload + ';\n')

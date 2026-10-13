@@ -2,7 +2,8 @@ name: Update projections
 # Runs on the schedule below, on manual "Run workflow", and when the app or pipeline changes.
 on:
   schedule:
-    # times are UTC. Tue: after Monday night. Wed–Fri: injury reports. Sat. Sun 11:30am ET before kickoff.
+    # times are UTC. Mon: Sunday's results. Tue: after Monday night. Wed–Fri: injury reports. Sat. Sun 11:30am ET before kickoff.
+    - cron: '0 14 * * 1'
     - cron: '0 12 * * 2'
     - cron: '0 22 * * 3,4,5'
     - cron: '0 16 * * 6'
@@ -10,11 +11,11 @@ on:
   workflow_dispatch: {}
   push:
     branches: [main]
-    paths: ['app.html', 'pipeline.py', 'kickers.py', 'build_site.py', '.github/workflows/update.yml']
+    paths: ['app.html', 'pipeline.py', 'kickers.py', 'defense.py', 'build_site.py', '.github/workflows/update.yml']
 permissions:
   contents: write
   pages: write
-  id-token: write   # GitHub Pages deploy + npm trusted publishing (no tokens stored)
+  id-token: write   # GitHub Pages deploy
 concurrency:
   group: update
   cancel-in-progress: false
@@ -40,24 +41,6 @@ jobs:
           git add history
           git diff --cached --quiet || git commit -m "snapshot $(date -u +%F)"
           git push
-      # Live feed for the private claude.ai copy of the app. Optional: Pages works without it.
-      - uses: actions/setup-node@v4
-        with: { node-version: '24', registry-url: 'https://registry.npmjs.org' }
-      - name: Publish data to npm
-        continue-on-error: true
-        run: |
-          npm install -g npm@latest
-          cp package.json dist/
-          cd dist
-          npm version "1.${{ github.run_number }}.${{ github.run_attempt }}" --no-git-tag-version
-          npm --version
-          if ! npm publish --access public --loglevel verbose > publish.log 2>&1; then
-            cat publish.log
-            echo "::warning title=npm publish failed::$(grep -iE 'oidc|trusted|npm error code|E40|E42' publish.log | head -8 | tr '\n' ' ')"
-            exit 1
-          fi
-          sleep 20
-          curl -s "https://purge.jsdelivr.net/npm/startsit-nfl-data@latest/data.js" || true
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with: { path: site }
