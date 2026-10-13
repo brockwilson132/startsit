@@ -243,6 +243,24 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);font-si
 .linkbtn{border:0;background:none;padding:0;color:var(--turf);font-weight:600;text-decoration:underline;text-underline-offset:3px}
 @media (max-width:460px){.lv-row{grid-template-columns:118px 1fr 54px}}
 .byelist{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.byelist .pill{padding:6px 12px}.byelist small{color:var(--muted)}
+.sortbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:-4px 0 12px;font-size:13px;color:var(--muted)}
+.sortbar button{border:0;background:none;padding:4px 8px;border-radius:6px;font:600 14px var(--body);color:var(--muted)}
+.sortbar button[aria-pressed="true"]{background:var(--chip);color:var(--ink)}
+.rktable td{vertical-align:middle}
+.spark{display:block}.sp-bar{fill:var(--ink);opacity:.72}.sp-dnp{fill:var(--line)}.sp-bye{fill:var(--muted)}
+tr.row.open td{background:var(--chip)}
+tr.detail td{padding:0 0 12px;border-bottom:1px solid var(--line);background:var(--chip);cursor:default}
+.dt{padding:4px 12px 4px 36px;display:grid;gap:8px;font-size:14px}
+.dt-row{display:grid;grid-template-columns:92px 1fr;gap:8px}.dt-k{color:var(--muted);font-weight:600}
+.dt-chart{display:flex;gap:4px;align-items:flex-end;height:84px;margin:2px 0 2px 100px;max-width:360px}
+.dt-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.dt-b{width:100%;max-width:26px;background:var(--turf);border-radius:3px 3px 0 0}
+.dt-v{font:600 11px var(--display);color:var(--muted);margin-bottom:2px}.dt-w{font:600 11px var(--display);color:var(--muted);margin-top:3px}
+.dt-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.dt-btn{border:0;background:var(--ink);color:var(--paper);border-radius:8px;padding:8px 12px;font:700 15px var(--display)}
+.dt-btn.ghost{background:none;color:var(--ink);border:1.5px solid var(--line)}
+@media (max-width:460px){.dt{padding-left:10px}.dt-row{grid-template-columns:1fr;gap:2px}.dt-chart{margin-left:0}}
+.rkseg{display:flex;margin:0 0 14px}.rkseg button{flex:1}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){.lane .ball{transition:none}}
 @media (max-width:460px){.part{grid-template-columns:64px 1fr 48px}.pts{font-size:34px}}
@@ -283,8 +301,10 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);font-si
 </section>
 
 <section id="rank" hidden>
+  <div class="seg rkseg" role="group" aria-label="Ranking period" id="rkview"></div>
   <div class="filters" id="posf"></div>
-  <div class="tablewrap"><table><thead><tr><th>#</th><th>Player</th><th>Matchup</th><th class="num">Proj</th><th></th></tr></thead><tbody id="rankBody"></tbody></table></div>
+  <div id="rkSort"></div>
+  <div class="tablewrap"><table class="rktable"><thead id="rankHead"></thead><tbody id="rankBody"></tbody></table></div>
   <div id="byeOut"></div>
 </section>
 
@@ -438,20 +458,97 @@ function cardsHTML(ps){
     <div class="facts">${role}${isD?`<span>${p.opp} expected to score <b>${fmt(p.imp)}</b></span>`:`<span>Team implied total <b>${fmt(p.imp)}</b></span>`}${isD?'':isK?(p.dome?'<span>Indoors this week</span>':''):`<span>${p.opp} allows <b>${p.xdef>0?'+':''}${fmt(p.xdef,0)}%</b> to ${p.pos}s</span>`}</div>`}</article>`}).join('')}</div>`}
 
 /* rankings */
+let rkView=store.get('ss_rkview','week'), rkSort='ppg', rkOpen=null;
+const SEA=()=>DATA.season||[];
+const seaById=()=>Object.fromEntries(SEA().map(p=>[p.id,p]));
+const wkPts=p=>p.wp.map((x,i)=>x==null?null:S==='std'?p.ws[i]:S==='half'?(x+p.ws[i])/2:x);
+const sum=a=>a.reduce((s,x)=>s+(x||0),0);
+const TIERS={QB:[[12,'QB1']],RB:[[12,'RB1'],[24,'RB2']],WR:[[12,'WR1'],[24,'WR2'],[36,'WR3']],TE:[[12,'TE1']],K:[[12,'K1']],DST:[[12,'DST1']]};
+function seasonStats(){
+  // per-player season numbers in the current scoring format, plus weekly position finishes
+  const rows=SEA().map(p=>{const w=wkPts(p),g=w.filter(x=>x!=null);const l3=g.slice(-3);
+    return {p,w,gp:g.length,tot:sum(g),ppg:g.length?sum(g)/g.length:0,l3:l3.length?sum(l3)/l3.length:0,fin:[]}});
+  const nW=Math.max(0,...SEA().map(p=>p.wp.length));
+  for(let i=0;i<nW;i++){const by={};rows.forEach(r=>{if(r.w[i]!=null)(by[r.p.pos]=by[r.p.pos]||[]).push(r)});
+    Object.values(by).forEach(list=>{list.sort((a,b)=>b.w[i]-a.w[i]);list.forEach((r,k)=>r.fin[i]=k+1)})}
+  const byPos={};rows.forEach(r=>(byPos[r.p.pos]=byPos[r.p.pos]||[]).push(r));
+  Object.values(byPos).forEach(list=>{[...list].sort((a,b)=>b.ppg-a.ppg).forEach((r,k)=>r.rkPpg=k+1);[...list].sort((a,b)=>b.tot-a.tot).forEach((r,k)=>r.rkTot=k+1)});
+  return rows}
+function tierCounts(r){const t=TIERS[r.p.pos]||[];const f=r.fin.filter(x=>x!=null);
+  return t.map(([n,l],k)=>[l,f.filter(x=>x<=n&&(k===0||x>t[k-1][0])).length])}
+function spark(vals,byeIdx,opts={}){const W=opts.w||72,H=opts.h||24,n=vals.length;if(!n)return'';
+  const mx=Math.max(opts.max||0,...vals.map(v=>v||0),1),bw=W/n;
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">${vals.map((v,i)=>{
+    if(byeIdx&&byeIdx.includes(i))return `<rect x="${i*bw+bw*.35}" y="${H-2}" width="${bw*.3}" height="2" class="sp-bye"/>`;
+    if(v==null)return `<rect x="${i*bw+1}" y="${H-1}" width="${bw-2}" height="1" class="sp-dnp"/>`;
+    const h=Math.max(1.5,Math.max(0,v)/mx*(H-1));return `<rect x="${i*bw+1}" y="${H-h}" width="${Math.max(1,bw-2)}" height="${h}" rx="1" class="sp-bar"/>`}).join('')}</svg>`}
+const fitPos=p=>rankPos==='ALL'?!['K','DST'].includes(p.pos):rankPos==='FLEX'?['RB','WR','TE'].includes(p.pos):p.pos===rankPos;
+const injTag=x=>{const p=byId[x.id];if(!p)return '';const i=inj(p);return i?` <span class="itag ${i.lvl}" title="${esc(i.txt)}">${i.lvl==='out'?i.tag.split(' ')[0]:i.lvl==='bad'?'D':'⚑'}</span>`:''};
 function renderRank(){
+  $('#rkview').innerHTML=[['week',`Week ${M.week}`],['season','Season'],['ros','Rest of season']].map(([k,l])=>`<button data-v="${k}" aria-pressed="${k===rkView}">${l}</button>`).join('');
+  $('#rkview').querySelectorAll('button').forEach(b=>b.onclick=()=>{rkView=b.dataset.v;store.set('ss_rkview',rkView);rkOpen=null;renderRank()});
   $('#posf').innerHTML=['ALL','QB','RB','WR','TE','FLEX','K','DST'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('');
-  $('#posf').querySelectorAll('button').forEach(b=>b.onclick=()=>{rankPos=b.dataset.p;renderRank()});
-  const list=P.filter(p=>!p.bye&&!inactive(p)&&(rankPos==='ALL'?!['K','DST'].includes(p.pos):rankPos==='FLEX'?['RB','WR','TE'].includes(p.pos):p.pos===rankPos)).sort((a,b)=>val(b)-val(a)).slice(0,80);
-  $('#rankBody').innerHTML=list.map((p,i)=>{const z=p.xdef;const bg=z>8?'var(--up)':z<-8?'var(--down)':'var(--chip)';const fg=Math.abs(z)>8?'#fff':'var(--ink)';
-    return `<tr class="row" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${(()=>{const i=inj(p);return i?` <span class="itag ${i.lvl}" title="${esc(i.txt)}">${i.lvl==='out'?i.tag.split(' ')[0]:i.lvl==='bad'?'D':'⚑'}</span>`:''})()}<small>${rankPos==='ALL'||rankPos==='FLEX'?p.pos+', ':''}${p.team} ${vs(p)}${p.ecr!=null?`, experts ${p.pos}${p.ecr}`:''}</small></td><td>${p.pos==='DST'?`<span class="mu" style="background:var(--chip)" title="${p.opp} expected to score ${fmt(p.imp)}">opp ${fmt(p.imp)}</span>`:p.pos==='K'?(p.dome?'<span class="mu" style="background:var(--chip)" title="Indoors">dome</span>':''):`<span class="mu" style="background:${bg};color:${fg}" title="${p.opp} allows ${fmt(z,0)}% vs expected to ${p.pos}s">${z>0?'+':''}${fmt(z,0)}%</span>`}</td><td class="num">${fmt(val(p))}${p.final?`<small class="per">${actual(p)!=null?'scored '+fmt(actual(p)):'final'}</small>`:''}</td><td><button class="addbtn" aria-label="${picks.includes(p.id)?'Remove from':'Add to'} compare" aria-pressed="${picks.includes(p.id)}" data-id="${p.id}">${picks.includes(p.id)?'✓':'+'}</button></td></tr>`}).join('');
-  $('#rankBody').querySelectorAll('.addbtn').forEach(b=>b.onclick=e=>{e.stopPropagation();toggle(b.dataset.id)});
-  $('#rankBody').querySelectorAll('tr.row').forEach(r=>r.onclick=()=>toggle(r.dataset.id));
-  const fit=p=>rankPos==='ALL'?!['K','DST'].includes(p.pos):rankPos==='FLEX'?['RB','WR','TE'].includes(p.pos):p.pos===rankPos;
-  const byes=P.filter(p=>p.bye&&fit(p)).sort((a,b)=>b.base-a.base);
-  const teams=[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort();
-  $('#byeOut').innerHTML=teams.length?`<h3 class="h3">On bye in Week ${M.week}</h3><p class="cap" style="margin-top:-4px">${teams.join(', ')} don't play this week, so their players aren't ranked.</p>
-    <div class="byelist">${byes.slice(0,24).map(p=>`<button class="pill" data-id="${p.id}">${esc(p.name)} <small>${p.pos}, ${p.team}</small></button>`).join('')}</div>`:'';
-  $('#byeOut').querySelectorAll('button').forEach(b=>b.onclick=()=>toggle(b.dataset.id));
+  $('#posf').querySelectorAll('button').forEach(b=>b.onclick=()=>{rankPos=b.dataset.p;rkOpen=null;renderRank()});
+  const showPos=rankPos==='ALL'||rankPos==='FLEX';
+  let head='',rows='',note='',sortbar='';
+  if(rkView==='week'){
+    const list=P.filter(p=>!p.bye&&!inactive(p)&&fitPos(p)).sort((a,b)=>val(b)-val(a)).slice(0,100);
+    head=`<tr><th>#</th><th>Player</th><th>Matchup</th><th class="num">Proj</th></tr>`;
+    rows=list.map((p,i)=>{const z=p.xdef;const bg=z>8?'var(--up)':z<-8?'var(--down)':'var(--chip)';const fg=Math.abs(z)>8?'#fff':'var(--ink)';
+      return `<tr class="row${rkOpen===p.id?' open':''}" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${injTag(p)}<small>${showPos?p.pos+', ':''}${p.team} ${vs(p)}${p.ecr!=null?`, experts ${p.pos}${p.ecr}`:''}</small></td><td>${p.pos==='DST'?`<span class="mu" style="background:var(--chip)" title="${p.opp} expected to score ${fmt(p.imp)}">opp ${fmt(p.imp)}</span>`:p.pos==='K'?(p.dome?'<span class="mu" style="background:var(--chip)" title="Indoors">dome</span>':''):`<span class="mu" style="background:${bg};color:${fg}" title="${p.opp} allows ${fmt(z,0)}% vs expected to ${p.pos}s">${z>0?'+':''}${fmt(z,0)}%</span>`}</td><td class="num">${fmt(val(p))}${p.final?`<small class="per">${actual(p)!=null?'scored '+fmt(actual(p)):'final'}</small>`:''}</td></tr>`+(rkOpen===p.id?`<tr class="detail"><td colspan="4">${detailHTML(p.id)}</td></tr>`:'')}).join('');
+    const byes=P.filter(p=>p.bye&&fitPos(p)).sort((a,b)=>b.base-a.base);const teams=[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort();
+    note=teams.length?`<h3 class="h3">On bye in Week ${M.week}</h3><p class="cap" style="margin-top:-4px">${teams.join(', ')} don't play this week, so their players aren't ranked.</p><div class="byelist">${byes.slice(0,24).map(p=>`<button class="pill" data-open="${p.id}">${esc(p.name)} <small>${p.pos}, ${p.team}</small></button>`).join('')}</div>`:'';
+  } else if(rkView==='season'){
+    const st=seasonStats().filter(r=>fitPos(r.p)&&r.gp>0);
+    const minG=Math.max(1,Math.floor(Math.max(...st.map(r=>r.gp),1)/2));
+    const key={ppg:r=>r.ppg,tot:r=>r.tot,l3:r=>r.l3}[rkSort];
+    const list=st.filter(r=>rkSort==='tot'||r.gp>=minG).sort((a,b)=>key(b)-key(a)).slice(0,100);
+    const mx=Math.max(...list.map(r=>Math.max(0,...r.w.map(x=>x||0))),1);
+    sortbar=`<div class="sortbar"><span>Rank by</span>${[['ppg','Points/game'],['tot','Total'],['l3','Last 3 games']].map(([k,l])=>`<button data-s="${k}" aria-pressed="${k===rkSort}">${l}</button>`).join('')}</div>`;
+    head=`<tr><th>#</th><th>Player</th><th>Weekly</th><th class="num">${rkSort==='tot'?'Total':rkSort==='l3'?'Last 3':'Pts/g'}</th></tr>`;
+    rows=list.map((r,i)=>{const p=r.p,tc=tierCounts(r),byeIdx=p.bye.map(b=>b-1);const main=rkSort==='tot'?r.tot:rkSort==='l3'?r.l3:r.ppg;
+      const sub=rkSort==='tot'?`${fmt(r.ppg)}/g`:rkSort==='l3'?`${fmt(r.ppg)}/g season`:`${fmt(r.tot,0)} total`;
+      return `<tr class="row${rkOpen===p.id?' open':''}" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${injTag(p)}<small>${showPos?p.pos+', ':''}${p.team}, ${r.gp} g${tc.length?' · '+tc.map(([l,c])=>`${c} ${l}`).join(', '):''}</small></td><td>${spark(r.w,byeIdx,{max:mx})}</td><td class="num">${fmt(main)}<small class="per">${sub}</small></td></tr>`+(rkOpen===p.id?`<tr class="detail"><td colspan="4">${detailHTML(p.id)}</td></tr>`:'')}).join('');
+    note=`<p class="cap">Weekly bars run from Week 1; a short dash is a bye, a flat line a game he missed. "RB1" counts weeks he finished top 12 at his position, "RB2" weeks 13 to 24 (12-team league).${rkSort!=='tot'?` Per-game ranks need at least ${minG} games played.`:''}</p>`;
+  } else {
+    const list=W.filter(p=>fitPos(p)).sort((a,b)=>rosT(b)-rosT(a)).slice(0,100);
+    const mx=Math.max(...list.map(p=>Math.max(0,...p.wk.map(x=>(x||0)*wsc(p)))),1);
+    head=`<tr><th>#</th><th>Player</th><th>Wk ${M.week}–18</th><th class="num">Total</th></tr>`;
+    rows=list.map((p,i)=>{const byeIdx=p.wk.map((x,k)=>x==null?k:-1).filter(k=>k>=0);
+      return `<tr class="row${rkOpen===p.id?' open':''}" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${p.status?` <span class="itag ${['Out','IR','Exempt'].includes(p.status)?'out':''}">${esc(p.status.toUpperCase())}</span>`:''}<small>${showPos?p.pos+', ':''}${p.team}${byeWk(p)?`, bye Wk ${byeWk(p)}`:''}${p.own!=null?`, ${p.own}% rostered`:''}</small></td><td>${spark(p.wk.map(x=>x==null?null:x*wsc(p)),byeIdx,{max:mx})}</td><td class="num">${fmt(rosT(p),0)}<small class="per">${fmt(p.ppg*wsc(p))}/g</small></td></tr>`+(rkOpen===p.id?`<tr class="detail"><td colspan="4">${detailHTML(p.id)}</td></tr>`:'')}).join('');
+    note=`<p class="cap">Projected points for every remaining week, bye weeks included, from the same model as Waivers. Future matchups count half as much as this week's, since defenses change over a season.</p>`;
+  }
+  $('#rkSort').innerHTML=sortbar;
+  $('#rankHead').innerHTML=head;$('#rankBody').innerHTML=rows||'<tr><td colspan="4" class="cap">No players for this filter yet.</td></tr>';$('#byeOut').innerHTML=note;
+  $('#rkSort').querySelectorAll('button').forEach(b=>b.onclick=()=>{rkSort=b.dataset.s;renderRank()});
+  $('#rankBody').querySelectorAll('tr.row').forEach(r=>r.onclick=()=>{rkOpen=rkOpen===r.dataset.id?null:r.dataset.id;renderRank()});
+  $('#byeOut').querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{rkView='season';store.set('ss_rkview',rkView);rkOpen=b.dataset.open;rankPos=byId[b.dataset.open]?.pos||rankPos;renderRank()});
+  wireDetail($('#rankBody'));
+}
+function detailHTML(id){
+  const p=byId[id], s=seaById()[id], w=W.find(x=>x.id===id);
+  const st=s?seasonStats().find(r=>r.p.id===id):null;
+  const pos=(p||s||w).pos, nm=(p||s||w).name;
+  let html='<div class="dt">';
+  // this week
+  if(p){html+=`<div class="dt-row"><span class="dt-k">Week ${M.week}</span><span>${p.bye?'On bye':inactive(p)?'Out':p.final?`Final: scored <b>${actual(p)!=null?fmt(actual(p)):'—'}</b> (proj ${fmt(val(p))})`:`<b>${fmt(val(p))}</b> projected ${vs(p)}, ${fmtTime(p)}${p.rank?`, model ${pos}${p.rank}`:''}${p.ecr?`, experts ${pos}${p.ecr}`:''}`}</span></div>`}
+  // season
+  if(st&&st.gp){const tc=tierCounts(st);const g=st.w.filter(x=>x!=null);
+    html+=`<div class="dt-row"><span class="dt-k">Season</span><span><b>${pos}${st.rkPpg}</b> in points per game (${fmt(st.ppg)}), <b>${pos}${st.rkTot}</b> in total (${fmt(st.tot,0)}) over ${st.gp} games. High ${fmt(Math.max(...g))}, low ${fmt(Math.min(...g))}.</span></div>`;
+    html+=`<div class="dt-chart">${st.w.map((v,i)=>{const bye=s.bye.includes(i+1);const mx=Math.max(1,...g);const h=v==null?0:Math.max(2,Math.max(0,v)/mx*52);
+      return `<div class="dt-col" title="Week ${i+1}: ${bye?'bye':v==null?'did not play':fmt(v)+' pts'+(st.fin[i]?`, ${pos}${st.fin[i]}`:'')}"><span class="dt-v">${bye?'':v==null?'out':fmt(v,0)}</span><span class="dt-b" style="height:${h}px"></span><span class="dt-w">${bye?'BYE':i+1}</span></div>`}).join('')}</div>`;
+    if(tc.length)html+=`<div class="dt-row"><span class="dt-k">Finishes</span><span>${tc.map(([l,c])=>`<b>${c}</b> ${l} week${c===1?'':'s'}`).join(', ')}, out of ${st.gp} games (12-team league).</span></div>`;
+    const u=s.u;const use=pos==='K'?`${u.fgm}/${u.fga} field goals, ${u.fg50} from 50+, long ${u.lng}, ${u.pat} extra points`:pos==='DST'?`${fmt(u.sacks)} sacks, ${fmt(u.to)} takeaways and ${fmt(u.pa)} points allowed per game, ${u.td} TD`:pos==='QB'?`${fmt(u.att,0)} pass attempts, ${fmt(u.car)} carries, ${fmt(u.yds,0)} yards per game, ${u.td} TD`:pos==='RB'?`${fmt(u.car)} carries, ${fmt(u.tgt)} targets, ${fmt(u.yds,0)} yards per game, ${u.snap}% of snaps, ${u.td} TD`:`${fmt(u.tgt)} targets${u.ts!=null?` (${fmt(u.ts)}% share)`:''}, ${fmt(u.rec)} catches, ${fmt(u.yds,0)} yards per game, ${u.snap}% of snaps, ${u.td} TD`;
+    html+=`<div class="dt-row"><span class="dt-k">Usage</span><span>${use}</span></div>`}
+  // rest of season
+  if(w){const all=W.filter(x=>x.pos===pos).sort((a,b)=>rosT(b)-rosT(a));const rk=all.findIndex(x=>x.id===id)+1;
+    html+=`<div class="dt-row"><span class="dt-k">Rest of season</span><span><b>${fmt(rosT(w),0)}</b> projected points (${fmt(w.ppg*wsc(w))}/g), <b>${pos}${rk}</b>. Next 4 weeks: ${fmt(nextN(w,4),0)}${byeWk(w)?`, bye Week ${byeWk(w)}`:''}.</span></div>`}
+  html+=`<div class="dt-actions">${p&&!p.bye?`<button class="dt-btn" data-cmp="${id}">${picks.includes(id)?'Remove from compare':'Compare'}</button>`:''}${w?`<button class="dt-btn ghost" data-wv="${id}">Use as waiver pickup</button>`:''}</div></div>`;
+  return html}
+function wireDetail(root){
+  root.querySelectorAll('[data-cmp]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggle(b.dataset.cmp);renderRank()});
+  root.querySelectorAll('[data-wv]').forEach(b=>b.onclick=e=>{e.stopPropagation();wv.add=b.dataset.wv;store.set('ss_wv',wv);document.querySelector('nav button[data-tab=compare]').click();setMode('wv');renderWaiver()});
+  root.querySelectorAll('tr.detail').forEach(r=>r.onclick=e=>e.stopPropagation());
 }
 
 /* defense */
@@ -701,7 +798,7 @@ function renderWaiver(){
   $('#wvOut').querySelectorAll('tr.row').forEach(r=>r.onclick=()=>{wv.add=r.dataset.id;store.set('ss_wv',wv);renderWaiver();$('#wvWrap').scrollIntoView({block:'start'})});
 }
 
-function renderAll(){renderCompare();renderRank();renderDef();setW();if(mode==='wv')renderWaiver();if(typeof renderHow==='function'&&$('#howOut').innerHTML)renderHow()}
+function renderAll(){setW();renderCompare();renderRank();renderDef();if(mode==='wv')renderWaiver();if(typeof renderHow==='function'&&$('#howOut').innerHTML)renderHow()}
 document.querySelectorAll('.mode button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));slotPicker('drop');slotPicker('add');
 setW();renderAll();renderHow();setMode(mode);
 </script>

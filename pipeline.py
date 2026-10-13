@@ -899,11 +899,63 @@ if sb_rows:
                       pos={p_: score(g_) for p_, g_ in allr.groupby('pos') if len(g_) >= 8})
     print('scoreboard', scoreboard['total'])
 
+
+# ---------------------------------------------------------------- season so far (Rankings: season view)
+# One row per player who has played this season: weekly points (PPR and standard), usage, team byes.
+cur_all = d[d.season == SEASON]
+last_wk = int(max(cur_all.week.max() if len(cur_all) else 0, 0))
+team_weeks = {}
+for r in games[(games.season == SEASON)].itertuples():
+    team_weeks.setdefault(r.home_team, set()).add(r.week)
+    team_weeks.setdefault(r.away_team, set()).add(r.week)
+team_bye = {t_: [w for w in range(1, 19) if w not in ws_] for t_, ws_ in team_weeks.items()}
+cur_team = dict(zip(universe.player_id, universe.team))
+cur_name = dict(zip(universe.player_id, universe.pname))
+status_now = {e['id']: e['status'] for e in out}
+
+
+def weekly_list(rows, col):
+    m = dict(zip(rows.week, rows[col]))
+    return [None if w not in m else round(float(m[w]), 1) for w in range(1, last_wk + 1)]
+
+
+season_tbl = []
+for pid, g_ in cur_all.groupby('player_id'):
+    g_ = g_.sort_values('week')
+    pos = g_.position.iloc[-1]
+    team = cur_team.get(pid, g_.team.iloc[-1])
+    gp = len(g_)
+    season_tbl.append(dict(
+        id=pid, name=cur_name.get(pid, g_.player_display_name.iloc[-1]), pos=pos, team=team, gp=gp,
+        wp=weekly_list(g_, 'ppr'), ws=weekly_list(g_, 'std'), bye=team_bye.get(team, []), status=status_now.get(pid, ''),
+        u=dict(tgt=round(g_.targets.mean(), 1), car=round(g_.carries.mean(), 1), att=round(g_.attempts.mean(), 1),
+               rec=round(g_.receptions.fillna(0).mean(), 1),
+               yds=round((g_.passing_yards.fillna(0) + g_.rushing_yards.fillna(0) + g_.receiving_yards.fillna(0)).mean(), 1),
+               td=int((g_.passing_tds.fillna(0) + g_.rushing_tds.fillna(0) + g_.receiving_tds.fillna(0)).sum()),
+               snap=round(g_.snap.mean() * 100), ts=None if g_.target_share.isna().all() else round(g_.target_share.mean() * 100, 1),
+               rz=round((g_.rz_tgt + g_.rz_car).mean(), 1))))
+for pid, g_ in kd[kd.season == SEASON].groupby('player_id'):
+    g_ = g_.sort_values('week')
+    team = cur_team.get(pid, g_.team.iloc[-1])
+    season_tbl.append(dict(
+        id=pid, name=cur_name.get(pid, g_.player_display_name.iloc[-1]), pos='K', team=team, gp=len(g_),
+        wp=weekly_list(g_, 'kpts'), ws=weekly_list(g_, 'kpts'), bye=team_bye.get(team, []), status=status_now.get(pid, ''),
+        u=dict(fgm=int(g_.fg_made.fillna(0).sum()), fga=int(g_.fg_att.fillna(0).sum()), fg50=int(g_.fg50.sum()),
+               pat=int(g_.pat_made.fillna(0).sum()), lng=int(g_.fg_long.fillna(0).max()))))
+for t_, g_ in dw[dw.season == SEASON].groupby('team'):
+    g_ = g_.sort_values('week')
+    season_tbl.append(dict(
+        id='DST-' + t_, name=TEAM_NAME.get(t_, t_) + ' D/ST', pos='DST', team=t_, gp=len(g_),
+        wp=weekly_list(g_, 'dpts'), ws=weekly_list(g_, 'dpts'), bye=team_bye.get(t_, []), status='',
+        u=dict(sacks=round(g_.sacks.mean(), 1), to=round((g_.ints + g_.fum).mean(), 1), pa=round(g_.pa.mean(), 1),
+               td=int((g_.td_d + g_.td_k).sum()))))
+print('season table:', len(season_tbl), 'players through week', last_wk)
+
 meta = dict(season=SEASON, week=WEEK, generated=dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%MZ'),
             updated=today.strftime('%b %-d'), league_imp=round(LEAGUE_IMP, 1), expert_date=fp_fresh,
             coef={p: [round(float(x), 3) for x in model.C[p]] for p in POS}, matchup_coef=round(model.cm, 3),
             backtest=bt, live=live, expert=expert, ros_backtest=ros_bt, scoreboard=scoreboard, n_injury_reports=int(len(iw)))
-payload = json.dumps(dict(players=out, defense=defense, waiver=waiver, meta=meta), separators=(',', ':'), default=float)
+payload = json.dumps(dict(players=out, defense=defense, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
 open(os.path.join(OUT, 'data.json'), 'w').write(payload)
 open(os.path.join(OUT, 'data.js'), 'w').write('window.SS_DATA=' + payload + ';\n')
 print(f'wrote {len(out)} players, {len(payload)//1024} KB')
