@@ -242,6 +242,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);font-si
 .lv-table small{color:var(--muted);font-weight:400}
 .linkbtn{border:0;background:none;padding:0;color:var(--turf);font-weight:600;text-decoration:underline;text-underline-offset:3px}
 @media (max-width:460px){.lv-row{grid-template-columns:118px 1fr 54px}}
+.byelist{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.byelist .pill{padding:6px 12px}.byelist small{color:var(--muted)}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){.lane .ball{transition:none}}
 @media (max-width:460px){.part{grid-template-columns:64px 1fr 48px}.pts{font-size:34px}}
@@ -284,6 +285,7 @@ footer{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);font-si
 <section id="rank" hidden>
   <div class="filters" id="posf"></div>
   <div class="tablewrap"><table><thead><tr><th>#</th><th>Player</th><th>Matchup</th><th class="num">Proj</th><th></th></tr></thead><tbody id="rankBody"></tbody></table></div>
+  <div id="byeOut"></div>
 </section>
 
 <section id="def" hidden>
@@ -347,9 +349,23 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{tab=b.dataset.
 
 /* search */
 const q=$('#q'), res=$('#results'); let hits=[], active=0;
-function norm(s){return s.toLowerCase().normalize('NFD').replace(/[^a-z0-9 ]/g,'')}
+function norm(s){return s.toLowerCase().normalize('NFD').replace(/-/g,' ').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim()}
+function lev(a,b){// edit distance, counting a swap of two neighboring letters as one edit
+  const m=a.length,n=b.length;if(!m)return n;if(!n)return m;
+  const d=[];for(let i=0;i<=m;i++){d[i]=[i];for(let j=1;j<=n;j++)d[i][j]=i?0:j}
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){
+    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+    if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1)}
+  return d[m][n]}
+// typo-tolerant name match: every word typed must be close to a word in the name (or the start of one)
+function nameScore(name,t){const n=norm(name);if(n.includes(t))return 0;const words=n.split(' ');let s=0;
+  for(const q of t.split(' ').filter(Boolean)){const allow=q.length<=3?0:q.length<=4?1:2;let best=9;
+    for(const w of words){best=Math.min(best,lev(q,w),q.length<w.length?lev(q,w.slice(0,q.length)):9)}
+    if(best>allow)return Infinity;s+=best+1}return s}
+function findPlayers(list,t){return list.map(p=>[p,p.team.toLowerCase()===t?0:nameScore(p.name,t)]).filter(x=>x[1]<Infinity)
+  .sort((a,b)=>a[1]-b[1]||(b[0].proj||b[0].ppg||0)-(a[0].proj||a[0].ppg||0)).map(x=>x[0])}
 function search(){const t=norm(q.value.trim()); if(!t){res.hidden=true;return}
-  hits=P.filter(p=>norm(p.name).includes(t)||p.team.toLowerCase()===t).slice(0,8); active=0;
+  hits=findPlayers(P,t).slice(0,8); active=0;
   res.innerHTML=hits.length?hits.map((p,i)=>`<button data-id="${p.id}" class="${i===0?'active':''}"><span>${esc(p.name)} <small>${p.pos}, ${p.team}</small></span><small>${p.bye?'BYE':p.status==='IR'||p.status==='Exempt'?'OUT':fmt(val(p))}</small></button>`).join(''):'<div style="padding:12px 14px;color:var(--muted)">No player with that name has a Week '+M.week+' projection.</div>';
   res.hidden=false; res.querySelectorAll('button').forEach(b=>b.onclick=()=>add(b.dataset.id))}
 q.addEventListener('input',search);
@@ -430,6 +446,12 @@ function renderRank(){
     return `<tr class="row" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${(()=>{const i=inj(p);return i?` <span class="itag ${i.lvl}" title="${esc(i.txt)}">${i.lvl==='out'?i.tag.split(' ')[0]:i.lvl==='bad'?'D':'⚑'}</span>`:''})()}<small>${rankPos==='ALL'||rankPos==='FLEX'?p.pos+', ':''}${p.team} ${vs(p)}${p.ecr!=null?`, experts ${p.pos}${p.ecr}`:''}</small></td><td>${p.pos==='DST'?`<span class="mu" style="background:var(--chip)" title="${p.opp} expected to score ${fmt(p.imp)}">opp ${fmt(p.imp)}</span>`:p.pos==='K'?(p.dome?'<span class="mu" style="background:var(--chip)" title="Indoors">dome</span>':''):`<span class="mu" style="background:${bg};color:${fg}" title="${p.opp} allows ${fmt(z,0)}% vs expected to ${p.pos}s">${z>0?'+':''}${fmt(z,0)}%</span>`}</td><td class="num">${fmt(val(p))}${p.final?`<small class="per">${actual(p)!=null?'scored '+fmt(actual(p)):'final'}</small>`:''}</td><td><button class="addbtn" aria-label="${picks.includes(p.id)?'Remove from':'Add to'} compare" aria-pressed="${picks.includes(p.id)}" data-id="${p.id}">${picks.includes(p.id)?'✓':'+'}</button></td></tr>`}).join('');
   $('#rankBody').querySelectorAll('.addbtn').forEach(b=>b.onclick=e=>{e.stopPropagation();toggle(b.dataset.id)});
   $('#rankBody').querySelectorAll('tr.row').forEach(r=>r.onclick=()=>toggle(r.dataset.id));
+  const fit=p=>rankPos==='ALL'?!['K','DST'].includes(p.pos):rankPos==='FLEX'?['RB','WR','TE'].includes(p.pos):p.pos===rankPos;
+  const byes=P.filter(p=>p.bye&&fit(p)).sort((a,b)=>b.base-a.base);
+  const teams=[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort();
+  $('#byeOut').innerHTML=teams.length?`<h3 class="h3">On bye in Week ${M.week}</h3><p class="cap" style="margin-top:-4px">${teams.join(', ')} don't play this week, so their players aren't ranked.</p>
+    <div class="byelist">${byes.slice(0,24).map(p=>`<button class="pill" data-id="${p.id}">${esc(p.name)} <small>${p.pos}, ${p.team}</small></button>`).join('')}</div>`:'';
+  $('#byeOut').querySelectorAll('button').forEach(b=>b.onclick=()=>toggle(b.dataset.id));
 }
 
 /* defense */
@@ -619,7 +641,7 @@ function slotPicker(role){
   const inp=$('#wv_'+role), res=$('#wvr_'+role); let act=0;
   const pick=id=>{wv[role]=id;store.set('ss_wv',wv);inp.value='';res.hidden=true;renderWaiver()};
   inp.oninput=()=>{const t=norm(inp.value.trim());if(!t){res.hidden=true;return}
-    const h=W.filter(p=>norm(p.name).includes(t)).slice(0,8);act=0;
+    const h=findPlayers(W,t).slice(0,8);act=0;
     res.innerHTML=h.length?h.map((p,i)=>`<button data-id="${p.id}" class="${i?'':'active'}"><span>${esc(p.name)} <small>${p.pos}, ${p.team}</small></span><small>${fmt(p.ppg*wsc(p))}/g</small></button>`).join(''):'<div style="padding:12px 14px;color:var(--muted)">No match.</div>';
     res.hidden=false;res.querySelectorAll('button').forEach(b=>b.onclick=()=>pick(b.dataset.id))};
   inp.onkeydown=e=>{const bs=[...res.querySelectorAll('button')];if(res.hidden||!bs.length)return;
