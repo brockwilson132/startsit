@@ -6,14 +6,18 @@ a = t.index('let DATA=') + len('let DATA=')
 b = t.index(';\nlet P=DATA.players')
 t = t[:a] + open(os.path.join(root, 'dist', 'data.json')).read() + t[b:]
 head = ('<meta name="apple-mobile-web-app-capable" content="yes">\n'
+        '<meta name="mobile-web-app-capable" content="yes">\n'
+        '<meta name="apple-mobile-web-app-status-bar-style" content="default">\n'
         '<meta name="apple-mobile-web-app-title" content="Start/Sit">\n'
-        '<meta name="theme-color" content="#2E6B45">\n'
         '<link rel="apple-touch-icon" href="icon.png">\n<link rel="icon" href="icon.png">\n')
 if 'apple-touch-icon' not in t:
     t = t.replace('<title>', head + '<title>', 1)
 os.makedirs(os.path.join(root, 'site'), exist_ok=True)
 open(os.path.join(root, 'site', 'index.html'), 'w').write(t)
 shutil.copy(os.path.join(root, 'icon.png'), os.path.join(root, 'site', 'icon.png'))
+os.makedirs(os.path.join(root, 'site', 'fonts'), exist_ok=True)
+for f in os.listdir(os.path.join(root, 'fonts')):
+    shutil.copy(os.path.join(root, 'fonts', f), os.path.join(root, 'site', 'fonts', f))
 open(os.path.join(root, 'site', '.nojekyll'), 'w').write('')
 # fingerprint of what users see, ignoring run timestamps: the hourly job only redeploys when this changes
 D = json.load(open(os.path.join(root, 'dist', 'data.json')))
