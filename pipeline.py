@@ -450,6 +450,7 @@ ro = ro[ro.status.isin(['ACT', 'INA', 'RES', 'EXE'])]
 stat_names = pd.concat([d, kd]).sort_values(['season', 'week']).groupby('player_id').player_display_name.last()
 ro['pname'] = ro.gsis_id.map(stat_names).fillna(ro.full_name)
 ON_IR = set(ro[ro.status == 'RES'].gsis_id)
+JERSEY = {g_: int(n_) for g_, n_ in zip(ro.gsis_id, ro.jersey_number) if pd.notna(n_)}
 EXEMPT = set(ro[ro.status == 'EXE'].gsis_id)
 universe = ro.rename(columns={'gsis_id': 'player_id'})[['player_id', 'pname', 'position', 'team']]
 universe = universe[universe.team.isin(all_teams)]
@@ -600,7 +601,7 @@ def base_entry(pid, name, pos, team):
                 miss=bool(pos != 'DST' and pid not in played_prev and team in teams_prev and team not in bye_teams),
                 new=bool(pos != 'DST' and pid not in played_season and WEEK >= 3),
                 news=(news_by.get(pid) or {}).get('news') or sleeper_note(pid), news_date=(news_by.get(pid) or {}).get('date') or None,
-                ret=(news_by.get(pid) or {}).get('ret'), adds=NEWS['trending'].get(pid))
+                ret=(news_by.get(pid) or {}).get('ret'), adds=NEWS['trending'].get(pid), num=JERSEY.get(pid))
 
 
 for r in up.itertuples():
@@ -856,7 +857,7 @@ for r in pool.itertuples():
                        trend=round(float(a_.snap_trend) * 100), snap=round(float(a_.u_snap) * 100),
                        own=None if o_ is None or pd.isna(o_) else round(float(o_)),
                        rs=round(float(a_.base_std / a_.base_ppr), 3) if a_.base_ppr > 0 else 1, rh=round(float(a_.base_half / a_.base_ppr), 3) if a_.base_ppr > 0 else 1,
-                       status=status.get(r.player_id, ''), adds=NEWS['trending'].get(r.player_id),
+                       status=status.get(r.player_id, ''), adds=NEWS['trending'].get(r.player_id), num=JERSEY.get(r.player_id),
                        news=(news_by.get(r.player_id) or {}).get('news')))
 
 # kickers, rest of season: baseline scaled by each team's expected scoring, plus dome games
@@ -885,7 +886,7 @@ for r in universe[universe.position == 'K'].itertuples():
                        wk=[None if x is None else round(x, 1) for x in wk], ros=round(sum(x for x in wk if x is not None), 1),
                        ppg=round(core, 1), cv=round(float(kicker_asof.cv[r.player_id]), 2), trend=0, snap=0,
                        own=None if o_ is None or pd.isna(o_) else round(float(o_)), rs=1, rh=1,
-                       status=status.get(r.player_id, ''), adds=NEWS['trending'].get(r.player_id),
+                       status=status.get(r.player_id, ''), adds=NEWS['trending'].get(r.player_id), num=JERSEY.get(r.player_id),
                        news=(news_by.get(r.player_id) or {}).get('news')))
 
 # team defenses, rest of season: baseline plus each future opponent's expected scoring and mistakes

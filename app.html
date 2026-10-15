@@ -128,6 +128,94 @@ main{max-width:600px;margin:0 auto;padding:4px 16px calc(96px + var(--bot))}
 .slot .role{font:700 12px var(--body);letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
 .slot.drop::before{background:var(--muted)} .slot.addp::before{background:var(--turf-hi)}
 
+/* ---------- baseball cards ---------- */
+.ic{width:16px;height:16px;flex:0 0 auto;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.cards2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.bcw{perspective:1200px;min-width:0}
+.bc{display:grid;transition:transform .55s cubic-bezier(.3,.8,.25,1);transform-style:preserve-3d;height:100%}
+.bc.flip{transform:rotateY(180deg)}
+.bc-face{grid-area:1/1;-webkit-backface-visibility:hidden;backface-visibility:hidden;border-radius:16px;overflow:hidden;background:var(--surface);
+  border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;min-width:0}
+.bc-face.back{transform:rotateY(180deg)}
+.bcw.lead .bc-face{border-color:var(--yellow);box-shadow:0 0 0 2px var(--yellow),var(--shadow)}
+.bc-photo{position:relative;height:92px;background:var(--tc,#6B7280);background-image:linear-gradient(160deg,rgba(255,255,255,.18),rgba(255,255,255,0) 45%,rgba(0,0,0,.28));overflow:hidden;color:#fff}
+.bc-photo.lt{color:#1b1b1b}
+.bc-num{position:absolute;right:-6px;bottom:-26px;font:900 112px/1 var(--display);letter-spacing:-.04em;opacity:.26;font-variant-numeric:tabular-nums;pointer-events:none}
+.bc-top{position:absolute;left:10px;top:10px;right:8px;display:flex;align-items:center;gap:6px}
+.bc-top .tm{font:900 15px/1 var(--display);letter-spacing:.06em}
+.bc-top .ps{font:800 12px/1 var(--display);letter-spacing:.06em;padding:3px 5px;border-radius:4px;background:rgba(255,255,255,.22)}
+.bc-photo.lt .ps{background:rgba(0,0,0,.12)}
+.bc-top .sp{flex:1}
+.bc-rm{width:30px;height:30px;border-radius:50%;border:0;background:rgba(0,0,0,.28);color:#fff;display:grid;place-items:center;margin:-4px -2px 0 0}
+.bc-rm .ic{width:14px;height:14px;stroke-width:2.4}
+.bc-flag{position:absolute;left:10px;bottom:9px;display:flex;align-items:center;gap:4px;height:22px;padding:0 7px 0 5px;border-radius:6px;font:800 12px/1 var(--display);letter-spacing:.05em}
+.bc-flag .ic{width:13px;height:13px;stroke-width:2.6}
+.bc-flag.out,.bc-flag.bad{background:var(--down);color:#fff}.bc-flag.warn{background:var(--yellow);color:var(--yellow-ink)}
+.bc-ribbon{position:absolute;right:0;bottom:10px;background:var(--yellow);color:var(--yellow-ink);font:900 14px/1 var(--display);letter-spacing:.08em;padding:5px 10px 5px 9px;border-radius:6px 0 0 6px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.bc-ribbon.drop{background:var(--surface);color:var(--ink)}.bc-ribbon.add{background:var(--turf-hi);color:#fff}
+.bc-plate{padding:10px 12px 0}
+.bc-plate .nm{font:800 20px/1.02 var(--display);letter-spacing:.005em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:40px}
+.bc-plate .when{display:flex;align-items:center;gap:4px;font-size:12.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden}
+.bc-plate .when .ic{width:13px;height:13px}
+.bc-proj{display:flex;align-items:flex-end;gap:7px;padding:8px 12px 10px;border-bottom:1px solid var(--line)}
+.bc-proj b{font:900 40px/.82 var(--display);font-variant-numeric:tabular-nums}
+.bc-proj span{font-size:11.5px;line-height:1.15;color:var(--muted);padding-bottom:1px}
+.bc-proj span em{font-style:normal;font-weight:700;color:var(--ink-2)}
+.bc-stats{display:grid;grid-template-columns:1fr 1fr;flex:1}
+.bc-stat{display:flex;flex-direction:column;gap:1px;padding:8px 10px 8px 12px;border-bottom:1px solid var(--line);min-width:0}
+.bc-stat:nth-child(odd){border-right:1px solid var(--line)}
+.bc-stat .v{display:flex;align-items:center;gap:5px;font:800 19px/1 var(--display);font-variant-numeric:tabular-nums;color:var(--ink)}
+.bc-stat .v .ic{color:var(--faint)}
+.bc-stat .l{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bc-stat.good .v{color:var(--up)}.bc-stat.bad .v{color:var(--down)}
+.bc-stat .tr{font-size:11px;margin-left:1px}.bc-stat .tr.up{color:var(--up)}.bc-stat .tr.dn{color:var(--down)}
+.bc-foot{display:flex;align-items:center;gap:10px;padding:8px 6px 8px 12px;font:800 14px var(--display);color:var(--ink-2);letter-spacing:.02em}
+.bc-foot span{display:flex;align-items:center;gap:4px}
+.bc-foot .ic{color:var(--faint)}
+.bc-foot .ex.far{color:var(--down)}
+.bc-fl{margin-left:auto;width:34px;height:30px;border:0;border-radius:8px;background:var(--surface-2);color:var(--muted);display:grid;place-items:center}
+.bc-fl .ic{width:17px;height:17px}
+/* back */
+.bc-face.back{padding:12px 12px 8px}
+.bc-bh{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.bc-bh .nm{flex:1;font:800 16px/1.05 var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-sec{font:700 11px var(--body);color:var(--muted);margin:8px 0 4px;display:flex;align-items:center;gap:4px}
+.bk-sec .ic{width:13px;height:13px}
+.bk-row{display:grid;grid-template-columns:52px 1fr 34px;gap:6px;align-items:center;font-size:12px;margin:5px 0}
+.bk-row .l{color:var(--muted)}.bk-row .v{text-align:right;font:800 15px var(--display);font-variant-numeric:tabular-nums}
+.bk-tr{position:relative;height:7px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line)}
+.bk-tr .f{position:absolute;top:-1px;bottom:-1px;border-radius:4px;background:var(--ink)}
+.bk-tr.c::before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1.5px;background:var(--faint)}
+.bk-tr .f.p{background:var(--up)}.bk-tr .f.n{background:var(--down)}
+.bk-wk{display:flex;gap:3px;align-items:flex-end;height:58px}
+.bk-wk .c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.bk-wk .b{width:100%;border-radius:3px 3px 1px 1px;background:var(--turf-hi)}
+.bk-wk .b.fut{background:repeating-linear-gradient(135deg,var(--turf-hi) 0 3px,transparent 3px 5px);border:1px solid var(--turf-hi)}
+.bk-wk .v{font:800 10.5px var(--display);color:var(--muted);margin-bottom:2px}
+.bk-wk .w{font:700 9.5px var(--display);color:var(--faint);margin-top:2px}
+.bk-facts{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted);margin-top:6px}
+.bk-facts b{color:var(--ink);font-weight:700}
+.bc-face.back .bc-fl{margin:auto 0 0 auto}
+.cards2 .addcard{min-height:120px;border-radius:16px;border:1.5px dashed var(--line-2);background:transparent;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-weight:600}
+.cards2 .addcard .plus{width:42px;height:42px;border-radius:50%;background:var(--surface);border:1px solid var(--line-2);display:grid;place-items:center;color:var(--ink)}
+.cards2 .addcard.slim{grid-column:1/-1;min-height:50px;flex-direction:row}
+.cards2 .addcard.slim .plus{width:30px;height:30px}
+/* alerts under the cards: injury reports and news, full length */
+.alerts{display:grid;gap:8px;margin-top:12px}
+.alert{display:grid;grid-template-columns:30px 1fr;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.45}
+.alert .ai{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--surface-2);color:var(--muted)}
+.alert .ai .ic{width:17px;height:17px}
+.alert.out .ai,.alert.bad .ai{background:var(--down-bg);color:var(--down)}.alert.warn .ai{background:var(--warn-bg);color:var(--warn-ink)}
+.alert.vac .ai{background:var(--up-bg);color:var(--up)}
+.alert b{font-weight:700}
+.alert small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+/* legend chips inside the field */
+.legend-i{position:relative;z-index:1;display:flex;gap:14px;padding:0 18px 14px;font-size:12px;color:var(--chalk-dim)}
+.legend-i span{display:flex;align-items:center;gap:6px}
+.legend-i i{display:inline-block}
+.lg-dot{width:10px;height:10px;border-radius:50%;background:var(--chalk)}
+.lg-rng{width:18px;height:6px;border-radius:3px;background:rgba(244,247,242,.3)}
+.lg-fd{width:3px;height:12px;background:var(--yellow);border-radius:1px}
 /* ---------- the field (verdict panel) ---------- */
 .field{position:relative;margin-top:14px;border-radius:var(--r-lg);color:var(--chalk);overflow:hidden;
   background:linear-gradient(180deg,var(--turf-hi) -40%,var(--turf) 45%,var(--turf-2) 100%);box-shadow:0 18px 40px -22px rgba(13,60,35,.75)}
@@ -448,7 +536,7 @@ function experts(p){if(p.ecr==null||p.rank==null)return null;const gap=p.ecr-p.r
 /* ---------- shell ---------- */
 function header(){
   $('#stamp').textContent=`Week ${M.week}, updated ${M.updated.replace(' ET','')}`;
-  $('#foot').innerHTML=`<button class="linkish" id="footLive">How the model is doing vs experts and Vegas</button><p style="margin-top:8px">Built on nflverse stats, play-by-play and snap counts, ESPN and Sleeper injury news, Vegas lines and FantasyPros consensus. Checks for new data every hour; last change ${esc(M.updated)}. Inactives announced 90 minutes before kickoff can still slip through.</p>`;
+  $('#foot').innerHTML=`<button class="linkish" id="footLive">Model vs experts vs Vegas</button><p style="margin-top:8px">nflverse · ESPN · Sleeper · Vegas · FantasyPros. Updated hourly.</p>`;
   $('#footLive').onclick=()=>{howSec='live';go('how')};
 }
 function go(t){tab=t;store.set('ss_tab',t);$$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
@@ -499,94 +587,136 @@ $('#sq').addEventListener('keydown',e=>{const bs=$$('#shList .res');if(!bs.lengt
   if(e.key==='Enter'){pickFromSheet((bs[sheetActive]||bs[0]).dataset.id)} if(e.key==='Escape')closeSheet()});
 function pickFromSheet(id){closeSheet();if(sheetCtx==='ss')add(id);else{wv[sheetCtx]=id;store.set('ss_wv',wv);renderWV()}}
 
+/* ---------- icons ---------- */
+const ICONS={
+  target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r=".9"/>',
+  ball:'<path d="M5.2 18.8C3.5 13 7.4 5.3 18.8 5.2c1.7 5.8-2.2 13.5-13.6 13.6z"/><path d="M9.5 14.5l5-5M11 11l2 2M12.7 9.3l1.4 1.4M9.3 12.7l1.4 1.4"/>',
+  snap:'<circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V10M10 3h4M18 6.5l1.4-1.4"/>',
+  flag:'<path d="M5.5 21V4M5.5 4H17l-2.2 4 2.2 4H5.5"/>',
+  shield:'<path d="M12 3.2l7 2.8v6c0 4.4-2.9 7.6-7 8.8-4.1-1.2-7-4.4-7-8.8V6l7-2.8z"/>',
+  vegas:'<path d="M4 19.5h16M5 15.5l4-4 3 3 6.5-7M14.5 7.5h4v4"/>',
+  throw:'<path d="M4 19c3.5-8.5 8.5-12 16-12.5M15 3.5l5 3-3 5"/>',
+  goal:'<path d="M12 21v-7M6 4v10h12V4"/>',
+  dome:'<path d="M3 19h18M5 19a7 7 0 0 1 14 0"/>',
+  sack:'<path d="M13 3L5 13.5h6L10 21l8-11h-6l1-7z"/>',
+  turn:'<path d="M4.5 11.5a7.5 7.5 0 0 1 13-4.6L19.5 9M19.5 12.5a7.5 7.5 0 0 1-13 4.6L4.5 15M19.5 4v5h-5M4.5 20v-5h5"/>',
+  wall:'<path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/>',
+  model:'<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3.5V7M14 3.5V7M10 17v3.5M14 17v3.5M3.5 10H7M3.5 14H7M17 10h3.5M17 14h3.5"/>',
+  experts:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19.5c.8-3.4 3-5 6-5s5.2 1.6 6 5"/><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14.6c1.6.6 2.6 2.1 3 4.9"/>',
+  flip:'<path d="M4 10a8 8 0 0 1 14.3-3.6L20 8.5M20 14a8 8 0 0 1-14.3 3.6L4 15.5M20 4v4.5h-4.5M4 20v-4.5h4.5"/>',
+  cross:'<path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/>',
+  news:'<path d="M3.5 10v4h4l6 4.5v-13l-6 4.5h-4zM17 8.8a4.5 4.5 0 0 1 0 6.4M19.5 6.3a8 8 0 0 1 0 11.4"/>',
+  fire:'<path d="M12 21c-3.9 0-6.8-2.6-6.8-6.3 0-3 1.9-4.9 2.9-5.9 0 1.8 1 2.9 2 2.9 0-3 1.1-6 4-7.7 0 3 4.7 5 4.7 10.7 0 3.7-2.9 6.3-6.8 6.3z"/>',
+  cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4.2l2.8 1.8"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19.5c.8-3.4 3-5 6-5s5.2 1.6 6 5"/>',
+  up:'<path d="M12 19V5M6 11l6-6 6 6"/>',
+  bar:'<path d="M5 20V11M10 20V5M15 20v-8M20 20v-4"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>'
+};
+const who=(p,txt)=>{const s=short(p.name);return (txt||'').startsWith(s)||(txt||'').startsWith(p.name)?'':`<b>${esc(s)}</b> `};
+const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
+
 /* ---------- start / sit ---------- */
 function defaultPicks(){const w=P.filter(p=>p.pos==='WR'&&!p.status&&!p.bye).sort((a,b)=>(a.final-b.final)||(b.proj-a.proj));return [w[9]?.id,w[10]?.id].filter(Boolean)}
 let picks=store.get('ss_picks_w'+M.week,null);
 if(!Array.isArray(picks)||!picks.every(id=>byId[id]))picks=defaultPicks();
 const save=()=>store.set('ss_picks_w'+M.week,picks);
+let flipped=new Set();
 function add(id){if(!picks.includes(id)){picks.push(id);if(picks.length>4)picks.shift()}save();renderSS()}
-function remove(id){picks=picks.filter(x=>x!==id);save();renderSS()}
+function remove(id){picks=picks.filter(x=>x!==id);flipped.delete(id);save();renderSS()}
 function toggle(id){picks.includes(id)?picks=picks.filter(x=>x!==id):(picks.push(id),picks.length>4&&picks.shift());save()}
-
-function slotHTML(p,lead,opts={}){
-  if(!p)return `<button class="slot add" data-slot="${opts.role||'add'}"><span class="plus">+</span>${opts.label||'Add player'}</button>`;
-  const big=opts.big!=null?opts.big:(p.bye?'BYE':inactive(p)?(p.status==='FA'?'FA':'OUT'):fmt(val(p)));
-  return `<div class="slot${lead?' lead':''}${opts.cls?' '+opts.cls:''}" style="${tc(p.team)}">
-    ${opts.role?`<span class="role">${opts.roleLabel}</span>`:''}
-    ${lead&&!opts.role?'<span class="pick">START</span>':''}
-    <div class="who">${badge(p.team)}<span class="pos">${p.pos}</span>${opts.role?'':injTag(p)}</div>
-    <div class="nm">${esc(p.name)}</div>
-    <div class="meta">${opts.meta!=null?opts.meta:(p.final?'Final':p.bye?'On bye':`${vs(p)}${p.time?', '+fmtTime(p):''}`)}</div>
-    <div class="big"><b>${big}</b><small>${opts.unit!=null?opts.unit:(live(p)?`${fmt(p.lo*scale(p),0)}–${fmt(p.hi*scale(p),0)}`:'')}</small></div>
-    <button class="x" data-rm="${p.id}" aria-label="Remove ${esc(p.name)}">✕</button></div>`}
-
+const stat=(icon,v,l,cls='')=>`<div class="bc-stat ${cls}"><span class="v">${ic(icon)}${v}</span><span class="l">${l}</span></div>`;
+function frontStats(p){
+  const z=p.xdef, mu=stat('shield',`${z>0?'+':''}${fmt(z,0)}%`,`vs ${p.opp||'opp'} D`,z>8?'good':z<-8?'bad':'');
+  const tr=Math.abs(p.trend)>=8?`<span class="tr ${p.trend>0?'up':'dn'}">${p.trend>0?'▲':'▼'}</span>`:'';
+  if(p.pos==='QB')return stat('throw',fmt(p.att,0),'pass att/g')+stat('ball',fmt(p.car),'rushes/g')+stat('vegas',fmt(p.imp),'team total')+mu;
+  if(p.pos==='RB')return stat('ball',fmt(p.car),'carries/g')+stat('target',fmt(p.tgt),'targets/g')+stat('snap',p.snap+'%'+tr,'snaps')+mu;
+  if(p.pos==='K')return stat('goal',fmt(p.fga),'FG tries/g')+stat('target',fmt(p.pata),'XP/g')+stat('vegas',fmt(p.imp),'team total')+stat('dome',p.dome?'Yes':'No','indoors');
+  if(p.pos==='DST')return stat('sack',fmt(p.sacks),'sacks/g')+stat('turn',fmt(p.takeaways),'takeaways/g')+stat('vegas',fmt(p.imp),`${p.opp} total`,p.imp<20?'good':p.imp>25?'bad':'')+stat('wall',fmt(p.pa),'pts allowed/g');
+  return stat('target',fmt(p.tgt),'targets/g')+stat('snap',p.snap+'%'+tr,'snaps')+stat('flag',fmt(p.rz),'red zone/g')+mu}
+function weeksBack(id,n=5){const s=(DATA.season||[]).find(x=>x.id===id);if(!s)return '';const w=wkPts(s),last=w.length;
+  const from=Math.max(0,last-n),vals=w.slice(from),mx=Math.max(1,...vals.map(v=>v||0));
+  return `<div class="bk-sec">${ic('bar')}Last ${vals.length} weeks</div><div class="bk-wk">${vals.map((v,i)=>{const wk=from+i+1,bye=s.bye.includes(wk);
+    return `<div class="c"><span class="v">${v==null?'':fmt(v,0)}</span><span class="b" style="height:${v==null?0:Math.max(3,Math.max(0,v)/mx*40)}px"></span><span class="w">${bye?'BYE':v==null?'—':'W'+wk}</span></div>`}).join('')}</div>`}
+function backBody(p,k){
+  const isK=p.pos==='K',isD=p.pos==='DST',baseV=(p.form+p.usage)*k;
+  const adj=[isD?['Mistakes',p.matchup]:isK?['Indoors',p.matchup*k]:['Matchup',p.matchup*k],['Vegas',p.vegas*k]];
+  return `<div class="bk-sec">${ic('model')}How the ${fmt(val(p))} adds up</div>
+    <div class="bk-row"><span class="l">Baseline</span><div class="bk-tr"><div class="f" style="left:-1px;width:${Math.min(100,baseV/Math.max(val(p),baseV,1)*100)}%"></div></div><span class="v">${fmt(baseV)}</span></div>`+
+    adj.map(([l,v])=>`<div class="bk-row"><span class="l">${l}</span><div class="bk-tr c"><div class="f ${v<0?'n':'p'}" style="${v<0?'right:50%':'left:50%'};width:${Math.min(50,Math.abs(v)/5*50)}%"></div></div><span class="v">${v>0?'+':''}${fmt(v)}</span></div>`).join('')+
+    weeksBack(p.id)+
+    `<div class="bk-facts">${isK||isD?'':`<span>Avg <b>${fmt(p.base*k)}</b></span><span>Usage <b>${fmt(p.xfp*k)}</b></span>`}${p.vac_tgt>=.3?`<span>+<b>${fmt(p.vac_tgt)}</b> tgt</span>`:''}${p.vac_car>=.5?`<span>+<b>${fmt(p.vac_car)}</b> car</span>`:''}</div>`}
+function bcard(p,o={}){
+  const lt=LIGHT.has(p.team), k=scale(p), i=o.noInj?null:inj(p), fl=flipped.has(p.id);
+  const ribbon=o.ribbon?`<span class="bc-ribbon ${o.ribbonCls||''}">${o.ribbon}</span>`:'';
+  const flag=i?`<span class="bc-flag ${i.lvl}">${ic('cross')}${SHORTTAG[i.tag]||i.tag}</span>`:'';
+  const big=o.big!=null?o.big:(p.bye?'BYE':inactive(p)?(p.status==='FA'?'FA':'OUT'):fmt(val(p)));
+  const sub=o.sub!=null?o.sub:(live(p)?`proj<br><em>${fmt(p.lo*k,0)}–${fmt(p.hi*k,0)}</em>`:p.final&&actual(p)!=null?`scored<br><em>${fmt(actual(p))}</em>`:'');
+  const when=o.when!=null?o.when:(p.bye?`${ic('cal')}Bye week`:p.final?`${ic('clock')}Final`:p.opp?`${ic('clock')}${vs(p)}, ${fmtTime(p)}`:'');
+  const stats=o.stats!=null?o.stats:(live(p)&&p.src!=='experts'?frontStats(p):'');
+  const e=o.noFoot?null:experts(p);
+  const foot=o.foot!=null?o.foot:`<div class="bc-foot">${p.rank?`<span title="Model rank">${ic('model')}${p.pos}${p.rank}</span>`:''}${e?`<span class="ex${e.big&&e.gap>0?' far':''}" title="Experts rank">${ic('experts')}${p.pos}${p.ecr}</span>`:''}<button class="bc-fl" data-flip="${p.id}" aria-label="Flip card">${ic('flip')}</button></div>`;
+  return `<div class="bcw${o.lead?' lead':''}"><div class="bc${fl?' flip':''}" data-card="${p.id}">
+    <div class="bc-face front" style="${tc(p.team)}">
+      <div class="bc-photo${lt?' lt':''}"><span class="bc-num">${p.pos==='DST'?'D':p.num!=null?p.num:''}</span>
+        <div class="bc-top"><span class="tm">${esc(p.team)}</span><span class="ps">${p.pos}</span><span class="sp"></span><button class="bc-rm" data-rm="${p.id}" aria-label="Remove ${esc(p.name)}">${ic('x')}</button></div>${flag}${ribbon}</div>
+      <div class="bc-plate"><div class="nm">${esc(p.name)}</div><div class="when">${when}</div></div>
+      <div class="bc-proj"><b>${big}</b><span>${sub}</span></div>
+      ${stats?`<div class="bc-stats">${stats}</div>`:'<div style="flex:1"></div>'}${foot}</div>
+    <div class="bc-face back"><div class="bc-bh"><span class="badge${lt?' lt':''}" style="${tc(p.team)}">${esc(p.team)}</span><span class="nm">${esc(short(p.name))}</span></div>
+      ${o.back!=null?o.back:(live(p)&&p.src!=='experts'?backBody(p,k):weeksBack(p.id))}
+      <button class="bc-fl" data-flip="${p.id}" aria-label="Flip card back">${ic('flip')}</button></div>
+  </div></div>`}
+function alertsHTML(list){
+  const out=[];
+  list.forEach(p=>{const i=inj(p);
+    if(i)out.push(`<div class="alert ${i.lvl}"><span class="ai">${ic('cross')}</span><span><b>${esc(short(p.name))}</b> ${i.txt}</span></div>`);
+    if(p.news)out.push(`<div class="alert"><span class="ai">${ic('news')}</span><span>${who(p,p.news)}${esc(p.news)}<small>${p.news_date?shortDate(p.news_date):''}</small></span></div>`);
+    if((p.vac_tgt>=.3||p.vac_car>=.5)&&p.vac_from&&p.vac_from.length)out.push(`<div class="alert vac"><span class="ai">${ic('up')}</span><span><b>${esc(short(p.name))}</b> ${[p.vac_tgt>=.3?'+'+fmt(p.vac_tgt)+' targets':'',p.vac_car>=.5?'+'+fmt(p.vac_car)+' carries':''].filter(Boolean).join(', ')} a game with ${p.vac_from.map(esc).join(' and ')} out</span></div>`);
+  });
+  return out.length?`<div class="alerts">${out.join('')}</div>`:''}
+function wireCards(root,onRemove){
+  root.querySelectorAll('[data-flip]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.flip;flipped.has(id)?flipped.delete(id):flipped.add(id);
+    const c=root.querySelector(`[data-card="${CSS.escape(id)}"]`);if(c)c.classList.toggle('flip')});
+  root.querySelectorAll('[data-rm]').forEach(b=>b.onclick=e=>{e.stopPropagation();onRemove(b.dataset.rm)});
+  root.querySelectorAll('[data-slot]').forEach(b=>b.onclick=()=>openSheet(b.dataset.slot));
+}
 function renderSS(){
   const ps=picks.map(id=>byId[id]).filter(Boolean).sort((a,b)=>(live(b)-live(a))||(val(b)-val(a)));
   const open_=ps.filter(live), done=ps.filter(p=>!live(p));
-  const leadId=open_.length>=1?open_[0].id:null;
-  let slots=ps.map(p=>slotHTML(p,p.id===leadId&&open_.length>=2)).join('');
-  if(ps.length<2)slots+=slotHTML(null,false,{label:'Add player'});
-  if(ps.length===0)slots+=slotHTML(null,false,{label:'Add player'});
-  if(ps.length>=2&&ps.length<4)slots+=`<button class="slot add slim" data-slot="add"><span class="plus">+</span>Compare another player</button>`;
-  let html=`<div class="slots">${slots}</div>`;
-  if(ps.length<2){
-    html+=`<div class="empty" style="margin-top:14px"><b>${ps.length?'Add one more player':'Who are you deciding between?'}</b>Pick two or more players and the app tells you who to start, and how sure it is.</div>`}
-  else if(open_.length<2){
-    const msg=p=>inactive(p)?`${esc(p.name)} is out this week.`:p.bye?`${esc(p.name)} is on bye.`:actual(p)!=null?`${esc(p.name)}'s game is over: he scored ${fmt(actual(p))}.`:`${esc(p.name)}'s game is over.`;
-    html+=`<section class="field"><div class="v-top" style="padding-bottom:18px"><div class="kicker">Week ${M.week}</div><h2>${open_.length===1?`Start ${esc(short(open_[0].name))}`:'Nothing left to decide'}</h2><p class="why">${done.map(msg).join(' ')}${open_.length===1?'':' Lineups lock at kickoff, so compare players whose games haven\'t started.'}</p></div></section>`}
-  else{
-    const [a,b]=open_; const diff=val(a)-val(b); const pr=Phi(diff/Math.sqrt(sd(a)**2+sd(b)**2));
-    const close=pr<0.55, ia=inj(a);
-    let kicker=close?'Coin flip':`Week ${M.week} pick`, head=close?`Lean ${esc(short(a.name))}`:`Start ${esc(short(a.name))}`;
-    if(ia&&ia.lvl!=='out'){head=`Start ${esc(short(a.name))}, if he plays`}
-    let why=close?`Too close for the model to matter much. Go with your gut or the injury news.`:`Projected <b>${fmt(diff)} points</b> ahead of ${esc(short(b.name))}.`;
-    if(ia&&ia.lvl!=='out')why+=` He has an injury flag, so confirm he's active before lineups lock.`;
-    const ea=experts(a);if(ea&&ea.big&&ea.gap>0)why+=` Experts rank him much lower (${a.pos}${a.ecr}), which usually means injury or role news the stats can't see yet.`;
-    if(a.pos!==b.pos)why+=` Different positions, so this only matters for a flex spot.`;
-    if(done.length)why+=' '+done.map(p=>inactive(p)?`${esc(short(p.name))} is out.`:p.bye?`${esc(short(p.name))} is on bye.`:`${esc(short(p.name))} already played${actual(p)!=null?' ('+fmt(actual(p))+')':''}.`).join(' ');
+  let lead=null, verdict='';
+  if(open_.length>=2){
+    const [a,b]=open_, diff=val(a)-val(b), pr=Phi(diff/Math.sqrt(sd(a)**2+sd(b)**2)), close=pr<0.55, ia=inj(a);
+    lead={id:a.id,ribbon:close?'LEAN':'START'};
+    const notes=[];
+    if(!close)notes.push(`<b>+${fmt(diff)}</b> projected`);
+    if(ia&&ia.lvl!=='out')notes.push('confirm he plays');
+    const ea=experts(a);if(ea&&ea.big&&ea.gap>0)notes.push(`experts have him ${a.pos}${a.ecr}`);
+    if(a.pos!==b.pos)notes.push('flex decision');
     const maxHi=Math.max(...open_.map(p=>p.hi*scale(p))), top=Math.max(20,Math.ceil(maxHi/10)*10), x=v=>Math.max(0,Math.min(100,v/top*100));
     let yl='';for(let v=0;v<=top;v+=5){yl+=`<i class="yl${v%10?'':' mj'}" style="left:${x(v)}%"></i>`;if(v%10===0&&v>0&&v<top)yl+=`<span class="yn" style="left:${x(v)}%">${v}</span>`}
     const lanes=open_.map((p,i)=>{const pv=val(p),xp=x(pv),cls=xp<16?'l':xp>84?'r':'';
       return `<div class="lane${i===0?' lead':''}"><div class="rng" style="left:${x(p.lo*scale(p))}%;width:${x(p.hi*scale(p))-x(p.lo*scale(p))}%"></div><div class="dot" style="left:${xp}%"></div><div class="lb ${cls}" style="left:${cls==='l'?Math.max(1,xp-3):xp}%">${esc(short(p.name))} ${fmt(pv)}</div></div>`}).join('');
-    html+=`<section class="field" aria-live="polite"><div class="v-top">
-      <div class="kicker">${kicker}</div><h2>${head}</h2>
-      <div class="odds"><div class="pct">${Math.round(pr*100)}<small>%</small></div><div class="lbl">chance ${esc(short(a.name))} outscores ${esc(short(b.name))}</div></div>
+    verdict=`<section class="field" aria-live="polite"><div class="v-top">
+      <div class="kicker">${close?'Coin flip':'Start'}</div><h2>${close?'Lean ':''}${esc(short(a.name))}</h2>
+      <div class="odds"><div class="pct">${Math.round(pr*100)}<small>%</small></div><div class="lbl">to outscore ${esc(short(b.name))}${notes.length?'<br>'+notes.join(', '):''}</div></div>
       <div class="tug" role="img" aria-label="${Math.round(pr*100)} to ${100-Math.round(pr*100)}"><i style="width:${pr*100}%"></i></div>
-      <div class="tug-l"><span>${esc(short(a.name))}</span><span>${esc(short(b.name))}</span></div>
-      <p class="why">${why}</p></div>
+      <div class="tug-l"><span>${esc(short(a.name))}</span><span>${esc(short(b.name))}</span></div></div>
       <div class="yard" role="img" aria-label="Projected points with likely range">${yl}<i class="fd" style="left:${x(val(a))}%"></i>${lanes}</div>
-      <div class="yard-cap">Dot is the projection, bar is the likely range. The yellow line marks the pick.</div></section>`}
-  html+=`<div class="pcards">${ps.map((p,i)=>cardHTML(p,ps,p.id===leadId||ps.length===1)).join('')}</div>`;
-  $('#s-ss').innerHTML=html;
-  $$('#s-ss [data-slot]').forEach(b=>b.onclick=()=>openSheet('ss'));
-  $$('#s-ss [data-rm]').forEach(b=>b.onclick=e=>{e.stopPropagation();remove(b.dataset.rm)});
+      <div class="legend-i"><span><i class="lg-dot"></i>projection</span><span><i class="lg-rng"></i>likely range</span><span><i class="lg-fd"></i>the pick</span></div></section>`;
+  } else if(ps.length>=2){
+    verdict=`<section class="field"><div class="v-top" style="padding-bottom:18px"><div class="kicker">Week ${M.week}</div><h2>${open_.length===1?`Start ${esc(short(open_[0].name))}`:'Nothing to decide'}</h2><p class="why">${done.map(p=>`${esc(short(p.name))}: ${inactive(p)?'out':p.bye?'bye':actual(p)!=null?'scored '+fmt(actual(p)):'played'}`).join(', ')}</p></div></section>`;
+    if(open_.length===1)lead={id:open_[0].id,ribbon:'START'};
+  }
+  let cards=ps.map(p=>bcard(p,lead&&lead.id===p.id?{lead:true,ribbon:lead.ribbon}:{})).join('');
+  if(ps.length<2)cards+=`<button class="addcard" data-slot="ss"><span class="plus">${ic('plus')}</span>Add player</button>`;
+  if(ps.length===0)cards+=`<button class="addcard" data-slot="ss"><span class="plus">${ic('plus')}</span>Add player</button>`;
+  if(ps.length>=2&&ps.length<4)cards+=`<button class="addcard slim" data-slot="ss"><span class="plus">${ic('plus')}</span>Compare another</button>`;
+  $('#s-ss').innerHTML=`<div class="cards2">${cards}</div>${verdict}${alertsHTML(ps)}`;
+  wireCards($('#s-ss'),remove);
 }
-
-function cardHTML(p,ps,open){
-  const k=scale(p), i=inj(p);
-  const sum_=`<summary><span class="strip" style="${tc(p.team)}"></span><span><span class="t1">${esc(p.name)}</span><span class="t2">${badge(p.team)}<span class="pos">${p.pos}</span>${p.opp?`<span>${vs(p)}</span>`:''}${injTag(p)}</span></span>
-    <span class="val"><b>${p.bye?'BYE':inactive(p)?(p.status==='FA'?'FA':'OUT'):fmt(val(p))}</b>${live(p)?`<small>${fmt(p.lo*k,0)}–${fmt(p.hi*k,0)}</small>`:p.final&&actual(p)!=null?`<small>scored ${fmt(actual(p))}</small>`:''}</span>${chev}</summary>`;
-  const flag=i?`<div class="flag ${i.lvl}"><b>${i.tag}</b><span>${i.txt}</span></div>`:'';
-  const news=p.news?`<div class="news"><b>Latest${p.news_date?', '+shortDate(p.news_date):''}</b>${esc(p.news)}</div>`:'';
-  if(p.bye)return `<details class="pc"${open?' open':''}>${sum_}<div class="body">${news}<p class="cap" style="margin-top:12px">On bye in Week ${M.week}. Averages <b style="color:var(--ink)">${fmt(p.base)}</b> points a game. Waivers shows his rest-of-season outlook.</p></div></details>`;
-  if(inactive(p))return `<details class="pc"${open?' open':''}>${sum_}<div class="body">${flag}${news}${p.base?`<p class="cap" style="margin-top:12px">Averaged <b style="color:var(--ink)">${fmt(p.base)}</b> points a game ${p.status==='FA'?'in his recent games':'when playing'}.</p>`:''}</div></details>`;
-  const isK=p.pos==='K', isD=p.pos==='DST', fromX=p.src==='experts';
-  const baseV=(p.form+p.usage)*k, mxB=Math.max(...ps.map(q=>(q.form+q.usage)*scale(q)),1);
-  const adj=[isD?['Opp. mistakes',p.matchup,'How often this opponent gives up sacks and turnovers']:isK?['Indoors',p.matchup*k,'Kicking in a dome or closed roof']:['Matchup',p.matchup*k,'Opponent-adjusted defense vs his position'],['Vegas',p.vegas*k,isD?'Opponent expected to score less than average means more points':'Implied team total vs league average']];
-  const vacTxt=(p.vac_tgt>=.3||p.vac_car>=.5)&&p.vac_from&&p.vac_from.length?`<span class="vac">${[p.vac_tgt>=.3?'+'+fmt(p.vac_tgt)+' targets':'',p.vac_car>=.5?'+'+fmt(p.vac_car)+' carries':''].filter(Boolean).join(' and ')} a game with ${p.vac_from.map(esc).join(' and ')} out</span>`:'';
-  const brk=`<div class="brk"><div class="r" title="Who he is before this week's game"><span class="l">Baseline</span><div class="tr"><div class="f" style="left:-1px;width:${Math.min(100,baseV/mxB*100)}%"></div></div><span class="v">${fmt(baseV)}</span></div>
-    <div class="note">${isK||isD?`Scores ${fmt(p.base)} a game, blended with last season`:`Scores ${fmt(p.base*k)} a game; usage is worth ${fmt(p.xfp*k)}`}${vacTxt}</div><div class="sep"></div>`+
-    adj.map(([l,v,tt])=>{const w=Math.min(50,Math.abs(v)/6*50);return `<div class="r" title="${tt}"><span class="l">${l}</span><div class="tr c"><div class="f ${v<0?'n':'p'}" style="${v<0?'right:50%':'left:50%'};width:${w}%"></div></div><span class="v">${v>0?'+':''}${fmt(v)}</span></div>`}).join('')+`</div>`;
-  const role=isD?[`<b>${fmt(p.sacks)}</b> sacks/g`,`<b>${fmt(p.takeaways)}</b> takeaways/g`,`<b>${fmt(p.pa)}</b> pts allowed/g`,`${p.opp} implied <b>${fmt(p.imp)}</b>`]
-    :isK?[`<b>${fmt(p.fga)}</b> FG tries/g`,`<b>${fmt(p.pata)}</b> XP/g`,`<b>${fmt(p.fg50*17,0)}</b> 50+ makes/season`,`Team total <b>${fmt(p.imp)}</b>`].concat(p.dome?['Indoors']:[])
-    :[].concat(p.pos==='QB'?[`<b>${fmt(p.att,0)}</b> pass att/g`,`<b>${fmt(p.car)}</b> carries/g`]:p.pos==='RB'?[`<b>${fmt(p.car)}</b> carries/g`,`<b>${fmt(p.tgt)}</b> targets/g`]:[`<b>${fmt(p.tgt)}</b> targets/g`],
-      [`<b>${fmt(p.rz)}</b> red-zone looks/g`],p.pos!=='QB'?[`<b>${p.snap}%</b> snaps${Math.abs(p.trend)>=8?` <span class="${p.trend>0?'up':'dn'}">${p.trend>0?'▲':'▼'}</span>`:''}`]:[],[`Team total <b>${fmt(p.imp)}</b>`,`${p.opp} allows <b>${p.xdef>0?'+':''}${fmt(p.xdef,0)}%</b>`]);
-  const e=experts(p);
-  const vsx=e?(()=>{const mx=Math.max(p.rank,p.ecr,12),pos=v=>Math.min(100,(v-1)/(mx-1)*100);
-    return `<div class="vsx"><span>Model <b>${p.pos}${p.rank}</b></span><div class="rail"><i class="m" style="left:${pos(p.rank)}%"></i><i class="e" style="left:${pos(p.ecr)}%"></i></div><span>Experts <b>${p.pos}${p.ecr}</b></span></div>
-      ${e.big?`<div class="vsx-note">${e.gap>0?(isD?'Experts are much lower here.':'Experts are much lower on him. Usually injury or role news.'):'Experts are much higher on him. The model may be missing something.'}</div>`:''}`})():'';
-  const fin=p.final?`<div class="flag final"><b>FINAL</b><span>${actual(p)!=null?`Scored <b>${fmt(actual(p))}</b> vs ${fmt(val(p))} projected.`:'Game is over; points post overnight.'}</span></div>`:'';
-  return `<details class="pc"${open?' open':''}>${sum_}<div class="body">${fin}${flag}${news}${fromX?`<p class="cap" style="margin-top:12px">No NFL stats yet, so this uses the expert projection.</p>`:brk+`<div class="facts">${role.map(r=>`<span>${r}</span>`).join('')}</div>`}${vsx}</div></details>`}
 
 /* ---------- waivers ---------- */
 let wvPos='ALL', wv=store.get('ss_wv',{drop:null,add:null});
@@ -605,37 +735,44 @@ function renderWV(){
   const el=$('#s-wv');
   if(!W.length){el.innerHTML='<div class="empty" style="margin-top:16px"><b>Waiver data is on its way</b>It appears after the next hourly update.</div>';return}
   const d=wById[wv.drop], a=wById[wv.add];
-  const wslot=(p,role)=>p?slotHTML(p,false,{role,roleLabel:role==='drop'?'Drop':'Add',cls:role==='drop'?'drop':'addp',big:fmt(rosT(p),0),unit:'pts left',meta:`${gamesLeft(p)} games, ${fmt(p.ppg*wsc(p))}/g`}):`<button class="slot add" data-slot="${role}"><span class="plus">+</span>${role==='drop'?'Player to drop':'Player to add'}</button>`;
-  let html=`<div class="slots">${wslot(d,'drop')}${wslot(a,'add')}</div>`;
+  const wslot=(p,role)=>{if(!p)return `<button class="addcard" data-slot="${role}"><span class="plus">${ic('plus')}</span>${role==='drop'?'Drop who?':'Add who?'}</button>`;
+    const k=wsc(p),bw=byeWk(p),wks=p.wk.slice(0,6),mx=Math.max(1,...wks.map(x=>(x||0)*k));
+    const back=`<div class="bk-sec">${ic('cal')}Next ${wks.length} weeks</div><div class="bk-wk">${wks.map((x,i)=>`<div class="c"><span class="v">${x==null?'':fmt(x*k,0)}</span><span class="b fut" style="height:${x==null?0:Math.max(3,x*k/mx*40)}px"></span><span class="w">${x==null?'BYE':'W'+(M.week+i)}</span></div>`).join('')}</div>`+
+      weeksBack(p.id,4)+`<div class="bk-facts"><span>Weekly swing <b>${p.cv>.7?'High':p.cv<.45?'Low':'Avg'}</b></span></div>`;
+    return bcard(p,{ribbon:role==='drop'?'DROP':'ADD',ribbonCls:role,big:fmt(rosT(p),0),sub:'pts<br><em>rest of year</em>',
+      when:`${ic('cal')}${bw?'Bye Week '+bw:'Bye done'}`,
+      stats:stat('bar',fmt(p.ppg*k),'pts/g')+stat('cal',gamesLeft(p),'games left')+stat('users',p.own==null?'<5%':p.own+'%','rostered')+(p.adds?stat('fire',compact(p.adds),'adds 24h','good'):stat('snap',p.snap+'%'+(Math.abs(p.trend)>=8?`<span class="tr ${p.trend>0?'up':'dn'}">${p.trend>0?'▲':'▼'}</span>`:''),'snaps')),
+      foot:`<div class="bc-foot"><span title="Week-to-week swing">${ic('vegas')}${p.cv>.7?'Boom/bust':p.cv<.45?'Steady':'Avg swing'}</span><button class="bc-fl" data-flip="${p.id}" aria-label="Flip card">${ic('flip')}</button></div>`,back})};
+  let html=`<div class="cards2">${wslot(d,'drop')}${wslot(a,'add')}</div>`;
   if(d&&a){
     const ta=rosT(a),td=rosT(d),na=gamesLeft(a),nd=gamesLeft(d),gain=ta-td,sdv=(M.ros_backtest?.sd||3.6);
     const z=gain/(sdv*Math.sqrt(na*na*wsc(a)**2+nd*nd*wsc(d)**2)||1), pr=Phi(z), n4=nextN(a,4)-nextN(d,4);
     let head,why;
-    if(pr>=.6&&gain>=8){head='Make the move';why=`${esc(short(a.name))} comes out ahead about <b>${Math.round(pr*100)}%</b> of the time.`}
-    else if(pr<=.4||gain<=-8){head=`Keep ${esc(short(d.name))}`;why=`${esc(short(d.name))} comes out ahead about <b>${Math.round((1-pr)*100)}%</b> of the time.`}
-    else{head='Close call';why=`${Math.round(Math.max(pr,1-pr)*100)}% for ${esc(short(gain>=0?a.name:d.name))}. Let upside, byes or roster needs decide.`}
-    if(Math.sign(n4)!==Math.sign(gain)&&Math.abs(n4)>=3)why+=` Over the next 4 weeks it flips: ${esc(short(n4>0?a.name:d.name))} is ${fmt(Math.abs(n4),0)} points better.`;
-    if(a.pos!==d.pos)why+=` Different positions, so make sure you can still fill your lineup.`;
-    const notes=[];
-    if(a.trend>=8)notes.push(['up',`${esc(short(a.name))}'s snap share is up ${a.trend} points lately. A growing role is the classic waiver win, and the model is a little slow to fully credit it.`]);
-    if(d.trend<=-8)notes.push(['dn',`${esc(short(d.name))}'s snap share is down ${-d.trend} points. His role may be shrinking.`]);
-    if(d.trend>=8)notes.push(['warn',`${esc(short(d.name))}'s role is growing (+${d.trend} snap share). Be careful dropping him.`]);
-    if(a.status)notes.push(['warn',`${esc(short(a.name))} is listed ${a.status==='IR'?'on injured reserve':a.status==='FA'?'as a free agent':a.status} this week.`]);
-    if(a.adds)notes.push(['up',`${compact(a.adds)} fantasy managers added ${esc(short(a.name))} in the last day. Move fast if you want him.`]);
-    [a,d].forEach(x=>{if(x.news)notes.push(['',`<b>${esc(short(x.name))}:</b> ${esc(x.news)}`])});
-    if(d.own!=null&&d.own>=60)notes.push(['warn',`${esc(short(d.name))} is ${d.own}% rostered, so he probably won't be there if you want him back.`]);
-    if(a.own!=null&&a.own>=60)notes.push(['warn',`${esc(short(a.name))} is ${a.own}% rostered. Check he's actually available.`]);
-    if(a.cv>d.cv+.15)notes.push(['up',`${esc(short(a.name))} is the higher-variance player: more big weeks, more duds.`]);
+    if(pr>=.6&&gain>=8){head='Make the move';why=`<b>${Math.round(pr*100)}%</b> chance ${esc(short(a.name))} wins out.`}
+    else if(pr<=.4||gain<=-8){head=`Keep ${esc(short(d.name))}`;why=`<b>${Math.round((1-pr)*100)}%</b> chance ${esc(short(d.name))} wins out.`}
+    else{head='Close call';why=`${Math.round(Math.max(pr,1-pr)*100)}% for ${esc(short(gain>=0?a.name:d.name))}. Go with roster need.`}
+    if(Math.sign(n4)!==Math.sign(gain)&&Math.abs(n4)>=3)why+=` Next 4 weeks favor ${esc(short(n4>0?a.name:d.name))} (+${fmt(Math.abs(n4),0)}).`;
+    if(a.pos!==d.pos)why+=` Different positions: check your lineup.`;
+    const al=[], S_=x=>`<b>${esc(short(x.name))}</b>`;
+    if(a.trend>=8)al.push(['vac','up',`${S_(a)} snap share up ${a.trend} pts. Growing role.`]);
+    if(d.trend<=-8)al.push(['bad','snap',`${S_(d)} snap share down ${-d.trend} pts.`]);
+    if(d.trend>=8)al.push(['warn','snap',`${S_(d)} role is growing (+${d.trend} snaps). Careful.`]);
+    [a,d].forEach(x=>{const i=inj(x);if(i)al.push([i.lvl,'cross',`${S_(x)} ${i.txt}`])});
+    if(a.adds)al.push(['vac','fire',`${compact(a.adds)} adds for ${S_(a)} in 24h. Move fast.`]);
+    [a,d].forEach(x=>{if(x.news)al.push(['','news',`${who(x,x.news)}${esc(x.news)}`])});
+    if(d.own!=null&&d.own>=60)al.push(['warn','users',`${S_(d)} is ${d.own}% rostered. He won't last on waivers.`]);
+    if(a.own!=null&&a.own>=60)al.push(['warn','users',`${S_(a)} is ${a.own}% rostered. Is he available?`]);
+    if(a.cv>d.cv+.15)al.push(['','vegas',`${S_(a)} is boom-or-bust.`]);
     const mx=Math.max(...a.wk.map(x=>(x||0)*wsc(a)),...d.wk.map(x=>(x||0)*wsc(d)),1);
     const cols=a.wk.map((x,i)=>{const y=d.wk[i];const h=v=>v==null?0:Math.max(3,v/mx*100);const bye=x==null||y==null;
       return `<div class="wk" title="Week ${M.week+i}: add ${x==null?'bye':fmt(x*wsc(a))}, drop ${y==null?'bye':fmt(y*wsc(d))}"><div class="pair"><i class="d" style="height:${h(y==null?null:y*wsc(d))}%"></i><i class="a" style="height:${h(x==null?null:x*wsc(a))}%"></i></div><div class="wl${bye?' bye':''}">${bye?'BYE':M.week+i}</div></div>`}).join('');
-    html+=`<section class="field"><div class="v-top"><div class="kicker">Rest of season, Weeks ${M.week}–18</div><h2>${head}</h2>
-      <div class="gain"><b>+${fmt(Math.abs(gain),0)}</b><span>more projected points for ${esc(short(gain>=0?a.name:d.name))}<br>over the rest of the season</span></div>
+    html+=`<section class="field"><div class="v-top"><div class="kicker">Weeks ${M.week}–18</div><h2>${head}</h2>
+      <div class="gain"><b>+${fmt(Math.abs(gain),0)}</b><span>pts for ${esc(short(gain>=0?a.name:d.name))}</span></div>
       <p class="why">${why}</p></div>
       <div class="wkchart"><div class="wklegend"><span><i style="background:var(--yellow)"></i>${esc(short(a.name))} (add)</span><span><i style="background:rgba(244,247,242,.5)"></i>${esc(short(d.name))} (drop)</span></div><div class="bars" role="img" aria-label="Projected points each remaining week">${cols}</div></div>
-      <div class="yard-cap" style="padding-top:10px">${esc(short(d.name))}: ${ownTxt(d)}. ${esc(short(a.name))}: ${ownTxt(a)}.</div></section>
-      ${notes.length?`<div class="notes">${notes.map(([c,t])=>`<p class="n ${c}">${t}</p>`).join('')}</div>`:''}`;
-  } else html+=`<div class="empty" style="margin-top:14px"><b>${!d&&!a?'Thinking about a pickup?':!d?'Now pick who you\'d drop':'Now pick who you\'d add'}</b>Compares the two over every remaining week, bye weeks included.</div>`;
+      <div style="height:12px"></div></section>
+      ${al.length?`<div class="alerts">${al.map(([c,i,x])=>`<div class="alert ${c}"><span class="ai">${ic(i)}</span><span>${x}</span></div>`).join('')}</div>`:''}`;
+  } else html+=`<div class="empty" style="margin-top:14px"><b>${!d&&!a?'Pick a drop and an add':!d?'Who would you drop?':'Who would you add?'}</b></div>`;
   const pool=bestAvailable(wvPos).slice(0,15);
   html+=`<div class="sec-h"><h3>Best available</h3><small>under 50% rostered</small></div>
     <div class="chips" id="wvf">${['ALL','QB','RB','WR','TE','K','DST'].map(q=>`<button data-p="${q}" aria-pressed="${q===wvPos}">${q==='ALL'?'All':q}</button>`).join('')}</div>
@@ -643,10 +780,9 @@ function renderWV(){
       <span style="min-width:0"><div class="nm">${esc(p.name)}</div><div class="sub"><span class="pos">${p.pos}</span><span>${p.team}</span><span>${ownTxt(p)}</span>${p.trend>=8?'<span class="tag ok">Role ▲</span>':''}${p.adds?`<span class="tag ok">${compact(p.adds)} adds</span>`:''}${byeWk(p)?`<span>bye ${byeWk(p)}</span>`:''}</div></span>
       <span class="rt"><b>${fmt(rosT(p),0)}</b><small>${fmt(p.ppg*wsc(p))}/g</small></span>
       <button class="add" data-add="${p.id}" aria-pressed="${wv.add===p.id}" aria-label="Set ${esc(p.name)} as the add">${wv.add===p.id?'✓':'+'}</button></div>`).join('')}</div>
-    <p class="cap" style="margin-top:8px">Points projected through Week 18.${wvPos==='ALL'?' "All" ranks against a typical starter at each position, so quarterbacks don\'t crowd out everyone else.':''}</p>`;
+    <p class="cap" style="margin-top:8px">Points through Week 18.</p>`;
   el.innerHTML=html;
-  $$('#s-wv [data-slot]').forEach(b=>b.onclick=()=>openSheet(b.dataset.slot));
-  $$('#s-wv [data-rm]').forEach(b=>b.onclick=e=>{e.stopPropagation();const r=wv.drop===b.dataset.rm?'drop':'add';wv[r]=null;store.set('ss_wv',wv);renderWV()});
+  wireCards(el,id=>{const r=wv.drop===id?'drop':'add';wv[r]=null;store.set('ss_wv',wv);renderWV()});
   $$('#wvf button').forEach(b=>b.onclick=()=>{wvPos=b.dataset.p;renderWV()});
   $$('#s-wv [data-add]').forEach(b=>b.onclick=e=>{e.stopPropagation();wv.add=b.dataset.add;store.set('ss_wv',wv);renderWV();window.scrollTo({top:0,behavior:'smooth'})});
   $$('#s-wv .li').forEach(r=>r.onclick=()=>{wv.add=r.dataset.id;store.set('ss_wv',wv);renderWV();window.scrollTo({top:0,behavior:'smooth'})});
@@ -693,13 +829,13 @@ function renderRank(){
     rows=list.map((r,i)=>{const p=r.p,tcn=tierCounts(r),main=rkSort==='tot'?r.tot:rkSort==='l3'?r.l3:r.ppg;
       return row(p.id,i,p.team,esc(p.name)+' '+injTag(byId[p.id]),`${showPos?`<span class="pos">${p.pos}</span>`:''}<span>${p.team}, ${r.gp}g</span>${tcn.length&&tcn[0][1]?`<span>${tcn[0][1]}× ${tcn[0][0]}</span>`:''}`,
         `<b>${fmt(main)}</b><small>${rkSort==='tot'?fmt(r.ppg)+'/g':rkSort==='l3'?fmt(r.ppg)+'/g yr':fmt(r.tot,0)+' tot'}</small>`,spark(r.w,p.bye.map(b=>b-1),{max:mx}))}).join('');
-    note=`<p class="cap" style="margin-top:10px">Bars show each week from Week 1; a short dash is a bye. "3× RB1" means three weeks finishing top 12 at his position (12-team league).${rkSort!=='tot'?` Per-game ranks need ${minG}+ games.`:''}</p>`;
+    note=`<p class="cap" style="margin-top:10px">"3× RB1" = 3 top-12 weeks. Dash = bye.${rkSort!=='tot'?` Min ${minG} games.`:''}</p>`;
   } else {
     const list=W.filter(fitPos).sort((a,b)=>rosT(b)-rosT(a)).slice(0,100);
     const mx=Math.max(...list.map(p=>Math.max(0,...p.wk.map(x=>(x||0)*wsc(p)))),1);
     rows=list.map((p,i)=>row(p.id,i,p.team,esc(p.name)+(p.status?` <span class="tag ${['Out','IR','Exempt','Suspended'].includes(p.status)?'out':'warn'}">${esc(p.status==='Questionable'?'Q':p.status)}</span>`:''),`${showPos?`<span class="pos">${p.pos}</span>`:''}<span>${p.team}</span>${byeWk(p)?`<span>bye ${byeWk(p)}</span>`:''}${p.own!=null?`<span>${p.own}% rost.</span>`:''}`,
       `<b>${fmt(rosT(p),0)}</b><small>${fmt(p.ppg*wsc(p))}/g</small>`,spark(p.wk.map(x=>x==null?null:x*wsc(p)),p.wk.map((x,k)=>x==null?k:-1).filter(k=>k>=0),{max:mx,cls:'sp-fut'}))).join('');
-    note=`<p class="cap" style="margin-top:10px">Projected points for every remaining week through 18, byes included. Future matchups count half as much as this week's, since defenses change over a season.</p>`;
+    note=`<p class="cap" style="margin-top:10px">Each remaining week through 18. Dash = bye.</p>`;
   }
   $('#s-rank').innerHTML=`<div class="seg" role="group" aria-label="Ranking period" style="margin-top:8px">${[['week',`Week ${M.week}`],['season','Season'],['ros','Rest of year']].map(([k,l])=>`<button data-v="${k}" aria-pressed="${k===rkView}">${l}</button>`).join('')}</div>
     <div class="chips">${['ALL','QB','RB','WR','TE','FLEX','K','DST'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('')}</div>
@@ -734,12 +870,12 @@ function detailHTML(id){
 let defPos='WR';
 function renderDef(){
   const rows=DATA.defense[defPos], m=Math.max(...rows.map(r=>Math.abs(r.z)),1);
-  $('#s-def').innerHTML=`<h2 class="h2" style="margin-top:10px">Matchups</h2><p class="cap" style="margin-top:6px">Fantasy points each defense allows, compared with what the players it faced usually score. Green means easy to score on.</p>
+  $('#s-def').innerHTML=`<h2 class="h2" style="margin-top:10px">Matchups</h2><p class="cap" style="margin-top:6px">Green = easy to score on.</p>
     <div class="chips">${['QB','RB','WR','TE'].map(p=>`<button data-p="${p}" aria-pressed="${p===defPos}">vs ${p}</button>`).join('')}</div>
     <div class="dz-head"><span>Tougher</span><span>Easier</span></div>
     <div class="list" style="margin-top:0">${rows.map(r=>{const w=Math.abs(r.z)/m*50,pos=r.z>=0;
       return `<div class="dz-row"><span>${badge(r.team)}</span><div class="axis"><div class="bar" style="${pos?'left:50%':'right:50%'};width:${w}%;background:${pos?'var(--up)':'var(--down)'}"></div></div><span class="v">${r.adj>0?'+':''}${fmt(r.adj)}</span></div>`}).join('')}</div>
-    <p class="cap" style="margin-top:10px">Points per game above (+) or below (−) what opposing ${defPos}s usually score. This season counts fully; last season about a third as much.</p>`;
+    <p class="cap" style="margin-top:10px">Pts/game vs what ${defPos}s usually score.</p>`;
   $$('#s-def .chips button').forEach(b=>b.onclick=()=>{defPos=b.dataset.p;renderDef()});
 }
 
