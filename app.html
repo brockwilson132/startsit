@@ -261,6 +261,10 @@ tr.detail td{padding:0 0 12px;border-bottom:1px solid var(--line);background:var
 .dt-btn.ghost{background:none;color:var(--ink);border:1.5px solid var(--line)}
 @media (max-width:460px){.dt{padding-left:10px}.dt-row{grid-template-columns:1fr;gap:2px}.dt-chart{margin-left:0}}
 .rkseg{display:flex;margin:0 0 14px}.rkseg button{flex:1}
+.newsline{margin-top:10px;padding:8px 10px;border-left:3px solid var(--line);font-size:14px;color:var(--muted);line-height:1.45}
+.newsline b{color:var(--ink);font-weight:600;margin-right:4px}
+.vacnote{display:block;color:var(--up);font-weight:600;margin-top:2px}
+.trend{color:var(--up);font-weight:600}
 [hidden]{display:none!important}
 @media (prefers-reduced-motion:reduce){.lane .ball{transition:none}}
 @media (max-width:460px){.part{grid-template-columns:64px 1fr 48px}.pts{font-size:34px}}
@@ -337,12 +341,17 @@ const val=p=>p[S];
 const fmtTime=p=>{if(p.bye)return `on bye in Week ${M.week}`;if(p.final)return 'final';if(!p.time)return '';const [h,m]=p.time.split(':').map(Number);const hh=((h+11)%12)+1;return `${p.day.slice(0,3)} ${hh}:${String(m).padStart(2,'0')}${h>=12?'p':'a'}`};
 const vs=p=>p.bye?'':(p.home?'vs ':'@ ')+p.opp;
 const actual=p=>p.act==null?null:(S==='std'?p.act_s:S==='half'?p.act_h:p.act);
-const inactive=p=>['Out','IR','Exempt'].includes(p.status);
+const inactive=p=>['Out','IR','Exempt','Suspended','FA'].includes(p.status);
+const shortDate=s=>{if(!s)return '';const d=new Date(s+'T12:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})};
+const compact=n=>n>=1e6?fmt(n/1e6,1)+'M':n>=1e3?Math.round(n/1e3)+'K':String(n);
+const newsHTML=p=>p.news?`<div class="newsline"><b>Latest${p.news_date?' · '+shortDate(p.news_date):''}</b> ${esc(p.news)}</div>`:'';
 const live=p=>!p.bye&&!p.final&&!inactive(p);
 function inj(p){
-  if(p.status==='IR')return {lvl:'out',tag:'IR',txt:`On injured reserve${p.injury?' ('+p.injury+')':''}. Out for at least a few more weeks.`};
+  if(p.status==='IR')return {lvl:'out',tag:'IR',txt:`On injured reserve${p.injury?' ('+p.injury+')':''}. ${p.ret?'Expected back around '+shortDate(p.ret)+'.':'Out for at least a few more weeks.'}`};
+  if(p.status==='FA')return {lvl:'out',tag:'FREE AGENT',txt:`Not on an NFL team right now. He'll get a projection as soon as he signs.`};
+  if(p.status==='Suspended')return {lvl:'out',tag:'SUSPENDED',txt:`Suspended${p.ret?', expected back around '+shortDate(p.ret):''}.`};
   if(p.status==='Exempt')return {lvl:'out',tag:'NOT ACTIVE',txt:`On the league's exempt list. Not eligible to play right now.`};
-  if(p.status==='Out')return {lvl:'out',tag:'OUT',txt:`Ruled out${p.injury?' ('+p.injury+')':''}. Don't start him.`};
+  if(p.status==='Out')return {lvl:'out',tag:'OUT',txt:`Ruled out${p.injury?' ('+p.injury+')':''}. Don't start him.${p.ret?' Expected back around '+shortDate(p.ret)+'.':''}`};
   if(p.status==='Doubtful')return {lvl:'bad',tag:'DOUBTFUL',txt:`Doubtful${p.injury?' ('+p.injury+')':''}. Unlikely to play.`};
   const pr=p.practice.startsWith('Did Not')?'didn\'t practice':p.practice.startsWith('Limited')?'limited in practice':'';
   if(p.status==='Questionable')return {lvl:'warn',tag:'QUESTIONABLE',txt:`Questionable${p.injury?' ('+p.injury+')':''}${pr?', '+pr:''}. Check before kickoff.`};
@@ -357,8 +366,8 @@ function erf(x){const t=1/(1+.3275911*Math.abs(x));const y=1-(((((1.061405429*t-
 const Phi=z=>.5*(1+erf(z/Math.SQRT2));
 const sd=p=>(p.hi-p.lo)*scale(p)/1.68;
 
-function header(){$('#sub').textContent=`Week ${M.week} projections, updated ${M.updated}`;
-$('#foot').innerHTML=`<button class="linkbtn" id="footLive">How the model is doing vs experts and Vegas</button><br>Built on nflverse stats, snap counts, play-by-play, injury reports and Vegas lines, plus FantasyPros expert consensus. Updates automatically several times a week; last run ${M.updated}. Late scratches after that can still slip through.`}
+function header(){$('#sub').textContent=`Week ${M.week}, updated ${M.updated.replace(' ET','')}`;
+$('#foot').innerHTML=`<button class="linkbtn" id="footLive">How the model is doing vs experts and Vegas</button><br>Built on nflverse stats, play-by-play and snap counts, ESPN and Sleeper injury news, Vegas lines, and FantasyPros expert consensus. Checks for new stats, injuries and news every hour; data last changed ${M.updated}. Inactives announced 90 minutes before kickoff can still slip through.`}
 header();
 document.addEventListener('click',e=>{if(e.target.id==='footLive'){howSec='live';document.querySelector('nav button[data-tab=how]').click();renderHow()}});
 
@@ -436,13 +445,13 @@ function renderCompare(){
 function cardsHTML(ps){
   return `<div class="cards">${ps.map(p=>{const k=scale(p);
     if(p.bye)return `<article class="card"><div class="card-top"><div><h3>${esc(p.name)}</h3><div class="sub">${p.pos}, ${p.team}, on bye in Week ${M.week}</div></div><div class="pts">BYE</div></div><p class="sub" style="margin:10px 0 0">Averages <b>${fmt(p.base)}</b> pts/g. He's back next week; use Waivers to see his rest-of-season outlook.</p></article>`;
-    if(inactive(p)){const i=inj(p);return `<article class="card"><div class="card-top"><div><h3>${esc(p.name)}</h3><div class="sub">${p.pos}, ${p.team}</div></div><div class="pts">OUT</div></div>${i?`<div class="flag ${i.lvl}"><b>${i.tag}</b><span>${i.txt}</span></div>`:''}${p.base?`<p class="sub" style="margin:10px 0 0">Averaged <b>${fmt(p.base)}</b> pts/g when playing. Use Waivers to see his rest-of-season outlook.</p>`:''}</article>`}
+    if(inactive(p)){const i=inj(p);return `<article class="card"><div class="card-top"><div><h3>${esc(p.name)}</h3><div class="sub">${p.pos}, ${p.team}</div></div><div class="pts">${p.status==='FA'?'FA':'OUT'}</div></div>${i?`<div class="flag ${i.lvl}"><b>${i.tag}</b><span>${i.txt}</span></div>`:''}${newsHTML(p)}${p.base?`<p class="sub" style="margin:10px 0 0">Averaged <b>${fmt(p.base)}</b> pts/g ${p.status==='FA'?'in his recent games':'when playing'}.${p.status==='FA'?'':' Use Waivers to see his rest-of-season outlook.'}</p>`:''}</article>`}
     const isK=p.pos==='K', isD=p.pos==='DST', fromX=p.src==='experts';
     const baseV=(p.form+p.usage)*k;
     const mxB=Math.max(...ps.map(q=>(q.form+q.usage)*scale(q)),1);
     const adj=[isD?['Opp. mistakes',p.matchup,'How often this opponent gives up sacks and turnovers']:isK?['Indoors',p.matchup*k,'Kicking in a dome or closed roof']:['Matchup',p.matchup*k,'Opponent-adjusted defense vs his position'],['Vegas',p.vegas*k,isD?'Opponent expected to score less than average = more points':'Implied team total vs league average']];
     const rows=`<div class="part" title="Who he is before this week's game"><span class="lbl">Baseline</span><div class="track"><div class="fill" style="left:0;width:${Math.min(100,baseV/mxB*100)}%"></div></div><span class="v">${fmt(baseV)}</span></div>
-      <div class="basenote">${isK||isD?`Scoring <b>${fmt(p.base)}</b> pts/g, blended with last season`:`Scoring <b>${fmt(p.base*k)}</b> pts/g, usage worth <b>${fmt(p.xfp*k)}</b> pts/g`}</div>
+      <div class="basenote">${isK||isD?`Scoring <b>${fmt(p.base)}</b> pts/g, blended with last season`:`Scoring <b>${fmt(p.base*k)}</b> pts/g, usage worth <b>${fmt(p.xfp*k)}</b> pts/g`}${(p.vac_tgt>=.3||p.vac_car>=.5)&&p.vac_from&&p.vac_from.length?`<span class="vacnote">Includes ${[p.vac_tgt>=.3?'+'+fmt(p.vac_tgt)+' targets':'',p.vac_car>=.5?'+'+fmt(p.vac_car)+' carries':''].filter(Boolean).join(' and ')} a game with ${p.vac_from.map(esc).join(' and ')} out.</span>`:''}</div>
       <div class="adjhead">This week</div>`+adj.map(([l,v,tt])=>{const w=Math.min(50,Math.abs(v)/6*50);
       return `<div class="part" title="${tt}"><span class="lbl">${l}</span><div class="track ctr"><div class="fill ${v<0?'neg':'pos-adj'}" style="${v<0?'right:50%':'left:50%'};width:${w}%"></div></div><span class="v">${v>0?'+':''}${fmt(v)}</span></div>`}).join('');
     const role=isD?`<span><b>${fmt(p.sacks)}</b> sacks/g</span><span><b>${fmt(p.takeaways)}</b> takeaways/g</span><span><b>${fmt(p.pa)}</b> pts allowed/g</span>`:isK?`<span><b>${fmt(p.fga)}</b> FG tries/g</span><span><b>${fmt(p.pata)}</b> extra points/g</span><span><b>${fmt(p.fg50*17,0)}</b> 50+ yd makes per 17 games</span>`:(p.pos==='QB'?`<span><b>${fmt(p.att,0)}</b> pass att/g</span><span><b>${fmt(p.car)}</b> carries/g</span>`:p.pos==='RB'?`<span><b>${fmt(p.car)}</b> carries/g</span><span><b>${fmt(p.tgt)}</b> targets/g</span>`:`<span><b>${fmt(p.tgt)}</b> targets/g</span>`)
@@ -450,6 +459,7 @@ function cardsHTML(ps){
     return `<article class="card"><div class="card-top"><div><h3>${esc(p.name)}</h3><div class="sub">${p.pos}, ${p.team} ${vs(p)}, ${fmtTime(p)}</div></div><div class="pts">${fmt(val(p))}<small>${fmt(p.lo*k)} to ${fmt(p.hi*k)}</small></div></div>
     ${p.final?`<div class="finalbar"><b>FINAL</b><span>${actual(p)!=null?`Scored <b>${fmt(actual(p))}</b> vs ${fmt(val(p))} projected.`:'Game is over; points post overnight.'}</span></div>`:''}
     ${(()=>{const i=inj(p);return i?`<div class="flag ${i.lvl}"><b>${i.tag}</b><span>${i.txt}</span></div>`:''})()}
+    ${newsHTML(p)}
     ${(()=>{const e=experts(p);if(!e)return '';const mx=Math.max(p.rank,p.ecr,12);const pos=v=>Math.min(100,(v-1)/(mx-1)*100);
       return `<div class="vsx"><div class="vsx-top"><span><i class="k m"></i>Model <b>${p.pos}${p.rank}</b></span><span><i class="k e"></i>Experts <b>${p.pos}${p.ecr}</b></span><span class="vsx-hint">← better</span></div>
       <div class="vsx-track"><span class="vsx-m" style="left:${pos(p.rank)}%"></span><span class="vsx-e" style="left:${pos(p.ecr)}%"></span></div>
@@ -532,6 +542,8 @@ function detailHTML(id){
   let html='<div class="dt">';
   // this week
   if(p){html+=`<div class="dt-row"><span class="dt-k">Week ${M.week}</span><span>${p.bye?'On bye':inactive(p)?'Out':p.final?`Final: scored <b>${actual(p)!=null?fmt(actual(p)):'—'}</b> (proj ${fmt(val(p))})`:`<b>${fmt(val(p))}</b> projected ${vs(p)}, ${fmtTime(p)}${p.rank?`, model ${pos}${p.rank}`:''}${p.ecr?`, experts ${pos}${p.ecr}`:''}`}</span></div>`}
+  if(p&&p.news)html+=`<div class="dt-row"><span class="dt-k">Latest${p.news_date?' · '+shortDate(p.news_date):''}</span><span>${esc(p.news)}</span></div>`;
+  if(p&&(p.vac_tgt>=.3||p.vac_car>=.5)&&p.vac_from&&p.vac_from.length)html+=`<div class="dt-row"><span class="dt-k">Teammates out</span><span>${p.vac_from.map(esc).join(', ')} won't play, so the model gives him ${[p.vac_tgt>=.3?'+'+fmt(p.vac_tgt)+' targets':'',p.vac_car>=.5?'+'+fmt(p.vac_car)+' carries':''].filter(Boolean).join(' and ')} a game.</span></div>`;
   // season
   if(st&&st.gp){const tc=tierCounts(st);const g=st.w.filter(x=>x!=null);
     html+=`<div class="dt-row"><span class="dt-k">Season</span><span><b>${pos}${st.rkPpg}</b> in points per game (${fmt(st.ppg)}), <b>${pos}${st.rkTot}</b> in total (${fmt(st.tot,0)}) over ${st.gp} games. High ${fmt(Math.max(...g))}, low ${fmt(Math.min(...g))}.</span></div>`;
@@ -595,6 +607,7 @@ baseline(){
   <div class="split"><div class="split-u" style="width:${tu*100}%"><span>Usage ${Math.round(tu*100)}%</span></div><div class="split-p"><span>Points ${Math.round((1-tu)*100)}%</span></div></div>
   <p class="cap">${howPos==='RB'?'Running back workloads are the most stable thing in fantasy, so their baseline is almost all usage.':howPos==='WR'?'Receivers split it evenly: targets matter, but talent turns targets into points at very different rates.':howPos==='QB'?'Quarterbacks lean on usage, which for them is mostly rushing and pass volume.':'Tight ends lean on targets; their touchdowns are especially streaky.'}</p>
   <p>Usage here means targets, carries, air yards and red-zone looks. If a player's snap share is climbing, the model gives him extra credit before the points show up.</p>
+  <p>Recent games count more: a game five weeks ago counts half as much as last week's. And when a regular is ruled out, on injured reserve or suspended, about three-quarters of his targets and carries are handed to his teammates, in proportion to their current roles. The card says when that's happening.</p>
   <p>Past points also get blended with last season, so a hot three-week start counts, but doesn't take over.</p>`},
 norm(){
   return `<h2>Why normalize?</h2>
@@ -767,7 +780,9 @@ function renderWaiver(){
     if(a.trend>=8)notes.push(['up',`${esc(ln(a))}'s snap share is up ${a.trend} points lately. A growing role is the classic waiver win, and the model is a little slow to fully credit it.`]);
     if(d.trend<=-8)notes.push(['dn',`${esc(ln(d))}'s snap share is down ${-d.trend} points. His role may be shrinking.`]);
     if(d.trend>=8)notes.push(['warn',`${esc(ln(d))}'s role is growing (+${d.trend} snap share). Be careful dropping him.`]);
-    if(a.status)notes.push(['warn',`${esc(ln(a))} is listed ${a.status} this week.`]);
+    if(a.status)notes.push(['warn',`${esc(ln(a))} is listed ${a.status==='IR'?'on injured reserve':a.status==='FA'?'as a free agent':a.status} this week.`]);
+    if(a.adds)notes.push(['up',`${compact(a.adds)} fantasy managers added ${esc(ln(a))} in the last 24 hours, so move fast if you want him.`]);
+    [a,d].forEach(x=>{if(x.news)notes.push(['',`<b>${esc(ln(x))}:</b> ${esc(x.news)}`])});
     if(d.own!=null&&d.own>=60)notes.push(['warn',`${esc(ln(d))} is rostered in ${d.own}% of leagues, so he probably won't be there if you want him back.`]);
     if(a.own!=null&&a.own>=60)notes.push(['warn',`${esc(ln(a))} is rostered in ${a.own}% of leagues. Check he's actually available.`]);
     if(a.cv>d.cv+.15)notes.push(['up',`${esc(ln(a))} is the higher-variance player: more big weeks, more duds.`]);
@@ -792,7 +807,7 @@ function renderWaiver(){
     .sort((x,y)=>wvPos==='ALL'?vorT(y)-vorT(x):rosT(y)-rosT(x)).slice(0,12);
   html+=`<h3 class="h3" style="margin-top:28px">Best available</h3><p class="cap" style="margin-top:-4px">Rostered in fewer than half of leagues. Number is projected points through Week 18${wvPos==='ALL'?', ranked against a typical starter at each position so QBs don\'t crowd out everyone else':''}.</p>
   <div class="filters" id="wvf">${['ALL','QB','RB','WR','TE','K','DST'].map(q=>`<button data-p="${q}" aria-pressed="${q===wvPos}">${q==='ALL'?'All':q}</button>`).join('')}</div>
-  <table><tbody>${pool.map((p,i)=>`<tr class="row" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${p.trend>=8?' <span class="rise" title="Snap share rising">▲</span>':''}<small>${p.pos}, ${p.team} · ${p.own==null?'unranked':p.own+'% rostered'}${byeWk(p)?` · bye Wk ${byeWk(p)}`:''}</small></td><td class="num">${fmt(rosT(p),0)}<small class="per">${fmt(p.ppg*wsc(p))}/g</small></td><td><button class="addbtn" data-id="${p.id}" aria-pressed="${wv.add===p.id}" aria-label="Set as add">${wv.add===p.id?'✓':'+'}</button></td></tr>`).join('')}</tbody></table>`;
+  <table><tbody>${pool.map((p,i)=>`<tr class="row" data-id="${p.id}"><td class="rk">${i+1}</td><td class="nm">${esc(p.name)}${p.trend>=8?' <span class="rise" title="Snap share rising">▲</span>':''}<small>${p.pos}, ${p.team} · ${p.own==null?'unranked':p.own+'% rostered'}${byeWk(p)?` · bye Wk ${byeWk(p)}`:''}${p.adds?` · <span class="trend">${compact(p.adds)} adds today</span>`:''}</small></td><td class="num">${fmt(rosT(p),0)}<small class="per">${fmt(p.ppg*wsc(p))}/g</small></td><td><button class="addbtn" data-id="${p.id}" aria-pressed="${wv.add===p.id}" aria-label="Set as add">${wv.add===p.id?'✓':'+'}</button></td></tr>`).join('')}</tbody></table>`;
   $('#wvOut').innerHTML=html;
   $('#wvf').querySelectorAll('button').forEach(b=>b.onclick=()=>{wvPos=b.dataset.p;renderWaiver()});
   $('#wvOut').querySelectorAll('tr.row').forEach(r=>r.onclick=()=>{wv.add=r.dataset.id;store.set('ss_wv',wv);renderWaiver();$('#wvWrap').scrollIntoView({block:'start'})});

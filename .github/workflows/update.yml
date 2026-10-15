@@ -1,17 +1,13 @@
 name: Update projections
-# Runs on the schedule below, on manual "Run workflow", and when the app or pipeline changes.
+# Every hour: pull fresh stats, injuries, news, expert projections and Vegas lines, rebuild,
+# and redeploy only if something users would see changed. Also runs when the app or model code changes.
 on:
   schedule:
-    # times are UTC. Mon: Sunday's results. Tue: after Monday night. Wed–Fri: injury reports. Sat. Sun 11:30am ET before kickoff.
-    - cron: '0 14 * * 1'
-    - cron: '0 12 * * 2'
-    - cron: '0 22 * * 3,4,5'
-    - cron: '0 16 * * 6'
-    - cron: '30 15 * * 0'
+    - cron: '7 * * * *'
   workflow_dispatch: {}
   push:
     branches: [main]
-    paths: ['app.html', 'pipeline.py', 'kickers.py', 'defense.py', 'build_site.py', '.github/workflows/update.yml']
+    paths: ['app.html', 'pipeline.py', 'kickers.py', 'defense.py', 'news.py', 'build_site.py', '.github/workflows/update.yml']
 permissions:
   contents: write
   pages: write
@@ -22,30 +18,43 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with: { python-version: '3.12', cache: 'pip' }
+      - id: day
+        run: echo "day=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+      # past seasons never change; Sleeper's player file is fetched at most once a day. One cache entry per day.
       - uses: actions/cache@v4
         with:
           path: cache
-          key: nfl-cache-${{ github.run_id }}
+          key: nfl-cache-${{ steps.day.outputs.day }}
           restore-keys: nfl-cache-
       - run: pip install -r requirements.txt
       - run: python pipeline.py
       - run: python build_site.py
+      - id: check
+        name: Did anything change?
+        run: |
+          new=$(cat site/hash.txt)
+          old=$(curl -fsSL "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/hash.txt" || echo none)
+          if [ "$new" != "$old" ] || [ "${{ github.event_name }}" != "schedule" ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; else echo "changed=false" >> "$GITHUB_OUTPUT"; echo "No changes since last deploy"; fi
       - name: Save weekly snapshots (used to score model vs experts)
         run: |
           git config user.name "startsit-bot"
           git config user.email "actions@users.noreply.github.com"
           git add history
-          git diff --cached --quiet || git commit -m "snapshot $(date -u +%F)"
-          git push
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+          git diff --cached --quiet || (git commit -m "snapshot $(date -u +%F)" && git pull --rebase -q && git push)
+      - if: steps.check.outputs.changed == 'true'
+        uses: actions/configure-pages@v5
+      - if: steps.check.outputs.changed == 'true'
+        uses: actions/upload-pages-artifact@v3
         with: { path: site }
   deploy:
     needs: update
+    if: needs.update.outputs.changed == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
