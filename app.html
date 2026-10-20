@@ -519,7 +519,7 @@ function inj(p){
   if(p.status==='IR')return {lvl:'out',tag:'IR',txt:`On injured reserve${p.injury?' ('+p.injury+')':''}. ${p.ret?'Expected back around '+shortDate(p.ret)+'.':'Out for at least a few more weeks.'}`};
   if(p.status==='FA')return {lvl:'out',tag:'FREE AGENT',txt:`Not on an NFL team right now. He gets a projection as soon as he signs.`};
   if(p.status==='Suspended')return {lvl:'out',tag:'SUSPENDED',txt:`Suspended${p.ret?', expected back around '+shortDate(p.ret):''}.`};
-  if(p.status==='Exempt')return {lvl:'out',tag:'NOT ACTIVE',txt:`On the league's exempt list. Not eligible to play right now.`};
+  if(p.status==='Exempt')return {lvl:'out',tag:'NOT ACTIVE',txt:`On the league's exempt list. Counted out for 4 games; updates within the hour of his reinstatement.`};
   if(p.status==='Out')return {lvl:'out',tag:'OUT',txt:`Ruled out${p.injury?' ('+p.injury+')':''}. Don't start him.${p.ret?' Expected back around '+shortDate(p.ret)+'.':''}`};
   if(p.status==='Doubtful')return {lvl:'bad',tag:'DOUBTFUL',txt:`Doubtful${p.injury?' ('+p.injury+')':''}. Unlikely to play.`};
   const pr=(p.practice||'').startsWith('Did Not')?"didn't practice":(p.practice||'').startsWith('Limited')?'limited in practice':'';
@@ -612,9 +612,11 @@ const ICONS={
   x:'<path d="M6 6l12 12M18 6L6 18"/>',
   users:'<circle cx="9" cy="8" r="3.2"/><path d="M3 19.5c.8-3.4 3-5 6-5s5.2 1.6 6 5"/>',
   up:'<path d="M12 19V5M6 11l6-6 6 6"/>',
+  down:'<path d="M12 5v14M6 13l6 6 6-6"/>',
   bar:'<path d="M5 20V11M10 20V5M15 20v-8M20 20v-4"/>',
   plus:'<path d="M12 5v14M5 12h14"/>'
 };
+const backTxt=(t,c,frm)=>`${[t>=.3?'−'+fmt(t)+' targets':'',c>=.5?'−'+fmt(c)+' carries':''].filter(Boolean).join(', ')} a game with ${frm.map(x=>esc(short(x))).join(' and ')} back`;
 const who=(p,txt)=>{const s=short(p.name);return (txt||'').startsWith(s)||(txt||'').startsWith(p.name)?'':`<b>${esc(s)}</b> `};
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
 
@@ -674,6 +676,7 @@ function alertsHTML(list){
   list.forEach(p=>{const i=inj(p);
     if(i)out.push(`<div class="alert ${i.lvl}"><span class="ai">${ic('cross')}</span><span><b>${esc(short(p.name))}</b> ${i.txt}</span></div>`);
     if(p.news)out.push(`<div class="alert"><span class="ai">${ic('news')}</span><span>${who(p,p.news)}${esc(p.news)}<small>${p.news_date?shortDate(p.news_date):''}</small></span></div>`);
+    if((p.back_tgt>=.3||p.back_car>=.5)&&p.back_from&&p.back_from.length)out.push(`<div class="alert warn"><span class="ai">${ic('down')}</span><span><b>${esc(short(p.name))}</b> ${backTxt(p.back_tgt,p.back_car,p.back_from)}</span></div>`);
     if((p.vac_tgt>=.3||p.vac_car>=.5)&&p.vac_from&&p.vac_from.length)out.push(`<div class="alert vac"><span class="ai">${ic('up')}</span><span><b>${esc(short(p.name))}</b> ${[p.vac_tgt>=.3?'+'+fmt(p.vac_tgt)+' targets':'',p.vac_car>=.5?'+'+fmt(p.vac_car)+' carries':''].filter(Boolean).join(', ')} a game with ${p.vac_from.map(esc).join(' and ')} out</span></div>`);
   });
   return out.length?`<div class="alerts">${out.join('')}</div>`:''}
@@ -758,6 +761,7 @@ function renderWV(){
     if(d.trend<=-8)al.push(['bad','snap',`${S_(d)} snap share down ${-d.trend} pts.`]);
     if(d.trend>=8)al.push(['warn','snap',`${S_(d)} role is growing (+${d.trend} snaps). Careful.`]);
     [a,d].forEach(x=>{const i=inj(x);if(i)al.push([i.lvl,'cross',`${S_(x)} ${i.txt}`])});
+    [a,d].forEach(x=>{if(x.back)al.push(['warn','down',`${S_(x)} ${backTxt(x.back.tgt,x.back.car,x.back.frm)}`])});
     if(a.adds)al.push(['vac','fire',`${compact(a.adds)} adds for ${S_(a)} in 24h. Move fast.`]);
     [a,d].forEach(x=>{if(x.news)al.push(['','news',`${who(x,x.news)}${esc(x.news)}`])});
     if(d.own!=null&&d.own>=60)al.push(['warn','users',`${S_(d)} is ${d.own}% rostered. He won't last on waivers.`]);

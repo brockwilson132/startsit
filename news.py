@@ -40,6 +40,19 @@ def _cached(path, url, max_age_h):
         return json.load(open(path)) if os.path.exists(path) else None
 
 
+# news that a player is available again: "has officially been removed from the Commissioner's Exempt List",
+# "was activated from injured reserve", "has been reinstated". Future tense ("expected to be activated") doesn't count.
+CLEARED = re.compile(r"\b(has|have|had|was|were|been|is)\b[^.;]{0,30}?\b(removed from|reinstated|activated)\b", re.I)
+NOT_YET = re.compile(r"\b(expected|could|will|would|may|might|hope|hopes|likely|eligible|set|poised|candidate|window)\b[^.;]{0,30}?\b(removed|reinstated|activated)", re.I)
+
+
+ACTIVE_VOICE = re.compile(r"\b(activated|reinstated)\b [A-Z][\w'.-]+(?: [A-Z][\w'.-]+)? (from|off)\b")
+
+
+def says_cleared(txt):
+    return bool(txt) and bool(CLEARED.search(txt) or ACTIVE_VOICE.search(txt)) and not NOT_YET.search(txt)
+
+
 def load(cache_dir, offline=False):
     """Returns dict with espn {espn_id: {...}}, sleeper {gsis_id: {...}}, trending {gsis_id: adds}."""
     age = 1e9 if offline else None
@@ -60,7 +73,7 @@ def load(cache_dir, offline=False):
                 continue
             det = e.get('details') or {}
             espn[m.group(1)] = dict(
-                status=ESPN_STATUS.get(e.get('status'), ''), news=(e.get('shortComment') or '').strip(),
+                status=ESPN_STATUS.get(e.get('status'), ''), raw=e.get('status') or '', news=(e.get('shortComment') or '').strip(),
                 date=(e.get('date') or '')[:10], ret=det.get('returnDate'), injury=det.get('type') or '',
                 name=a.get('displayName'))
 
@@ -72,7 +85,7 @@ def load(cache_dir, offline=False):
             g = (v.get('gsis_id') or '').strip()
             rec = dict(name=v.get('full_name'), pos=v.get('position'), team=v.get('team'), active=v.get('active'),
                        espn_id=str(v.get('espn_id')) if v.get('espn_id') else None, gsis_id=g or None,
-                       body=v.get('injury_body_part'), notes=v.get('injury_notes'), inj=v.get('injury_status'),
+                       status=v.get('status'), body=v.get('injury_body_part'), notes=v.get('injury_notes'), inj=v.get('injury_status'),
                        depth=v.get('depth_chart_order'), rank=v.get('search_rank') or 9999)
             sl_by_id[sid] = rec
             if g:

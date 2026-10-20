@@ -242,6 +242,58 @@ def absorb(f):
     return f
 
 
+RECLAIM = float(os.environ.get('RECLAIM', 0.5))   # share of a returning regular's usage taken back from teammates
+
+
+def returning(season, week, rows, avail=None):
+    """Regulars who are playing this week but missed both of the team's last two games (back from injury,
+    suspension, exempt list). avail: player ids available this week (live); default = everyone in rows (backtests)."""
+    prev = d[(d.season == season) & (d.week < week)]
+    res = {}
+    for team, g in rows.groupby('team'):
+        tw = prev[prev.team == team]
+        if tw.empty:
+            continue
+        last2 = set(tw[tw.week.isin(sorted(tw.week.unique())[-2:])].player_id)
+        res[team] = [p for p in g.player_id if p not in last2 and (avail is None or p in avail)]
+    return res
+
+
+def reclaimed(season, week, rows, ret_by_team):
+    """Usage a returning regular takes back, removed from the teammates who had been covering for him."""
+    a = A[(season, week)]
+    out = pd.DataFrame(0.0, index=rows.index, columns=['rec_' + c for c in VCOLS])
+    src = pd.Series('', index=rows.index)
+    for team, g in rows.groupby('team'):
+        rt = [p for p in ret_by_team.get(team, []) if p in a.index]
+        if not rt:
+            continue
+        reg = a.loc[rt]
+        reg = reg[(reg.position != 'QB') & ((reg.u_snap >= .35) | (reg.u_targets >= 3) | (reg.u_carries >= 5))]
+        if reg.empty:
+            continue
+        act = a.reindex(g.player_id)
+        stay = ~g.player_id.isin(rt).values
+        for c in VCOLS:
+            v = float(reg['u_' + c].sum())
+            if v <= 0:
+                continue
+            elig = (act.position.isin(['RB']).values if c in ('carries', 'rz_car') else act.position.isin(['WR', 'TE', 'RB']).values) & stay
+            sh = act['u_' + c].fillna(0).values * elig
+            if sh.sum() > 0:
+                out.loc[g.index, 'rec_' + c] = v * sh / sh.sum()
+        src.loc[g.index[stay]] = ', '.join(reg.index)
+    out['rec_src'] = src
+    return out
+
+
+def reclaim(f):
+    f = f.copy()
+    for c in VCOLS:
+        f['u_' + c] = np.maximum(f['u_' + c] - RECLAIM * f['rec_' + c], 0.4 * f['u_' + c])
+    return f
+
+
 def hist_absent(season, week, rows):
     """Backtests: regulars who played in one of the team's last two games but not this one."""
     prev = d[(d.season == season) & (d.week < week)]
@@ -264,7 +316,8 @@ def build(seasons, wmin=3):
                 continue
             rows = d[(d.season == s) & (d.week == w)][['season', 'week', 'player_id', 'player_display_name', 'position', 'team', 'opponent_team', 'ppr', 'std', 'half']]
             f_ = frame(s, w, rows)
-            out.append(absorb(pd.concat([f_, vacated(s, w, f_, hist_absent(s, w, f_))], axis=1)))
+            f_ = absorb(pd.concat([f_, vacated(s, w, f_, hist_absent(s, w, f_))], axis=1))
+            out.append(reclaim(pd.concat([f_, reclaimed(s, w, f_, returning(s, w, f_))], axis=1)))
     f = pd.concat(out)
     return f[f.base_ppr >= 4].dropna(subset=['imp', 'naive'])
 
@@ -445,13 +498,22 @@ bye_teams = all_teams - set(kick)
 # player universe = current NFL rosters (right team after trades; injured reserve known),
 # not just "who has recorded a stat", so returning and traded players aren't missed
 ro = pd.read_csv(fetch(f'{NV}/weekly_rosters/roster_weekly_{SEASON}.csv', f'roster{SEASON}.csv'), low_memory=False)
-ro = ro[ro.position.isin(POS + ['K'])].sort_values('week').groupby('gsis_id').last().reset_index()
+ro = ro[ro.position.isin(POS + ['K'])].sort_values('week')
+# week each player's current roster status began (so news older than an IR / exempt move can't undo it)
+_st = ro.groupby('gsis_id').status.last()
+# who was sidelined (IR, exempt, inactive) in the last two roster weeks: only they count as "returning" live,
+# so a healthy scratch who lost his job doesn't take work back from the starters
+WAS_OUT = set(ro[(ro.week >= ro.week.max() - 1) & ro.status.isin(['RES', 'EXE', 'INA', 'SUS', 'NWT'])].gsis_id)
+_chg = ro[ro.status != ro.gsis_id.map(_st)].groupby('gsis_id').week.max()
+FLAG_WEEK = {g_: int(_chg.get(g_, 0)) + 1 for g_ in _st.index}
+ro = ro.groupby('gsis_id').last().reset_index()
 ro = ro[ro.status.isin(['ACT', 'INA', 'RES', 'EXE'])]
 stat_names = pd.concat([d, kd]).sort_values(['season', 'week']).groupby('player_id').player_display_name.last()
 ro['pname'] = ro.gsis_id.map(stat_names).fillna(ro.full_name)
 ON_IR = set(ro[ro.status == 'RES'].gsis_id)
 JERSEY = {g_: int(n_) for g_, n_ in zip(ro.gsis_id, ro.jersey_number) if pd.notna(n_)}
 EXEMPT = set(ro[ro.status == 'EXE'].gsis_id)
+name_of_ro = dict(zip(ro.gsis_id, ro.pname))
 universe = ro.rename(columns={'gsis_id': 'player_id'})[['player_id', 'pname', 'position', 'team']]
 universe = universe[universe.team.isin(all_teams)]
 
@@ -488,6 +550,27 @@ for eid, v in NEWS['espn'].items():
         status[g_] = v['status']
     if v['injury'] and not injury.get(g_):
         injury[g_] = v['injury']
+# The weekly roster file lags news by days, so its exempt / IR flags can outlive the real move.
+# Fresher evidence that a player is available again overrides them: ESPN listing him as Active,
+# or a "removed from the exempt list" / "activated from IR" headline. Only ESPN (fetched every run) can clear:
+# Sleeper's file is daily and can predate an IR move.
+CLEARED = set()
+for g_ in EXEMPT | ON_IR | {k for k, v in status.items() if v in ('Exempt', 'IR', 'Suspended')}:
+    e_ = news_by.get(g_) or {}
+    if e_.get('status') in ('Out', 'Doubtful', 'IR', 'Suspended'):
+        continue                                  # ESPN currently has him out: trust that
+    wk_ = games[(games.season == SEASON) & (games.week == FLAG_WEEK.get(g_, 1))].gameday
+    since = str((pd.to_datetime(wk_.min()) - pd.Timedelta(days=3)).date()) if len(wk_) else ''
+    if (e_.get('date') or '') < since:
+        continue                                  # this news predates the move
+    if e_.get('raw') == 'Active' or newsfeed.says_cleared(e_.get('news')):
+        CLEARED.add(g_)
+for g_ in CLEARED:
+    EXEMPT.discard(g_)
+    ON_IR.discard(g_)
+    status[g_] = (news_by.get(g_) or {}).get('status', '')
+if CLEARED:
+    print('cleared by fresher news:', sorted(name_of_ro.get(g_, g_) for g_ in CLEARED))
 print('statuses after news:', pd.Series(list(status.values())).value_counts().to_dict())
 prev_wk = pd.concat([cur, kd[kd.season == SEASON]])
 prev_wk = prev_wk[prev_wk.week == WEEK - 1]
@@ -563,6 +646,19 @@ absent_long = {t_: [p_ for p_ in ps if status.get(p_, '') in LONG_OUT or on_team
                for t_, ps in recent_regulars.items()}
 fwk = frame(SEASON, WEEK, pd.DataFrame(rows)).dropna(subset=['base_ppr', 'imp'])
 fwk = absorb(pd.concat([fwk, vacated(SEASON, WEEK, fwk, absent_now)], axis=1))
+# regulars back this week after missing the team's last two games take work back from whoever covered
+_inj_prev = inj[(inj.season == SEASON) & (inj.week.between(WEEK - 2, WEEK - 1)) & inj.report_status.isin(['Out', 'Doubtful'])]
+WAS_OUT |= set(_inj_prev.gsis_id) | CLEARED
+avail_now = {r.player_id for r in sk.itertuples() if status.get(r.player_id, '') not in OUT_SET and r.player_id in WAS_OUT}
+back_now = returning(SEASON, WEEK, sk, avail_now)
+avail_long = {p_ for p_ in universe.player_id if status.get(p_, '') not in LONG_OUT and p_ in WAS_OUT
+              and p_ not in ON_IR and p_ not in EXEMPT}
+back_long = returning(SEASON, WEEK, universe[universe.position.isin(POS)], avail_long)
+fwk = reclaim(pd.concat([fwk, reclaimed(SEASON, WEEK, fwk, back_now)], axis=1))
+_a = A[(SEASON, WEEK)]
+_bk = {t_: [name_of_ro.get(p_, p_) for p_ in ps if p_ in _a.index and _a.position[p_] != 'QB' and
+            (_a.u_snap[p_] >= .35 or _a.u_targets[p_] >= 3 or _a.u_carries[p_] >= 5)] for t_, ps in back_now.items()}
+print('returning regulars:', sum(len(v) for v in _bk.values()), sorted(n_ for v in _bk.values() for n_ in v))
 up = model.apply(fwk)
 name_of = dict(zip(universe.player_id, universe.pname))
 name_of.update({k: v for k, v in stat_names.items() if k not in name_of})
@@ -620,7 +716,10 @@ for r in up.itertuples():
              rz=round(r.u_rz_tgt + r.u_rz_car, 1), snap=round(r.u_snap * 100), trend=round(r.snap_trend * 100),
              cv=round(r.cv, 2), gp=int(r.n_cur),
              vac_tgt=round(ABSORB * r.vac_targets, 1), vac_car=round(ABSORB * r.vac_carries, 1),
-             vac_from=[name_of.get(x, x) for x in r.vac_src.split(', ')] if r.vac_src else [])
+             vac_from=[name_of.get(x, x) for x in r.vac_src.split(', ')] if r.vac_src else [],
+             back_tgt=round(min(RECLAIM * r.rec_targets, .6 * r.u_targets), 1) if r.rec_src else 0,
+             back_car=round(min(RECLAIM * r.rec_carries, .6 * r.u_carries), 1) if r.rec_src else 0,
+             back_from=[name_of.get(x, x) for x in r.rec_src.split(', ')] if r.rec_src else [])
     out.append(e)
 
 # no NFL stats yet (rookies, longtime backups): use the expert projection if experts rank them
@@ -740,7 +839,17 @@ def team_strength(season, week):
     return out
 
 
-def ros(season, week, mdl, players, absent=None):
+REC_INFO = {}
+
+
+def back_info(pid):
+    x = REC_INFO.get(pid)
+    if not x or (x[0] < .3 and x[1] < .5):
+        return None
+    return dict(tgt=x[0], car=x[1], frm=[name_of_ro.get(y, y) for y in x[2].split(', ')])
+
+
+def ros(season, week, mdl, players, absent=None, back=None):
     """players: frame with player_id, position, team. Returns dict id -> list of weekly projections week..18 (None on bye)."""
     a = A[(season, week)]
     da = dadj(season, week)
@@ -750,6 +859,12 @@ def ros(season, week, mdl, players, absent=None):
         sched[(r.home_team, r.week)] = r.away_team
         sched[(r.away_team, r.week)] = r.home_team
     f = players.join(a.drop(columns=['position']), on='player_id').dropna(subset=['base_ppr'])
+    if back:
+        f = pd.concat([f, reclaimed(season, week, f, back)], axis=1)
+        for r in f[f.rec_src != ''].itertuples():
+            REC_INFO[r.player_id] = (round(min(RECLAIM * r.rec_targets, .6 * r.u_targets), 1),
+                                     round(min(RECLAIM * r.rec_carries, .6 * r.u_carries), 1), r.rec_src)
+        f = reclaim(f)
     out = {}
     for p in POS:
         sub = f[f.position == p]
@@ -807,7 +922,7 @@ _fa = fp_all.copy()
 _fa.loc[_fa.pos == 'DST', 'gsis_id'] = ['DST-' + _TEAM.get(t, t) for t in _fa.loc[_fa.pos == 'DST', 'team']]
 own.update({g_: v_ for g_, v_ in zip(_fa.gsis_id, _fa.player_owned_avg) if isinstance(g_, str) and not pd.isna(v_)})
 pool = universe[universe.position.isin(POS)]
-pr = ros(SEASON, WEEK, model, pool[['player_id', 'position', 'team']], absent=absent_long)
+pr = ros(SEASON, WEEK, model, pool[['player_id', 'position', 'team']], absent=absent_long, back=back_long)
 cvmap = A[(SEASON, WEEK)].cv
 inj_out = {k for k, v in status.items() if v == 'Out'}
 IR_WEEKS = 4   # minimum stay on injured reserve; flagged so the user can check the real timeline
@@ -828,9 +943,7 @@ def zero_out(wk, pid):
     if ret and st in OUT_SET + ('Doubtful',):
         t_ = pid_team.get(pid)
         return [x if x is None or (team_week_date.get((t_, WEEK + i)) or '9999') >= ret else 0.0 for i, x in enumerate(wk)]
-    if pid in EXEMPT:
-        return [None if x is None else 0.0 for x in wk]
-    if pid in ON_IR or st == 'IR':
+    if pid in ON_IR or pid in EXEMPT or st in ('IR', 'Exempt'):
         n = 0
         for i, x in enumerate(wk):
             if x is not None and n < IR_WEEKS:
@@ -858,7 +971,7 @@ for r in pool.itertuples():
                        own=None if o_ is None or pd.isna(o_) else round(float(o_)),
                        rs=round(float(a_.base_std / a_.base_ppr), 3) if a_.base_ppr > 0 else 1, rh=round(float(a_.base_half / a_.base_ppr), 3) if a_.base_ppr > 0 else 1,
                        status=status.get(r.player_id, ''), adds=NEWS['trending'].get(r.player_id), num=JERSEY.get(r.player_id),
-                       news=(news_by.get(r.player_id) or {}).get('news')))
+                       news=(news_by.get(r.player_id) or {}).get('news'), back=back_info(r.player_id)))
 
 # kickers, rest of season: baseline scaled by each team's expected scoring, plus dome games
 ts_ = team_strength(SEASON, WEEK)
