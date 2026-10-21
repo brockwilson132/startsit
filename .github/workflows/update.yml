@@ -4,6 +4,12 @@ name: Update projections
 on:
   schedule:
     - cron: '7 * * * *'
+    # game windows (UTC): every 10 minutes so late inactives and weather land before lineups lock
+    - cron: '3-53/10 13-23 * * 0'   # Sunday 9am-8pm ET (London games through late afternoon)
+    - cron: '3-53/10 0-4 * * 1'     # Sunday night game
+    - cron: '3-53/10 21-23 * * 1,4' # Monday / Thursday evening
+    - cron: '3-53/10 0-3 * * 2,5'   # Monday / Thursday night game
+    - cron: '3-53/10 16-23 * * 6'   # Saturday games (December and January)
   workflow_dispatch: {}
   push:
     branches: [main]
@@ -33,18 +39,6 @@ jobs:
           key: nfl-cache-${{ steps.day.outputs.day }}
           restore-keys: nfl-cache-
       - run: pip install -r requirements.txt
-      - name: Probe ESPN league (temporary)
-        continue-on-error: true
-        run: |
-          B="https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2026/segments/0/leagues/370896190"
-          for v in mSettings mTeam mRoster mMatchup; do
-            code=$(curl -s -o $v.json -w '%{http_code}' "$B?view=$v")
-            echo "::notice title=league::$v $code $(wc -c < $v.json) bytes $(head -c 100 $v.json | tr -d '\n')"
-          done
-          mkdir -p probe && mv m*.json probe/ || true
-      - uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with: { name: league-probe, path: probe, retention-days: 1 }
       - name: Status rules still pass (if not, the live site keeps its last good version)
         run: python tests/test_status.py
       - run: python pipeline.py

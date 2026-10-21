@@ -25,7 +25,7 @@
   --turf:#1E6B45; --turf-2:#195C3B; --turf-hi:#2A8456; --chalk:#F4F7F2; --chalk-dim:rgba(244,247,242,.62); --chalk-line:rgba(244,247,242,.22);
   --yellow:#F2C21B; --yellow-ink:#2B2200;
   --up:#1E7A4C; --up-bg:#E3F1E8; --down:#B8402D; --down-bg:#F8E5E1; --warn-bg:#FBF1CF; --warn-ink:#5E4700;
-  --s-model:#1baf7a; --s-exp:#2a78d6; --s-veg:#eb6834;
+  --s-model:#1baf7a; --s-exp:#2a78d6; --s-veg:#eb6834; --s-app:#6250d6;
   --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --body:Barlow,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --r-sm:8px; --r:14px; --r-lg:20px;
@@ -38,13 +38,13 @@
   --line:#22304A; --line-2:#2C3B57;
   --turf:#17603D; --turf-2:#124F32; --turf-hi:#22804F;
   --yellow:#F5CC2E; --up:#4CC38A; --up-bg:#123326; --down:#F07A64; --down-bg:#3A1C19; --warn-bg:#3A3112; --warn-ink:#F5DB8A;
-  --s-model:#199e70; --s-exp:#3987e5; --s-veg:#d95926;
+  --s-model:#199e70; --s-exp:#3987e5; --s-veg:#d95926; --s-app:#9085e9;
   --shadow:0 1px 0 rgba(0,0,0,.2),0 10px 28px -14px rgba(0,0,0,.6); color-scheme:dark }}
 :root[data-theme="dark"]{
   --bg:#0B1220; --surface:#121C2E; --surface-2:#172338; --ink:#E9EEF6; --ink-2:#C9D2E1; --muted:#9AA6B8; --faint:#6F7C91;
   --line:#22304A; --line-2:#2C3B57; --turf:#17603D; --turf-2:#124F32; --turf-hi:#22804F;
   --yellow:#F5CC2E; --up:#4CC38A; --up-bg:#123326; --down:#F07A64; --down-bg:#3A1C19; --warn-bg:#3A3112; --warn-ink:#F5DB8A;
-  --s-model:#199e70; --s-exp:#3987e5; --s-veg:#d95926;
+  --s-model:#199e70; --s-exp:#3987e5; --s-veg:#d95926; --s-app:#9085e9;
   --shadow:0 1px 0 rgba(0,0,0,.2),0 10px 28px -14px rgba(0,0,0,.6); color-scheme:dark }
 
 /* ---------- base ---------- */
@@ -416,7 +416,7 @@ details.pc[open] .chev{transform:rotate(180deg)}
 .acc-bar.n{background:var(--faint)}.acc-bar.m{background:var(--turf-hi)}
 .lv-bar{background:var(--c)}
 .lv-row.lead .lv-l{font-weight:700}
-.s-model{--c:var(--s-model)}.s-exp{--c:var(--s-exp)}.s-veg{--c:var(--s-veg)}
+.s-app{--c:var(--s-app)}.s-model{--c:var(--s-model)}.s-exp{--c:var(--s-exp)}.s-veg{--c:var(--s-veg)}
 .sw{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c);margin-right:7px;vertical-align:-1px}
 .lv-sum{font-weight:600;font-size:16px;margin:4px 0 4px}
 .lv-chart{position:relative}
@@ -687,7 +687,8 @@ function weeksBack(id,n=5){const s=(DATA.season||[]).find(x=>x.id===id);if(!s)re
     return `<div class="c"><span class="v">${v==null?'':fmt(v,0)}</span><span class="b" style="height:${v==null?0:Math.max(3,Math.max(0,v)/mx*40)}px"></span><span class="w">${bye?'BYE':v==null?'—':'W'+wk}</span></div>`}).join('')}</div>`}
 function backBody(p,k){
   const isK=p.pos==='K',isD=p.pos==='DST',baseV=(p.form+p.usage)*k;
-  const adj=[isD?['Mistakes',p.matchup]:isK?['Indoors',p.matchup*k]:['Matchup',p.matchup*k],['Vegas',p.vegas*k]];
+  const adj=[isD?['Mistakes',p.matchup]:isK?['Matchup',p.matchup*k]:['Matchup',p.matchup*k],['Vegas',p.vegas*k]];
+  if(p.experts_adj)adj.push(['Experts',p.experts_adj*k]);
   return `<div class="bk-sec">${ic('model')}How the ${fmt(val(p))} adds up</div>
     <div class="bk-row"><span class="l">Baseline</span><div class="bk-tr"><div class="f" style="left:-1px;width:${Math.min(100,baseV/Math.max(val(p),baseV,1)*100)}%"></div></div><span class="v">${fmt(baseV)}</span></div>`+
     adj.map(([l,v])=>`<div class="bk-row"><span class="l">${l}</span><div class="bk-tr c"><div class="f ${v<0?'n':'p'}" style="${v<0?'right:50%':'left:50%'};width:${Math.min(50,Math.abs(v)/5*50)}%"></div></div><span class="v">${v>0?'+':''}${fmt(v)}</span></div>`).join('')+
@@ -1036,7 +1037,7 @@ acc(){
 live(){
   const SB=M.scoreboard;
   if(!SB)return `<h2>Model vs experts vs Vegas</h2><p>Each week the app saves three projections before kickoff, then scores them once the games are played. The first results show up after this week's games.</p>`;
-  const SRC=[['model','This model','Model','s-model'],['experts','FantasyPros experts','Experts','s-exp'],['vegas','Vegas line','Vegas','s-veg']];
+  const SRC=[['blend','The app (blend)','App','s-app'],['model','Model alone','Model','s-model'],['experts','FantasyPros experts','Experts','s-exp'],['vegas','Vegas line','Vegas','s-veg']];
   const posList=['ALL'].concat(['QB','RB','WR','TE','K','DST'].filter(p=>SB.pos[p]));
   if(!posList.includes(lvPos))lvPos='ALL';
   const tot=lvPos==='ALL'?SB.total:SB.pos[lvPos];
@@ -1086,7 +1087,7 @@ live(){
   ${chart}${table}
   <p class="cap">${weeks.some(k=>k.partial)?'"So far" means the week is still being played; it fills in as games finish. ':''}Counts players the experts projected for at least 3 points who played that week. Kickers and defenses join the scoring from Week 6.</p>
   <h3 class="h3">What each line is</h3>
-  <p><span class="sw s-model"></span><b>This model:</b> the projection shown in the app before kickoff.<br><span class="sw s-exp"></span><b>FantasyPros experts:</b> the consensus projection from dozens of fantasy analysts, captured at the same time.<br><span class="sw s-veg"></span><b>Vegas line:</b> each player's average, adjusted only by his team's Vegas point total for that game. Sportsbooks don't publish free player-level fantasy projections, so this is what the game lines alone predict.</p>
+  <p><span class="sw s-app"></span><b>The app:</b> what the app shows, 60% model + 40% experts.<br><span class="sw s-model"></span><b>Model alone:</b> our model before blending.<br><span class="sw s-exp"></span><b>FantasyPros experts:</b> the consensus projection from dozens of fantasy analysts, captured at the same time.<br><span class="sw s-veg"></span><b>Vegas line:</b> each player's average, adjusted only by his team's Vegas point total for that game. Sportsbooks don't publish free player-level fantasy projections, so this is what the game lines alone predict.</p>
   <p>A couple of weeks is a small sample, and a gap of a point or two in "picks right" is noise. Watch the trend across the season.</p>`},
 
 };
@@ -1105,7 +1106,7 @@ live(){
     const cx=+el.getAttribute('x')+(+el.getAttribute('width'))/2;
     const xs=[...svg.querySelectorAll('circle')].filter(c=>Math.abs(+c.getAttribute('cx')-cx)<(+el.getAttribute('width'))/2+.1);
     const x=xs.length?+xs[0].getAttribute('cx'):cx;cross.setAttribute('x1',x);cross.setAttribute('x2',x);cross.setAttribute('visibility','visible');
-    tip.innerHTML=`<b>Week ${k.wk}${k.partial?' (so far)':''}</b>`+[['model','Model','s-model'],['experts','Experts','s-exp'],['vegas','Vegas','s-veg']].map(([kk,l,c])=>`<div><i class="sw ${c}"></i>${l}<span>${f2(k.o[kk][lvMetric])}</span></div>`).join('')+`<small>${k.o.n} players</small>`;
+    tip.innerHTML=`<b>Week ${k.wk}${k.partial?' (so far)':''}</b>`+[['blend','App','s-app'],['model','Model','s-model'],['experts','Experts','s-exp'],['vegas','Vegas','s-veg']].map(([kk,l,c])=>`<div><i class="sw ${c}"></i>${l}<span>${f2(k.o[kk][lvMetric])}</span></div>`).join('')+`<small>${k.o.n} players</small>`;
     tip.hidden=false;const px=x/vb.width*r.width;tip.style.left=Math.min(Math.max(px-70,0),r.width-150)+'px'};
   document.querySelectorAll('.lv-hit').forEach(el=>{el.onmouseenter=el.onfocus=el.onclick=()=>show(el);el.onmouseleave=el.onblur=()=>{tip.hidden=true;cross.setAttribute('visibility','hidden')}});
 },

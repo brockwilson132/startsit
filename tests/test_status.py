@@ -7,6 +7,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from status import Claim, parse_headline, resolve, final_status  # noqa: E402
 
 HEADLINES = [
+    ("Smith (hamstring) is inactive for Sunday's game against the Bears.", 'inactive', None, None),
+    ("Smith was listed as inactive ahead of Sunday's game.", 'inactive', None, None),
+    ("Smith (ankle) is active for Sunday's game against the Chiefs.", 'playing', None, None),
+    ("Smith (knee) will play Sunday against the Giants, Ian Rapoport reports.", 'playing', None, None),
+    ("Smith no longer carries an injury designation for Sunday's game.", 'playing', None, None),
     # (headline, expected kind, expected long, expected team)
     ("Jacobs (personal) has officially been removed from the Commissioner's Exempt List, Matt Schneidman of The Athletic reports.", 'cleared', 'active', None),
     ("The Packers activated Smith from injured reserve Monday.", 'cleared', 'active', None),
@@ -34,6 +39,8 @@ HEADLINES = [
     ("Smith was claimed off waivers by the Dolphins on Wednesday.", 'signed', 'active', 'MIA'),
 ]
 NOT_EVENTS = [
+    "Smith (ankle) is not available for Sunday's game.",
+    "Smith is questionable and will be a game-time decision.",
     # future tense, speculation, or game recaps: must not change status
     "Smith is expected to be activated from IR this week.",
     "Smith has been designated to return from IR and could be activated Saturday.",
@@ -102,6 +109,12 @@ def test_week_tag_only_from_this_week():
                  Claim('espn', '2026-10-05T10:00', week='Out'),                    # last week's news
                  Claim('injury report', '2026-10-16T16:00', week='Questionable')], WEEK_START)
     assert final_status(r) == 'Questionable', r
+
+
+def test_inactive_headline_beats_friday_report():
+    r = resolve([Claim('injury report', '2026-10-16T20:00', week='Questionable'),
+                 Claim('espn', '2026-10-18T15:30', week='Out', note='inactive')], WEEK_START)
+    assert final_status(r) == 'Out', r
 
 
 def test_game_day_active_clears_questionable():

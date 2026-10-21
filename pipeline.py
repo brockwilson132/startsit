@@ -687,6 +687,8 @@ for eid, v in NEWS['espn'].items():
                 c_.team = 'FA'
         if lg == 'active' and c_.week is None:
             c_.week = ''
+        if kind in status_mod.WEEK_OF_KIND:
+            c_.week = status_mod.WEEK_OF_KIND[kind]
         if tm:
             c_.team = tm
         c_.note = kind
@@ -991,6 +993,19 @@ for r in universe_wk[universe_wk.team.isin(bye_teams)].itertuples():
              cv=0.0, gp=0)
     out.append(e)
 
+# Blend with the FantasyPros consensus. On this season's saved snapshots (weeks 4-6, ~700 player-weeks)
+# 60% model / 40% experts beat both alone: average miss 5.33 (model 5.47, experts 5.30) and close calls
+# 58.8% (model 58.6%, experts 57.5%). The live scoreboard keeps scoring the raw model, experts and blend.
+BLEND = 0.6
+for e in out:
+    e['model'] = e['proj']
+    if e.get('src') == 'experts' or e['final'] or e['bye'] or e['status'] in OUT_SET or e['proj'] <= 0 or e.get('fp') is None:
+        continue
+    new = BLEND * e['proj'] + (1 - BLEND) * float(e['fp'])
+    k_ = new / e['proj']
+    e['experts_adj'] = round(new - e['proj'], 2)
+    for f_ in ('proj', 'std', 'half', 'lo', 'hi'):
+        e[f_] = round(e[f_] * k_, 2)
 out.sort(key=lambda x: -x['proj'])
 rk = {}
 for e in out:
@@ -1293,7 +1308,7 @@ for e in out:
     e['vegas_bench'] = None if v is None else round(0.0 if e['status'] in OUT_SET else v, 2)
 
 # snapshot: only games not yet played are written; started games keep the numbers saved before kickoff
-snap = pd.DataFrame([dict(id=p['id'], pos=p['pos'], model=p['proj'], fp_pts=p['fp'], vegas=p['vegas_bench']) for p in out
+snap = pd.DataFrame([dict(id=p['id'], pos=p['pos'], model=p.get('model', p['proj']), fp_pts=p['fp'], vegas=p['vegas_bench'], blend=p['proj']) for p in out
                      if not p['final'] and not p['bye']])
 snap_path = os.path.join(HIST, f'ecr_{SEASON}_{WEEK}.csv')
 if os.path.exists(snap_path):
@@ -1313,7 +1328,7 @@ def week_actuals(season, week):
     return rows
 
 
-SRC = ['model', 'fp_pts', 'vegas']
+SRC = ['blend', 'model', 'fp_pts', 'vegas']
 
 
 def score(f):
@@ -1331,7 +1346,7 @@ def score(f):
     for c, k_ in [('fp_pts', 'experts'), ('vegas', 'vegas')]:
         eo = np.abs(f[c] - f.act)
         h2h[k_] = round(float(((em < eo) + 0.5 * (em == eo)).mean() * 100), 1)   # % of players the model was closer
-    return {'model': out_['model'], 'experts': out_['fp_pts'], 'vegas': out_['vegas'], 'h2h': h2h, 'n': int(len(f))}
+    return {'blend': out_['blend'], 'model': out_['model'], 'experts': out_['fp_pts'], 'vegas': out_['vegas'], 'h2h': h2h, 'n': int(len(f))}
 
 
 sb_weeks, sb_rows = [], []
@@ -1360,6 +1375,12 @@ for fn in sorted(os.listdir(HIST), key=lambda x: (len(x), x)):
                     rows_.append((r.id, r.pos, t_, o_, impk.get((SEASON, w, t_), np.nan), impk.get((SEASON, w, o_), np.nan)))
         vb = vegas_bench(SEASON, w, rows_)
         e_.loc[miss_v, 'vegas'] = e_.loc[miss_v, 'id'].map(vb)
+    # weeks saved before the blend existed: rebuild it from the same pre-game numbers
+    if 'blend' not in e_:
+        e_['blend'] = np.nan
+    _nb = e_.blend.isna()
+    e_.loc[_nb, 'blend'] = np.where(e_.loc[_nb, 'fp_pts'].notna() & (e_.loc[_nb, 'model'] > 0),
+                                    BLEND * e_.loc[_nb, 'model'] + (1 - BLEND) * e_.loc[_nb, 'fp_pts'], e_.loc[_nb, 'model'])
     e_['act'] = e_.id.map(lambda x: acts[x][0] if x in acts else np.nan)
     e_ = e_.dropna(subset=['act', 'model', 'fp_pts', 'vegas'])
     e_ = e_[(e_.fp_pts >= 3) | e_.pos.isin(['K', 'DST'])]

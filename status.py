@@ -62,11 +62,17 @@ _RULES = [
     ('released', 'FA', re.compile(r"\b(released|waived|cut|terminated)\b(?![^.;]{0,20}\b(from|off) (injured reserve|IR|the "
                                   r"practice squad)\b)|\bparted ways\b", re.I)),
     ('traded', None, re.compile(r"\b(traded|dealt|shipped|acquired)\b", re.I)),
+    ('inactive', None, re.compile(r"\b(is|was|has been|will be|been)\b[^.;]{0,25}\binactive\b|\b(listed|named) (as )?inactive\b|"
+                                  r"\binactives?\b[^.;]{0,30}\b(include|list)", re.I)),
+    ('playing', None, re.compile(r"\b(is|was)\b[^.;]{0,15}\b(officially )?(active|available)\b(?! roster)|\bwill (play|suit up|start)\b|"
+                                 r"\bno (longer (carries|has) an )?injury designation\b|\bcleared to (play|return)\b|"
+                                 r"\b(off|removed from) the injury report\b", re.I)),
     ('signed', 'active', re.compile(r"\b(signed|signs|re-signed|claimed off waivers|promoted|agreed to (a )?(one-year|two-year|"
                                     r"multi-year|\d+-year)? ?(deal|contract))\b", re.I)),
 ]
 # words that mean the headline is talking about status at all; used to catch phrasings the rules miss
-STATUS_WORDS = re.compile(r"\b(exempt|injured reserve|reserve/|activated|reinstated|released|waived|traded|"
+WEEK_OF_KIND = {'inactive': 'Out', 'playing': ''}     # this-week tags implied by game-day headlines
+STATUS_WORDS = re.compile(r"\b(inactive|exempt|injured reserve|reserve/|activated|reinstated|released|waived|traded|"
                           r"suspend|signed|PUP|non-football)\b", re.I)
 
 
@@ -92,6 +98,8 @@ def parse_headline(txt):
     for kind, long, rx in _RULES:
         if rx.search(first):
             if kind == 'no change':
+                return None
+            if kind in WEEK_OF_KIND and re.search(r"\b(not|won't|isn't|wasn't|questionable|doubtful|game-time|uncertain)\b|n't\b", first, re.I):
                 return None
             team = team_in(first) if kind in ('traded', 'signed') else None
             if kind == 'signed' and not team:
