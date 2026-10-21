@@ -1324,7 +1324,8 @@ function privateHelp(){
     <form id="authForm"><label>espn_s2<input id="s2In" autocomplete="off" spellcheck="false" placeholder="AEB…" value="${esc(AUTH&&AUTH.s2||'')}"></label>
       <label>SWID<input id="swidIn" autocomplete="off" spellcheck="false" placeholder="{XXXXXXXX-XXXX-…}" value="${esc(AUTH&&AUTH.swid||'')}"></label>
       <button class="btn">Connect privately</button>
-      <button type="button" class="btn ghost" id="toPhone">Finish on my phone instead</button></form>
+      <button type="button" class="btn ghost" id="toPhone">Finish on my phone instead</button>
+      ${AUTH?`<button type="button" class="linkish" id="forgetAuth" style="align-self:center;margin-top:4px">Remove saved cookies and league from this device</button>`:''}</form>
     <p class="cap" id="toPhoneMsg" hidden></p>
     <details><summary>Where do I find these?</summary><ol>
       <li>On a computer, log in at <b>fantasy.espn.com</b> in Chrome.</li>
@@ -1356,6 +1357,7 @@ function renderTeam(){
       try{if(navigator.share){await navigator.share({title:'Start/Sit setup',url:u});msg.textContent='Open the link on your phone.'}
         else{await navigator.clipboard.writeText(u);msg.textContent='Link copied. Send it to yourself (only yourself; it contains your ESPN cookies) and open it on your phone.'}}
       catch(e){prompt('Copy this link and open it on your phone (it contains your ESPN cookies, so send it only to yourself):',u)}};
+    const fa=$('#forgetAuth');if(fa)fa.onclick=()=>{AUTH=null;store.set('ss_espn_auth',null);LG=null;store.set('ss_league',null);lgPending='';lgErr=null;renderTeam()};
     const af=$('#authForm');if(af)af.onsubmit=e=>{e.preventDefault();const s2=$('#s2In').value.trim(),swid=$('#swidIn').value.trim();
       const s2c=cleanS2(s2), swc=cleanSwid(swid);
       if(s2c.length<20||!swc){lgErr='badformat';renderTeam();return}
