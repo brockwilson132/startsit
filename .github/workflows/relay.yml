@@ -1,6 +1,6 @@
 name: Deploy ESPN relay
 # Deploys relay/worker.js to Cloudflare Workers as "startsit-relay" whenever it changes.
-# Needs repo secrets CLOUDFLARE_API_TOKEN (template "Edit Cloudflare Workers") and CLOUDFLARE_ACCOUNT_ID.
+# Needs repo secret CLOUDFLARE_API_TOKEN (template "Edit Cloudflare Workers"); the account is read from the token.
 on:
   push:
     branches: [main]
@@ -10,7 +10,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - if: env.HAS_TOKEN != 'true'
@@ -20,7 +20,6 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy relay/worker.js --name startsit-relay --compatibility-date 2026-01-01
       - if: env.HAS_TOKEN == 'true'
         run: |
