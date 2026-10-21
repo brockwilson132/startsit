@@ -76,7 +76,7 @@ main{max-width:600px;margin:0 auto;padding:4px 16px calc(96px + var(--bot))}
 .screen{animation:none}
 
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
-  border-top:1px solid var(--line);padding:0 6px var(--bot);display:grid;grid-template-columns:repeat(5,1fr)}
+  border-top:1px solid var(--line);padding:0 4px var(--bot);display:grid;grid-template-columns:repeat(6,1fr)}
 .tabbar button{position:relative;border:0;background:none;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--faint);font:600 11.5px var(--body)}
 .tabbar svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .tabbar button[aria-selected="true"]{color:var(--ink)}
@@ -142,6 +142,41 @@ main{max-width:600px;margin:0 auto;padding:4px 16px calc(96px + var(--bot))}
 .bc-photo::before{content:"";position:absolute;left:-30%;right:-30%;bottom:16px;height:16px;background:linear-gradient(var(--tc2) 0 5px,transparent 5px 11px,var(--tc2) 11px 16px);transform:rotate(-8deg);opacity:.85;pointer-events:none}
 .bc-photo .crest{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .crest{flex:none;display:block}
+/* my team */
+.connect{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:22px 18px;text-align:center}
+.connect .cn-ic{width:52px;height:52px;margin:0 auto 10px;border-radius:50%;display:grid;place-items:center;background:var(--up-bg);color:var(--up)}
+.connect .cn-ic .ic{width:26px;height:26px}
+.connect b{font:800 22px var(--display);display:block}
+.connect p{color:var(--muted);font-size:14px;margin:6px 0 14px}
+.connect form{display:flex;gap:8px}
+.connect input{flex:1;min-width:0;height:46px;border-radius:12px;border:1px solid var(--line-2);background:var(--bg);color:var(--ink);padding:0 12px;font:500 15px var(--body)}
+.connect .err{color:var(--down);margin-top:10px}
+.tm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:10px}
+.tm-head .h2{margin:0}
+.iconbtn{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);display:grid;place-items:center;flex:none}
+.moves{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.mv{display:grid;grid-template-columns:38px 1fr 18px;gap:10px;align-items:center;text-align:left;width:100%;border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:11px 12px;box-shadow:var(--shadow);color:var(--ink)}
+.mv>.ic{width:16px;height:16px;color:var(--faint)}
+.mv-i{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--surface-2)}
+.mv-i .ic{width:20px;height:20px}
+.mv.up .mv-i{background:var(--up-bg);color:var(--up)}.mv.bad .mv-i{background:var(--down-bg);color:var(--down)}.mv.warn .mv-i{background:var(--warn-bg);color:var(--warn-ink)}
+.mv-t b{display:block;font:800 17px/1.15 var(--display);letter-spacing:.01em}
+.mv-t small{display:block;color:var(--muted);font-size:13px;margin-top:2px;line-height:1.35}
+.lu{margin-top:8px}
+.lu-row{display:grid;grid-template-columns:44px minmax(0,1fr) 54px;gap:8px;align-items:center;padding:9px 12px 9px 10px;border-top:1px solid var(--line);cursor:pointer}
+.lu-row:first-child{border-top:0}
+.lu-s{font:800 13px var(--display);letter-spacing:.06em;color:var(--muted);background:var(--surface-2);border-radius:7px;text-align:center;padding:5px 0}
+.lu-p{display:flex;align-items:center;gap:9px;min-width:0}
+.lu-p b{display:block;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lu-p small{display:block;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lu-p small em{font-style:normal;color:var(--up);font-weight:600}
+.lu-v{text-align:right;font:800 18px var(--display);font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:flex-end;gap:4px}
+.lu-v .ic{width:13px;height:13px;color:var(--faint)}
+.lu-row.moved{background:color-mix(in srgb,var(--up-bg) 60%,transparent)}
+.lu-row.moved .lu-s{background:var(--up);color:#fff}
+.lu-row.bench .lu-v{color:var(--muted);font-size:16px}
+.tm-pick{width:100%;text-align:left;border:0;border-top:1px solid var(--line);grid-template-columns:44px 0 1fr 20px!important}
+.tm-pick .ic{width:16px;height:16px;color:var(--faint)}
 .wx{display:inline-flex;align-items:center;gap:3px;margin-top:3px;font-size:12px;color:var(--muted);white-space:nowrap}
 .wx .ic{width:13px;height:13px}
 .wx.bad{color:var(--warn-ink,#9a6700)}
@@ -492,6 +527,7 @@ footer .linkish{font-size:14px}
 </header>
 
 <main>
+  <section id="s-team" class="screen" aria-label="My team" hidden></section>
   <section id="s-ss" class="screen" aria-label="Start or sit"></section>
   <section id="s-wv" class="screen" aria-label="Waivers" hidden></section>
   <section id="s-rank" class="screen" aria-label="Rankings" hidden></section>
@@ -501,6 +537,7 @@ footer .linkish{font-size:14px}
 </main>
 
 <nav class="tabbar" role="tablist" aria-label="Sections">
+  <button role="tab" data-tab="team" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M8.5 3.5 4 6v5h3v9.5h10V11h3V6l-4.5-2.5a3.5 3.5 0 0 1-7 0z"/></svg>Team</button>
   <button role="tab" data-tab="ss" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M12 3.5v17M6.5 20.5h11M4 7.5h16"/><path d="M6.5 7.5L3.6 13.6a3 3 0 0 0 5.8 0L6.5 7.5zM17.5 7.5l-2.9 6.1a3 3 0 0 0 5.8 0l-2.9-6.1z"/></svg>Start/Sit</button>
   <button role="tab" data-tab="wv" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M7.5 4L3.5 8l4 4M3.5 8H17M16.5 20l4-4-4-4M20.5 16H7"/></svg>Waivers</button>
   <button role="tab" data-tab="rank" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 6h2.5M4 12h2.5M4 18h2.5M10 6h10M10 12h7M10 18h4"/></svg>Rankings</button>
@@ -524,7 +561,7 @@ setData(DATA);
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let S=store.get('ss_scoring','proj'); if(!['proj','half','std'].includes(S))S='proj';
-let tab=store.get('ss_tab','ss'); if(!['ss','wv','rank','def','how'].includes(tab))tab='ss';
+let tab=store.get('ss_tab',null); if(!['team','ss','wv','rank','def','how'].includes(tab))tab=(store.get('ss_league',null)||{}).team!=null?'team':'ss';
 
 /* ---------- formatting & helpers ---------- */
 const fmt=(n,d=1)=>(Math.round(n*10**d)/10**d).toFixed(d);
@@ -584,9 +621,9 @@ function header(){
   $('#footLive').onclick=()=>{howSec='live';go('how')};
 }
 function go(t){tab=t;store.set('ss_tab',t);$$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
-  ['ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==t);
+  ['team','ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==t);
   render(t);window.scrollTo({top:0})}
-function render(t){({ss:renderSS,wv:renderWV,rank:renderRank,def:renderDef,how:renderHow})[t]()}
+function render(t){({team:renderTeam,ss:renderSS,wv:renderWV,rank:renderRank,def:renderDef,how:renderHow})[t]()}
 $$('.tabbar button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 $$('.fmt button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.s===S);b.onclick=()=>{S=b.dataset.s;store.set('ss_scoring',S);$$('.fmt button').forEach(x=>x.setAttribute('aria-pressed',x===b));render(tab)}});
 addEventListener('scroll',()=>$('#topbar').classList.toggle('scrolled',scrollY>4),{passive:true});
@@ -1135,11 +1172,172 @@ norm(){
   $('#wslide').oninput=upd; upd()}
 };
 
+/* ---------- my team (ESPN league) ----------
+   Read straight from ESPN in the browser (ESPN allows this site's origin). Public leagues only: nothing is
+   stored anywhere but this phone. Each person connects their own league and picks their own team. */
+const ESPN_PRO={1:'ATL',2:'BUF',3:'CHI',4:'CIN',5:'CLE',6:'DAL',7:'DEN',8:'DET',9:'GB',10:'TEN',11:'IND',12:'KC',13:'LV',14:'LA',15:'MIA',16:'MIN',17:'NE',18:'NO',19:'NYG',20:'NYJ',21:'PHI',22:'ARI',23:'PIT',24:'LAC',25:'SF',26:'SEA',27:'TB',28:'WAS',29:'CAR',30:'JAX',33:'BAL',34:'HOU'};
+const ESPN_POS={1:'QB',2:'RB',3:'WR',4:'TE',5:'K',16:'DST'};
+const SLOT_OK={0:['QB'],2:['RB'],3:['RB','WR'],4:['WR'],5:['WR','TE'],6:['TE'],7:['QB','RB','WR','TE'],16:['DST'],17:['K'],23:['RB','WR','TE']};
+const SLOT_NAME={0:'QB',2:'RB',3:'RB/WR',4:'WR',5:'WR/TE',6:'TE',7:'OP',16:'D/ST',17:'K',23:'FLEX',20:'BN',21:'IR'};
+let LG=store.get('ss_league',null);          // {id, team, at, data}
+let byEspn={}, wByEspn={};
+function indexEspn(){byEspn={};wByEspn={};P.forEach(p=>{if(p.espn)byEspn[p.espn]=p});W.forEach(p=>{if(p.espn)wByEspn[p.espn]=p})}
+function leagueIdFrom(s){const m=String(s||'').match(/leagueId=(\d+)/i)||String(s||'').match(/^\s*(\d{4,})\s*$/);return m?m[1]:null}
+async function fetchLeague(id){
+  const u=`https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${M.season}/segments/0/leagues/${id}?view=mTeam&view=mRoster&view=mSettings`;
+  let r;try{r=await fetch(u,{credentials:'omit'})}catch(e){throw {code:'network'}}
+  if(r.status===401||r.status===403)throw {code:'private'};
+  if(r.status===404)throw {code:'missing'};
+  if(!r.ok)throw {code:'http',status:r.status};
+  return parseLeague(await r.json())}
+function parseLeague(j){
+  const s=j.settings||{}, rs=s.rosterSettings||{}, sc=s.scoringSettings||{};
+  const rec=(sc.scoringItems||[]).find(x=>x.statId===53), pr=rec?rec.points:0;
+  const members=Object.fromEntries((j.members||[]).map(m=>[m.id,(m.firstName?`${m.firstName} ${m.lastName||''}`:m.displayName||'').trim()]));
+  return {name:s.name||'Your league',fmt:pr>=1?'proj':pr>=.5?'half':'std',
+    slots:Object.entries(rs.lineupSlotCounts||{}).map(([k,v])=>[+k,+v]).filter(([k,v])=>v>0&&SLOT_OK[k]),
+    teams:(j.teams||[]).map(t=>({id:t.id,name:(t.name||`${t.location||''} ${t.nickname||''}`).trim()||t.abbrev||('Team '+t.id),abbrev:t.abbrev||'',
+      owner:members[(t.owners||[])[0]]||'',
+      roster:((t.roster||{}).entries||[]).map(e=>{const pl=(e.playerPoolEntry||{}).player||{};
+        return {espn:e.playerId,slot:e.lineupSlotId,name:pl.fullName||'',pos:ESPN_POS[pl.defaultPositionId]||'',pro:ESPN_PRO[pl.proTeamId]||''}})}))}}
+/* a roster entry -> our player (this week) and waiver row (rest of season) */
+function ourPlayer(e){if(e.pos==='DST'||e.espn<0){const id='DST-'+e.pro;return {p:byId[id],w:wById[id]}}return {p:byEspn[e.espn],w:wByEspn[e.espn]}}
+function myTeam(){return LG&&LG.data?LG.data.teams.find(t=>t.id===LG.team):null}
+function rostered(){const s=new Set();(LG&&LG.data?LG.data.teams:[]).forEach(t=>t.roster.forEach(e=>{const o=ourPlayer(e);if(o.p)s.add(o.p.id);if(o.w)s.add(o.w.id)}));return s}
+const wk=p=>!p||inactive(p)||p.bye?0:(p.final&&actual(p)!=null?actual(p):val(p));     // this week's value (actual once played)
+/* kickoff in ET -> a real instant, whatever the daylight-saving offset that day */
+function kickoff(p){if(!p||!p.date||!p.time)return null;const g=new Date(`${p.date}T${p.time}:00Z`);
+  const off=(new Date(g.toLocaleString('en-US',{timeZone:'UTC'}))-new Date(g.toLocaleString('en-US',{timeZone:'America/New_York'})));return new Date(g.getTime()+off)}
+const locked=p=>!!p&&(p.final||(kickoff(p)||Infinity)<=new Date());
+/* the best lineup you can still set: players whose game has started stay where ESPN has them */
+function lineupNow(mine,L){
+  const lk=mine.filter(x=>x.slot!==20&&x.slot!==21&&locked(x.p)), used={};lk.forEach(x=>used[x.slot]=(used[x.slot]||0)+1);
+  const free=L.slots.map(([k,n])=>[k,n-(used[k]||0)]).filter(([k,n])=>n>0);
+  const r=bestLineup(mine.filter(x=>x.slot!==21&&!locked(x.p)),free,x=>wk(x.p)+(x.slot!==20?.5:0));   // don't churn the lineup for less than half a point
+  const starters=lk.map(x=>({slot:x.slot,x,v:wk(x.p),lock:true})).concat(r.starters.map(s=>({...s,v:s.x?wk(s.x.p):0})));
+  const ord=Object.fromEntries(L.slots.map(([k],i)=>[k,i]));starters.sort((a,b)=>(ord[a.slot]??99)-(ord[b.slot]??99));
+  return {starters,total:starters.reduce((a,s)=>a+s.v,0)}}
+/* best lineup: fill the narrowest slots first; with nested eligibility (RB, WR, TE, then FLEX) greedy is optimal */
+function bestLineup(players,slots,value){
+  const pool=players.filter(x=>x.p||x.w).slice(), out=[];
+  const order=slots.flatMap(([k,n])=>Array(n).fill(k)).sort((a,b)=>SLOT_OK[a].length-SLOT_OK[b].length);
+  for(const k of order){let bi=-1,bv=-1e9;pool.forEach((x,i)=>{const pos=(x.p||x.w).pos;if(SLOT_OK[k].includes(pos)){const v=value(x);if(v>bv){bv=v;bi=i}}});
+    if(bi>=0){out.push({slot:k,x:pool[bi],v:bv});pool.splice(bi,1)}else out.push({slot:k,x:null,v:0})}
+  return {starters:out,total:out.reduce((a,s)=>a+s.v,0),bench:pool}}
+const rosV=x=>x.w?rosT(x.w):0;
+function teamEntries(t){return t.roster.filter(e=>e.slot!==21).map(e=>({...e,...ourPlayer(e)}))}
+
+/* proactive moves for my team, most valuable first */
+function moves(){
+  const me=myTeam();if(!me)return [];
+  const L=LG.data, mine=teamEntries(me), out=[], taken=rostered();
+  // 1. lineup: optimal this week vs what ESPN has set (locked players stay put)
+  const opt=lineupNow(mine,L);
+  const startIds=new Set(opt.starters.filter(s=>s.x).map(s=>s.x.espn));
+  const curStart=mine.filter(x=>x.slot!==20&&x.slot!==21), curPts=curStart.reduce((s,x)=>s+wk(x.p),0);
+  const ins=mine.filter(x=>(x.slot===20||x.slot===21)&&startIds.has(x.espn)), outs=curStart.filter(x=>!startIds.has(x.espn)), gain=opt.total-curPts;
+  if(ins.length&&gain>=.3)out.push({kind:'lineup',score:gain*3,icon:'flip',
+    title:ins.length===1&&outs.length===1?`Start ${short(ins[0].name)} over ${short(outs[0].name)}`:`Start ${ins.map(x=>short(x.name)).join(', ')}`,
+    sub:`+${fmt(gain)} pts this week${ins.length>1||outs.length!==1?` · sit ${outs.map(x=>short(x.name)).join(', ')}`:''}`,
+    act:ins.length===1&&outs.length===1?{type:'cmp',ids:[ins[0].p&&ins[0].p.id,outs[0].p&&outs[0].p.id]}:{type:'lineup'},tone:'up'});
+  // 2. starters who won't play and nobody healthy behind them
+  opt.starters.forEach(s=>{if((!s.x||s.v<=0)&&s.slot!==16&&s.slot!==17){const best=P.filter(q=>SLOT_OK[s.slot].includes(q.pos)&&live(q)&&!taken.has(q.id)).sort((a,b)=>val(b)-val(a))[0];
+    if(best)out.push({kind:'hole',score:20,icon:'cross',title:`Empty ${SLOT_NAME[s.slot]} spot: pick up ${short(best.name)}`,sub:`${fmt(val(best))} pts projected · free agent`,act:{type:'add',id:best.id},tone:'bad'})}});
+  // 3. waiver upgrades for the rest of the season: free agent vs your least valuable bench player at any position
+  const luR=entries=>bestLineup(entries,L.slots,rosV).total, myBase=luR(mine);
+  const fas=W.filter(w=>!taken.has(w.id)&&!['K','DST'].includes(w.pos)&&w.status!=='FA').sort((a,b)=>rosT(b)-rosT(a)).slice(0,60);
+  const droppable=mine.filter(x=>x.w&&!['K','DST'].includes(x.w.pos)&&x.slot!==21);
+  const wvIdeas=[];
+  fas.forEach(a=>{const ax={espn:'fa'+a.id,name:a.name,w:a,p:byId[a.id]};let best=null;
+    droppable.forEach(d=>{const g=luR(mine.filter(x=>x!==d).concat([ax]))-myBase+.2*(rosT(a)-rosT(d.w));if(!best||g>best.g)best={a,d,g}});
+    if(best&&best.g>=8)wvIdeas.push(best)});
+  const usedDrop=new Set();
+  wvIdeas.sort((x,y)=>y.g-x.g).forEach(m=>{if(usedDrop.size>=3||usedDrop.has(m.d.espn))return;usedDrop.add(m.d.espn);
+    out.push({kind:'waiver',score:m.g/2,icon:'up',title:`Add ${short(m.a.name)}, drop ${short(m.d.name)}`,sub:`+${fmt(m.g,0)} pts rest of season · ${m.a.own==null?'<5':m.a.own}% rostered`,
+      act:{type:'wv',drop:m.d.w.id,add:m.a.id},tone:'up'})});
+  // 4. streaming kicker and defense for this week
+  ['K','DST'].forEach(pos=>{const cur=mine.filter(x=>x.p&&x.p.pos===pos).sort((a,b)=>wk(b.p)-wk(a.p))[0];if(cur&&locked(cur.p))return;
+    const best=P.filter(q=>q.pos===pos&&live(q)&&!taken.has(q.id)).sort((a,b)=>val(b)-val(a))[0];
+    const g=best?val(best)-(cur?wk(cur.p):0):0;
+    if(best&&g>=2)out.push({kind:'stream',score:g*1.5,icon:pos==='K'?'goal':'shield',title:`Stream ${short(best.name)} at ${pos==='DST'?'D/ST':'K'}`,sub:`+${fmt(g)} pts this week${cur?' over '+short(cur.name):''}`,act:{type:'add',id:best.id},tone:'up'})});
+  // 5. trades that help both sides' starting lineups for the rest of the season (1-for-1)
+  const lu=luR, ideas=[];
+  L.teams.filter(t=>t.id!==me.id).forEach(t=>{const theirs=teamEntries(t),theirBase=lu(theirs);
+    mine.forEach(a=>{if(!a.w||['K','DST'].includes(a.w.pos))return;theirs.forEach(b=>{if(!b.w||['K','DST'].includes(b.w.pos)||b.w.pos===a.w.pos)return;
+      const ra=rosT(a.w),rb=rosT(b.w);if(rb<ra*.6||rb>ra*1.6)return;      // roughly fair on raw value
+      const g1=lu(mine.filter(x=>x!==a).concat([b]))-myBase;if(g1<8)return;
+      const g2=lu(theirs.filter(x=>x!==b).concat([a]))-theirBase;if(g2<=0)return;
+      ideas.push({t,a,b,g1,g2})})})});
+  ideas.sort((x,y)=>Math.min(y.g1,y.g2*2)-Math.min(x.g1,x.g2*2)).slice(0,3).forEach(m=>
+    out.push({kind:'trade',score:m.g1/3,icon:'turn',title:`Trade ${short(m.a.name)} for ${short(m.b.name)}`,sub:`with ${esc(m.t.name)} · you +${fmt(m.g1,0)}, them +${fmt(m.g2,0)} rest of season`,act:{type:'trade',a:m.a.w.id,b:m.b.w.id},tone:'up'}));
+  // 6. news on my players
+  mine.forEach(x=>{const p=x.p;if(!p)return;const i=inj(p),isStart=x.slot!==20;
+    if(p.upd)out.push({kind:'news',score:15,icon:'news',title:`${short(x.name)}: ${p.upd.what}`,sub:`${p.upd.src}, ${shortDate(p.upd.date)}`,act:{type:'open',id:p.id},tone:/IR|Released|Suspended|exempt|Not on/.test(p.upd.what)?'bad':'up'});
+    else if(i&&isStart&&live(p))out.push({kind:'injury',score:i.lvl==='out'?18:i.lvl==='bad'?12:6,icon:'cross',title:`${short(x.name)} is ${SHORTTAG[i.tag]||i.tag}`,sub:i.txt,act:{type:'open',id:p.id},tone:i.lvl==='warn'?'warn':'bad'});
+    if(p.qb&&p.qb_adj&&Math.abs(p.qb_adj)>=.5)out.push({kind:'qb',score:4,icon:'throw',title:`${short(x.name)}: ${p.qb.new} at QB`,sub:`${p.qb_adj>0?'+':''}${fmt(p.qb_adj*scale(p))} pts vs with ${p.qb.old}`,act:{type:'open',id:p.id},tone:p.qb_adj>0?'up':'bad'})});
+  return out.sort((a,b)=>b.score-a.score)}
+
+let lgBusy=false, lgErr=null;
+async function connectLeague(input){
+  const id=leagueIdFrom(input);if(!id){lgErr='Paste the league link from ESPN, or just the number after leagueId=';renderTeam();return}
+  lgBusy=true;lgErr=null;renderTeam();
+  try{const data=await fetchLeague(id);LG={id,team:null,at:Date.now(),data};store.set('ss_league',LG);
+    if(data.fmt!==S){S=data.fmt;store.set('ss_scoring',S);$$('.fmt button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.s===S))}}
+  catch(e){lgErr=e.code==='private'?'private':e.code==='missing'?'No league with that ID for this season.':e.code==='network'?'Couldn\'t reach ESPN. Check your connection and try again.':`ESPN returned an error (${e.status}).`}
+  lgBusy=false;renderTeam()}
+async function refreshLeague(force){if(!LG||!LG.id)return;if(!force&&LG.at&&Date.now()-LG.at<10*60e3)return;
+  try{const data=await fetchLeague(LG.id);LG={...LG,at:Date.now(),data};store.set('ss_league',LG);if(tab==='team')renderTeam()}catch(e){}}
+function renderTeam(){
+  const el=$('#s-team');indexEspn();
+  if(!LG||!LG.data){
+    el.innerHTML=`<h2 class="h2" style="margin-top:10px">My team</h2>
+    <div class="connect"><div class="cn-ic">${ic('users')}</div><b>Connect your ESPN league</b><p>Paste your league's link. The app reads rosters from ESPN on this phone only; no login.</p>
+      <form id="lgForm"><input id="lgIn" inputmode="url" autocomplete="off" placeholder="fantasy.espn.com/…leagueId=123456" value="${esc(LG&&LG.id||'')}"><button class="btn" ${lgBusy?'disabled':''}>${lgBusy?'Connecting…':'Connect'}</button></form>
+      ${lgErr==='private'?`<div class="alert bad" style="margin-top:12px;text-align:left"><span class="ai">${ic('cross')}</span><span><b>This league is private.</b> The League Manager can open it up on a computer: fantasy.espn.com → LM Tools → Basic Settings → Edit → turn on “Make League Viewable to Public”. It's read-only and only reachable with the league ID.</span></div>`:lgErr?`<p class="err">${esc(lgErr)}</p>`:''}</div>`;
+    $('#lgForm').onsubmit=e=>{e.preventDefault();connectLeague($('#lgIn').value)};return}
+  const L=LG.data;
+  if(LG.team==null||!myTeam()){
+    el.innerHTML=`<h2 class="h2" style="margin-top:10px">Which team is yours?</h2><p class="cap">${esc(L.name)}</p>
+    <div class="list">${L.teams.map(t=>`<button class="li tm-pick" data-team="${t.id}"><span class="rk">${esc(t.abbrev)}</span><span></span><span style="min-width:0"><div class="nm">${esc(t.name)}</div><div class="sub">${esc(t.owner)}</div></span><span>${ic('flip')}</span></button>`).join('')}</div>
+    <p class="cap" style="margin-top:10px"><button class="linkish" id="lgReset">Use a different league</button></p>`;
+    $$('#s-team [data-team]').forEach(b=>b.onclick=()=>{LG.team=+b.dataset.team;store.set('ss_league',LG);renderTeam()});
+    $('#lgReset').onclick=()=>{LG=null;store.set('ss_league',null);renderTeam()};return}
+  const me=myTeam(), mine=teamEntries(me), mv=moves();
+  const opt=lineupNow(mine,L), startIds=new Set(opt.starters.filter(s=>s.x).map(s=>s.x.espn));
+  const cur=mine.filter(x=>x.slot!==20&&x.slot!==21), curPts=cur.reduce((a,x)=>a+wk(x.p),0);
+  const lineRow=s=>{const x=s.x;if(!x)return `<div class="lu-row empty"><span class="lu-s">${SLOT_NAME[s.slot]}</span><span class="muted">Nobody healthy</span><span></span></div>`;
+    const p=x.p||x.w, moved=x.slot===20||x.slot===21;
+    return `<div class="lu-row${moved?' moved':''}" data-open="${p.id}"><span class="lu-s">${SLOT_NAME[s.slot]}</span>
+      <span class="lu-p">${crest(p.team,22)}<span style="min-width:0"><b>${esc(x.name||p.name)}</b><small>${x.p?(x.p.bye?'Bye':x.p.final?'Final':vs(x.p)+' · '+fmtTime(x.p)):'No game data'}${moved?` · <em>from bench</em>`:''}</small></span></span>
+      <span class="lu-v">${s.lock?ic('clock'):''}${x.p&&x.p.final&&actual(x.p)!=null?fmt(actual(x.p)):fmt(wk(x.p))}</span></div>`};
+  el.innerHTML=`<div class="tm-head"><div><h2 class="h2">${esc(me.name)}</h2><p class="cap">${esc(L.name)} · Week ${M.week}</p></div><button class="iconbtn" id="lgMenu" aria-label="League settings">${ic('users')}</button></div>
+    <div class="sec-h"><h3>Moves</h3><small>${mv.length?mv.length+' ideas':''}</small></div>
+    ${mv.length?`<div class="moves">${mv.slice(0,8).map((m,i)=>`<button class="mv ${m.tone}" data-mv="${i}"><span class="mv-i">${ic(m.icon)}</span><span class="mv-t"><b>${esc(m.title)}</b><small>${m.sub}</small></span>${ic('flip')}</button>`).join('')}</div>`
+      :`<div class="empty"><b>Nothing to change</b>Your lineup is set and no free agent beats your bench.</div>`}
+    <div class="sec-h"><h3>Best lineup</h3><small>${fmt(opt.total)} pts${opt.total-curPts>=.3?` · +${fmt(opt.total-curPts)} vs now`:''}</small></div>
+    <div class="list lu">${opt.starters.map(lineRow).join('')}</div>
+    <div class="sec-h"><h3>Bench</h3></div>
+    <div class="list lu">${mine.filter(x=>!startIds.has(x.espn)).map(x=>{const p=x.p||x.w;return p?`<div class="lu-row bench" data-open="${p.id}"><span class="lu-s">${x.slot===21?'IR':'BN'}</span><span class="lu-p">${crest(p.team,22)}<span style="min-width:0"><b>${esc(x.name||p.name)}</b><small>${p.pos}${x.w?' · '+fmt(rosT(x.w),0)+' rest of yr':''}</small></span></span><span class="lu-v">${x.p?fmt(wk(x.p)):''}</span></div>`:`<div class="lu-row bench"><span class="lu-s">BN</span><span class="lu-p"><span><b>${esc(x.name)}</b><small>Not in our data</small></span></span><span></span></div>`}).join('')}</div>
+    <p class="cap" style="margin-top:10px">From ESPN ${LG.at?'at '+new Date(LG.at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):''} · <button class="linkish" id="lgRefresh">Refresh</button></p>`;
+  $$('#s-team [data-mv]').forEach(b=>b.onclick=()=>doMove(mv[+b.dataset.mv]));
+  $$('#s-team [data-open]').forEach(b=>b.onclick=()=>{const id=b.dataset.open;if(byId[id]){picks=[id];save();go('ss')}});
+  $('#lgRefresh').onclick=()=>{LG.at=0;refreshLeague(true)};
+  $('#lgMenu').onclick=()=>{if(confirm('Switch team or league?')){LG.team=null;store.set('ss_league',LG);renderTeam()}};
+}
+function doMove(m){const a=m.act;
+  if(a.type==='cmp'){picks=a.ids.filter(Boolean);save();go('ss')}
+  else if(a.type==='wv'){wv={drop:a.drop,add:a.add};store.set('ss_wv',wv);go('wv')}
+  else if(a.type==='add'){if(byId[a.id]){picks=[a.id];save();go('ss')}}
+  else if(a.type==='trade'){wv={drop:a.a,add:a.b};store.set('ss_wv',wv);go('wv')}
+  else if(a.type==='lineup'){$('#s-team .lu')&&$('#s-team .lu').scrollIntoView({behavior:'smooth',block:'start'})}
+  else if(a.type==='open'){if(byId[a.id]){picks=[a.id];save();go('ss')}}}
+
 /* ---------- boot ---------- */
 setW();header();
 $$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
-['ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==tab);
+['team','ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==tab);
 render(tab);
+refreshLeague(false);
 </script>
 </body>
 </html>

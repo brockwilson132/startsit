@@ -1556,6 +1556,16 @@ except Exception as e:
 WX = {} if OFFLINE else wxmod.kickoff_weather([(r.home_team, r.away_team, r.gameday, r.gametime, r.roof if isinstance(r.roof, str) else None,
                                                  r.location) for r in wk_games[wk_games.home_score.isna()].itertuples()])
 print('weather for', len(WX) // 2, 'outdoor games')
+# ESPN player ids, so a connected ESPN league's rosters map onto our players (defenses map by team in the app)
+GSIS2ESPN = {}
+for e_, g_ in espn2gsis.items():
+    GSIS2ESPN.setdefault(g_, int(e_))
+for e in out:
+    if e['pos'] != 'DST' and e['id'] in GSIS2ESPN:
+        e['espn'] = GSIS2ESPN[e['id']]
+for e in waiver:
+    if e['pos'] != 'DST' and e['id'] in GSIS2ESPN:
+        e['espn'] = GSIS2ESPN[e['id']]
 payload = json.dumps(dict(players=out, defense=defense, sched=SCHED, logos=LOGOS, wx=WX, imp=IMP_NOW, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
 open(os.path.join(OUT, 'data.json'), 'w').write(payload)
 open(os.path.join(OUT, 'data.js'), 'w').write('window.SS_DATA=' + payload + ';\n')
