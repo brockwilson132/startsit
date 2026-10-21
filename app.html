@@ -178,6 +178,7 @@ main{max-width:600px;margin:0 auto;padding:4px 16px calc(96px + var(--bot))}
 .pv{margin-top:14px;text-align:left;border-top:1px solid var(--line);padding-top:14px}
 .pv p{color:var(--ink-2);margin:0 0 10px}
 .pv form{display:flex;flex-direction:column;gap:8px}
+.pv .btn.ghost{background:none;color:var(--ink);border:1px solid var(--line-2)}
 .pv label{display:flex;flex-direction:column;gap:4px;font:600 12.5px var(--body);color:var(--muted)}
 .pv input{flex:none;height:44px;border-radius:12px;border:1px solid var(--line-2);background:var(--bg);color:var(--ink);padding:0 12px;font:500 14px ui-monospace,Menlo,monospace}
 .pv details{margin-top:12px;font-size:14px;color:var(--ink-2)}
@@ -1313,16 +1314,18 @@ async function connectLeague(input){
   lgBusy=true;lgErr=null;renderTeam();
   try{const data=await fetchLeague(id);LG={id,team:LG&&LG.id===id?LG.team:null,at:Date.now(),data};store.set('ss_league',LG);
     if(data.fmt!==S){S=data.fmt;store.set('ss_scoring',S);$$('.fmt button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.s===S))}}
-  catch(e){lgErr=e.code==='private'?'private':e.code==='badauth'?'badauth':e.code==='missing'?'No league with that ID for this season.':e.code==='network'?(e.where==='relay'?'Couldn\'t reach the app\'s relay. Check your connection, or turn off ad or content blockers for this site, and try again.':'Couldn\'t reach ESPN. An ad or content blocker may be blocking it; try turning it off for this site.'):`ESPN returned an error (${e.status}).`}
+  catch(e){lgErr=e.code==='private'?'private':e.code==='badauth'?'badauth':e.code==='missing'?'No league with that ID for this season.':e.code==='network'?(e.where==='relay'?'relaynet':'Couldn\'t reach ESPN. An ad or content blocker may be blocking it; try turning it off for this site.'):`ESPN returned an error (${e.status}).`}
   lgBusy=false;renderTeam()}
 async function refreshLeague(force){if(!LG||!LG.id)return;if(!force&&LG.at&&Date.now()-LG.at<10*60e3)return;
   try{const data=await fetchLeague(LG.id);LG={...LG,at:Date.now(),data};store.set('ss_league',LG);if(tab==='team')renderTeam()}catch(e){}}
 function privateHelp(){
   if(!RELAY)return `<div class="alert bad" style="margin-top:12px;text-align:left"><span class="ai">${ic('cross')}</span><span><b>This league is private.</b> Private leagues need the app's relay, which isn't set up yet. Or the League Manager can turn on “Make League Viewable to Public” (LM Tools → Basic Settings).</span></div>`;
-  return `<div class="pv">${lgErr==='badformat'?`<p class="err">Those don't look like ESPN's values. espn_s2 is a long string starting with AEB; SWID looks like {XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}. Copy just the Value column.</p>`:lgErr==='badauth'?`<p class="err">ESPN didn't accept those cookies. Copy them again; they change when you log out.</p>`:`<p><b>Private league.</b> Add your ESPN cookies once. They stay on this device and only go to ESPN.</p>`}
+  return `<div class="pv">${lgErr==='relaynet'?`<p class="err">This device can't reach the app's relay (some work networks and blockers block Cloudflare's workers.dev). Finish on your phone instead, or try another network.</p>`:lgErr==='badformat'?`<p class="err">Those don't look like ESPN's values. espn_s2 is a long string starting with AEB; SWID looks like {XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}. Copy just the Value column.</p>`:lgErr==='badauth'?`<p class="err">ESPN didn't accept those cookies. Copy them again; they change when you log out.</p>`:`<p><b>Private league.</b> Add your ESPN cookies once. They stay on this device and only go to ESPN.</p>`}
     <form id="authForm"><label>espn_s2<input id="s2In" autocomplete="off" spellcheck="false" placeholder="AEB…" value="${esc(AUTH&&AUTH.s2||'')}"></label>
       <label>SWID<input id="swidIn" autocomplete="off" spellcheck="false" placeholder="{XXXXXXXX-XXXX-…}" value="${esc(AUTH&&AUTH.swid||'')}"></label>
-      <button class="btn">Connect privately</button></form>
+      <button class="btn">Connect privately</button>
+      <button type="button" class="btn ghost" id="toPhone">Finish on my phone instead</button></form>
+    <p class="cap" id="toPhoneMsg" hidden></p>
     <details><summary>Where do I find these?</summary><ol>
       <li>On a computer, log in at <b>fantasy.espn.com</b> in Chrome.</li>
       <li>Right-click the page → <b>Inspect</b> → <b>Application</b> tab → <b>Cookies</b> → <b>https://fantasy.espn.com</b>.</li>
@@ -1330,7 +1333,7 @@ function privateHelp(){
       <li>Then, from the Team tab menu, copy your <b>phone setup link</b> and open it on your phone.</li></ol>
       <p class="cap">Safari: Settings → Advanced → “Show features for web developers”, then Develop → Show Web Inspector → Storage → Cookies.</p></details></div>`}
 /* one link that sets up another device (league, team, cookies). The part after # never reaches any server. */
-function setupLink(){const b=btoa(unescape(encodeURIComponent(JSON.stringify({id:LG.id,team:LG.team,a:AUTH||null})))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+function setupLink(o){o=o||{id:LG.id,team:LG.team,a:AUTH||null};const b=btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   return location.origin+location.pathname+'#setup='+b}
 function readSetup(){const m=location.hash.match(/^#setup=([\w-]+)$/);if(!m)return false;
   try{const j=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')))));
@@ -1344,8 +1347,15 @@ function renderTeam(){
     el.innerHTML=`<h2 class="h2" style="margin-top:10px">My team</h2>
     <div class="connect"><div class="cn-ic">${ic('users')}</div><b>Connect your ESPN league</b><p>Paste your league's link. The app reads rosters from ESPN on this phone only; no login.</p>
       <form id="lgForm"><input id="lgIn" inputmode="url" autocomplete="off" placeholder="fantasy.espn.com/…leagueId=123456" value="${esc(LG&&LG.id||lgPending||'')}"><button class="btn" ${lgBusy?'disabled':''}>${lgBusy?'Connecting…':'Connect'}</button></form>
-      ${lgErr==='private'||lgErr==='badauth'||lgErr==='badformat'?privateHelp():lgErr?`<p class="err">${esc(lgErr)}</p>`:''}</div>`;
+      ${['private','badauth','badformat','relaynet'].includes(lgErr)?privateHelp():lgErr?`<p class="err">${esc(lgErr)}</p>`:''}</div>`;
     $('#lgForm').onsubmit=e=>{e.preventDefault();connectLeague($('#lgIn').value)};
+    const tp=$('#toPhone');if(tp)tp.onclick=async()=>{const id=leagueIdFrom($('#lgIn').value)||lgPending, s2c=cleanS2($('#s2In').value), swc=cleanSwid($('#swidIn').value);
+      const msg=$('#toPhoneMsg');msg.hidden=false;
+      if(!id||s2c.length<20||!swc){msg.textContent='Fill in the league and both cookie boxes first.';return}
+      const u=setupLink({id,team:null,a:{s2:s2c,swid:swc}});
+      try{if(navigator.share){await navigator.share({title:'Start/Sit setup',url:u});msg.textContent='Open the link on your phone.'}
+        else{await navigator.clipboard.writeText(u);msg.textContent='Link copied. Send it to yourself (only yourself; it contains your ESPN cookies) and open it on your phone.'}}
+      catch(e){prompt('Copy this link and open it on your phone (it contains your ESPN cookies, so send it only to yourself):',u)}};
     const af=$('#authForm');if(af)af.onsubmit=e=>{e.preventDefault();const s2=$('#s2In').value.trim(),swid=$('#swidIn').value.trim();
       const s2c=cleanS2(s2), swc=cleanSwid(swid);
       if(s2c.length<20||!swc){lgErr='badformat';renderTeam();return}
