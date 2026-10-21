@@ -14,6 +14,7 @@ import kickers
 import news as newsfeed
 import defense as dstm
 import status as status_mod
+import weather as wxmod
 
 POS = ['QB', 'RB', 'WR', 'TE']
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
@@ -496,6 +497,68 @@ def dst_off_adj(season, week):
     return a.poe / (a.n + 2.0)
 
 
+# ---------------------------------------------------------------- quarterback changes
+# Starting QB per team-game (nflverse lists the projected starter for the coming week too).
+_gq = games[games.season.isin(SEASONS)]
+QB_START = {}
+for r in _gq.itertuples():
+    if isinstance(r.home_qb_id, str):
+        QB_START[(r.season, r.week, r.home_team)] = r.home_qb_id
+    if isinstance(r.away_qb_id, str):
+        QB_START[(r.season, r.week, r.away_team)] = r.away_qb_id
+
+
+def prev_starter(season, week, team):
+    for w in range(week - 1, 0, -1):
+        q = QB_START.get((season, w, team))
+        if q:
+            return q
+    return None
+
+
+# QB quality for his receivers = passing production only (rushing points don't feed WRs/TEs):
+# passing fantasy points per game, this season plus last season shrunk toward it (5 games of prior).
+_qp = d[d.position == 'QB'][['season', 'week', 'player_id', 'attempts']].copy()
+_qp['pfp'] = (0.04 * d.loc[_qp.index, 'passing_yards'].fillna(0) + 4 * d.loc[_qp.index, 'passing_tds'].fillna(0)
+              - 2 * d.loc[_qp.index, 'passing_interceptions'].fillna(0))
+_qp = _qp[_qp.attempts >= 10]
+_QQ = {}
+
+
+def qb_quality(season, week, qid):
+    if (season, week) not in _QQ:
+        cur_ = _qp[(_qp.season == season) & (_qp.week < week)].groupby('player_id').pfp.agg(['sum', 'count'])
+        pri_ = _qp[_qp.season == season - 1].groupby('player_id').pfp.mean()
+        ids_ = set(cur_.index) | set(pri_.index)
+        lg_ = float(pri_.quantile(.3)) if len(pri_) else 12.0
+        _QQ[(season, week)] = {i: (cur_['sum'].get(i, 0) + 5 * pri_.get(i, lg_)) / (cur_['count'].get(i, 0) + 5) for i in ids_}
+    return _QQ[(season, week)].get(qid)
+
+
+def qb_ratio(season, week, team, starter=None):
+    """New starter's baseline over the previous starter's, when the team changes QBs. 1.0 if no change."""
+    new = starter or QB_START.get((season, week, team))
+    old = prev_starter(season, week, team)
+    if not new or not old or new == old:
+        return 1.0, None, None
+    qn, qo = qb_quality(season, week, new), qb_quality(season, week, old)
+    vals = [v for v in _QQ.get((season, week), {}).values()]
+    repl = float(np.quantile(vals, .2)) if vals else 10.0
+    qn = repl if qn is None else qn
+    if qo is None:
+        return 1.0, new, old
+    return float(np.clip(qn / max(qo, 1.0), 0.6, 1.3)), new, old
+
+
+# Backtest (fit 2023-24, test 2025, first game after a QB change): receivers scaled by the new starter's passing
+# production over the old one's. Error on affected players: WR 4.89 -> 4.85, TE 3.97 -> 3.88; RBs got no better, so they skip it.
+QB_BETA = {'WR': 0.3, 'TE': 0.3}
+
+
+# Weather was tested as a model input (wind over 10 mph, cold under 32F, fit on 2023-24, tested on 2025):
+# no position improved beyond noise (QB close calls 56.9% -> 57.1%; K and RB got worse), because Vegas totals
+# already price the forecast in. So forecasts are shown on cards as context, not used in projections.
+
 K_MATCH = 0.25   # backtest (2025): close calls 56.3% -> 57.0%; a DST version added nothing beyond Vegas + giveaways
 KDEF_NOW, KFGA_NOW = k_def_adj(SEASON, WEEK)
 _kopp = kd.set_index(['season', 'week', 'player_id']).opponent_team
@@ -846,6 +909,27 @@ _bk = {t_: [name_of_ro.get(p_, p_) for p_ in ps if p_ in _a.index and _a.positio
             (_a.u_snap[p_] >= .35 or _a.u_targets[p_] >= 3 or _a.u_carries[p_] >= 5)] for t_, ps in back_now.items()}
 print('returning regulars:', sum(len(v) for v in _bk.values()), sorted(n_ for v in _bk.values() for n_ in v))
 up = model.apply(fwk)
+# this week's starting QB: nflverse's listed starter, unless he's out, then the team's best available QB
+_qa = A[(SEASON, WEEK)]
+QB_CHANGE = {}
+for t_ in sorted(set(up.team)):
+    listed = QB_START.get((SEASON, WEEK, t_))
+    if listed and status.get(listed, '') in OUT_SET:
+        cands = [p_ for p_ in universe.player_id[(universe.team == t_) & (universe.position == 'QB')]
+                 if status.get(p_, '') not in OUT_SET and p_ != listed]
+        listed = max(cands, key=lambda p_: _qa.base_ppr.get(p_, 0) if p_ in _qa.index else 0) if cands else None
+    qr, new_, old_ = qb_ratio(SEASON, WEEK, t_, listed)
+    if qr != 1.0 and new_ and old_:
+        QB_CHANGE[t_] = dict(ratio=round(qr, 3), new=name_of_ro.get(new_, new_), old=name_of_ro.get(old_, old_),
+                             old_id=old_, long=status.get(old_, '') in LONG_OUT + ('FA',))
+up['qb_adj'] = 0.0
+for i_, r in up.iterrows():
+    qc, b_ = QB_CHANGE.get(r.team), QB_BETA.get(r.position)
+    if qc and b_:
+        new_p = r.proj * (1 + b_ * (qc['ratio'] - 1))
+        up.at[i_, 'qb_adj'] = new_p - r.proj
+        up.at[i_, 'proj'] = new_p
+print('QB changes this week:', {t_: f"{v['new']} for {v['old']} ({v['ratio']})" for t_, v in QB_CHANGE.items()})
 name_of = dict(zip(universe.player_id, universe.pname))
 name_of.update({k: v for k, v in stat_names.items() if k not in name_of})
 up['kind'] = 'skill'
@@ -900,6 +984,7 @@ for r in up.itertuples():
     e.update(proj=round(proj, 2), std=round(proj * sc_std, 2), half=round(proj * sc_half, 2),
              lo=round(float(lo_.iloc[0]), 1), hi=round(float(hi_.iloc[0]), 1),
              form=round(r.c_form, 2), usage=round(r.c_usage, 2), matchup=round(r.c_match, 2), vegas=round(r.c_vegas, 2),
+             qb_adj=round(r.qb_adj, 2), qb=(lambda q: dict(new=q['new'], old=q['old']) if q else None)(QB_CHANGE.get(r.team)),
              base=round(r.base_ppr, 1), xfp=round(r.xfp, 1), imp=round(r.imp, 1), xdef=round(r.x_def * 100, 1),
              tgt=round(r.u_targets, 1), car=round(r.u_carries, 1), att=round(r.u_attempts, 1),
              rz=round(r.u_rz_tgt + r.u_rz_car, 1), snap=round(r.u_snap * 100), trend=round(r.snap_trend * 100),
@@ -1191,6 +1276,10 @@ for r in pool.itertuples():
     if r.player_id not in pr:
         continue
     wk, core = pr[r.player_id]
+    _qc, _qb = QB_CHANGE.get(r.team), QB_BETA.get(r.position)
+    if _qc and _qb and _qc['long']:
+        _m = 1 + _qb * (_qc['ratio'] - 1)
+        wk, core = [None if x is None else x * _m for x in wk], core * _m
     wk = zero_out(list(wk), r.player_id)
     tot = sum(x for x in wk if x is not None)
     if core < 3.5:
@@ -1464,7 +1553,10 @@ try:
 except Exception as e:
     print('WARN team logos unavailable', e)
     LOGOS = {}
-payload = json.dumps(dict(players=out, defense=defense, sched=SCHED, logos=LOGOS, imp=IMP_NOW, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
+WX = {} if OFFLINE else wxmod.kickoff_weather([(r.home_team, r.away_team, r.gameday, r.gametime, r.roof if isinstance(r.roof, str) else None,
+                                                 r.location) for r in wk_games[wk_games.home_score.isna()].itertuples()])
+print('weather for', len(WX) // 2, 'outdoor games')
+payload = json.dumps(dict(players=out, defense=defense, sched=SCHED, logos=LOGOS, wx=WX, imp=IMP_NOW, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
 open(os.path.join(OUT, 'data.json'), 'w').write(payload)
 open(os.path.join(OUT, 'data.js'), 'w').write('window.SS_DATA=' + payload + ';\n')
 print(f'wrote {len(out)} players, {len(payload)//1024} KB')

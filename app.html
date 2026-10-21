@@ -142,6 +142,9 @@ main{max-width:600px;margin:0 auto;padding:4px 16px calc(96px + var(--bot))}
 .bc-photo::before{content:"";position:absolute;left:-30%;right:-30%;bottom:16px;height:16px;background:linear-gradient(var(--tc2) 0 5px,transparent 5px 11px,var(--tc2) 11px 16px);transform:rotate(-8deg);opacity:.85;pointer-events:none}
 .bc-photo .crest{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .crest{flex:none;display:block}
+.wx{display:inline-flex;align-items:center;gap:3px;margin-top:3px;font-size:12px;color:var(--muted);white-space:nowrap}
+.wx .ic{width:13px;height:13px}
+.wx.bad{color:var(--warn-ink,#9a6700)}
 .crest.logo{object-fit:contain;border-radius:50%;background:#fff;padding:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 .bc-photo .crest.logo{box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .li .crest{justify-self:center}
@@ -655,11 +658,18 @@ const ICONS={
   up:'<path d="M12 19V5M6 11l6-6 6 6"/>',
   down:'<path d="M12 5v14M6 13l6 6 6-6"/>',
   bar:'<path d="M5 20V11M10 20V5M15 20v-8M20 20v-4"/>',
-  plus:'<path d="M12 5v14M5 12h14"/>'
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  wind:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h8"/>',
+  rain:'<path d="M7 15a4.5 4.5 0 0 1 .5-9 5.5 5.5 0 0 1 10.4 1.6A3.7 3.7 0 0 1 17.5 15z"/><path d="M8.5 18l-1 2.5M12.5 18l-1 2.5M16.5 18l-1 2.5"/>',
+  snow:'<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/>',
+  temp:'<path d="M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0z"/>'
 };
 const backTxt=(t,c,frm)=>`${[t>=.3?'−'+fmt(t)+' targets':'',c>=.5?'−'+fmt(c)+' carries':''].filter(Boolean).join(', ')} a game with ${frm.map(x=>esc(short(x))).join(' and ')} back`;
 const updAlert=p=>{const u=p.upd,bad=/IR|Released|Suspended|exempt|Not on/.test(u.what);
   return `<div class="alert ${bad?'bad':'vac'}"><span class="ai">${ic(bad?'cross':'news')}</span><span><b>${esc(short(p.name))}</b> ${esc(u.what)}<small>${esc(u.src)}, ${shortDate(u.date)} · newer than the roster</small></span></div>`};
+const wxOf=p=>live(p)&&DATA.wx?DATA.wx[p.team]:null;
+const wxChip=p=>{const w=wxOf(p);if(!w)return '';const ico=w.snow?'snow':w.pop>=50?'rain':w.wind>=15?'wind':'temp';
+  return `<span class="wx${w.wind>=15||w.pop>=50||w.snow?' bad':''}" title="Kickoff forecast">${ic(ico)}${w.temp}° · ${w.wind} mph${w.pop>=30?` · ${w.pop}%`:''}</span>`};
 const who=(p,txt)=>{const s=short(p.name);return (txt||'').startsWith(s)||(txt||'').startsWith(p.name)?'':`<b>${esc(s)}</b> `};
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
 
@@ -688,6 +698,7 @@ function weeksBack(id,n=5){const s=(DATA.season||[]).find(x=>x.id===id);if(!s)re
 function backBody(p,k){
   const isK=p.pos==='K',isD=p.pos==='DST',baseV=(p.form+p.usage)*k;
   const adj=[isD?['Mistakes',p.matchup]:isK?['Matchup',p.matchup*k]:['Matchup',p.matchup*k],['Vegas',p.vegas*k]];
+  if(p.qb_adj)adj.splice(1,0,['New QB',p.qb_adj*k]);
   if(p.experts_adj)adj.push(['Experts',p.experts_adj*k]);
   return `<div class="bk-sec">${ic('model')}How the ${fmt(val(p))} adds up</div>
     <div class="bk-row"><span class="l">Baseline</span><div class="bk-tr"><div class="f" style="left:-1px;width:${Math.min(100,baseV/Math.max(val(p),baseV,1)*100)}%"></div></div><span class="v">${fmt(baseV)}</span></div>`+
@@ -708,7 +719,7 @@ function bcard(p,o={}){
     <div class="bc-face front" style="${tc(p.team)}">
       <div class="bc-photo${lt?' lt':''}"><span class="bc-num">${p.pos==='DST'?'D':p.num!=null?p.num:''}</span>
         <div class="bc-top">${crest(p.team,24)}<span class="tm">${esc(p.team)}</span><span class="ps">${p.pos}</span><span class="sp"></span><button class="bc-rm" data-rm="${p.id}" aria-label="Remove ${esc(p.name)}">${ic('x')}</button></div>${flag}${ribbon}</div>
-      <div class="bc-plate"><div class="nm">${esc(p.name)}</div><div class="when">${when}</div></div>
+      <div class="bc-plate"><div class="nm">${esc(p.name)}</div><div class="when">${when}</div>${o.when==null?wxChip(p):''}</div>
       <div class="bc-proj"><b>${big}</b><span>${sub}</span></div>
       ${stats?`<div class="bc-stats">${stats}</div>`:'<div style="flex:1"></div>'}${foot}</div>
     <div class="bc-face back"><div class="bc-bh"><span class="badge${lt?' lt':''}" style="${tc(p.team)}">${esc(p.team)}</span><span class="nm">${esc(short(p.name))}</span></div>
@@ -717,8 +728,12 @@ function bcard(p,o={}){
   </div></div>`}
 function alertsHTML(list){
   const out=[];
+  const wxSeen=new Set();
+  list.forEach(p=>{const w=wxOf(p);if(w&&(w.wind>=15||w.pop>=50||w.snow)&&!wxSeen.has(p.team)){wxSeen.add(p.team);
+    out.push(`<div class="alert warn"><span class="ai">${ic(w.snow?'snow':w.pop>=50?'rain':'wind')}</span><span><b>${esc(p.team)} game</b> ${[w.wind>=15?w.wind+' mph wind':'',w.pop>=50?w.pop+'% chance of rain':'',w.snow?'snow':''].filter(Boolean).join(', ')} at kickoff, ${w.temp}°<small>Vegas usually prices weather in already</small></span></div>`)}});
   list.forEach(p=>{const i=inj(p);
     if(p.upd)out.push(updAlert(p));
+    if(p.qb&&p.qb_adj&&Math.abs(p.qb_adj)>=.2)out.push(`<div class="alert ${p.qb_adj<0?'bad':'vac'}"><span class="ai">${ic('throw')}</span><span><b>${esc(short(p.name))}</b> ${esc(p.qb.new)} starts at QB instead of ${esc(p.qb.old)}: ${p.qb_adj>0?'+':''}${fmt(p.qb_adj*scale(p))} pts</span></div>`);
     if(i)out.push(`<div class="alert ${i.lvl}"><span class="ai">${ic('cross')}</span><span><b>${esc(short(p.name))}</b> ${i.txt}</span></div>`);
     if(p.news)out.push(`<div class="alert"><span class="ai">${ic('news')}</span><span>${who(p,p.news)}${esc(p.news)}<small>${p.news_date?shortDate(p.news_date):''}</small></span></div>`);
     if((p.back_tgt>=.3||p.back_car>=.5)&&p.back_from&&p.back_from.length)out.push(`<div class="alert warn"><span class="ai">${ic('down')}</span><span><b>${esc(short(p.name))}</b> ${backTxt(p.back_tgt,p.back_car,p.back_from)}</span></div>`);
