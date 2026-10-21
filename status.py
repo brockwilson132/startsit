@@ -42,8 +42,9 @@ SLEEPER_WEEK = {'Questionable': 'Questionable', 'Doubtful': 'Doubtful', 'Out': '
 
 # ---------------------------------------------------------------- headlines
 _NAME = r"[A-Z][\w'.-]+(?: [A-Z][\w'.-]+){0,2}(?:'s)?(?: \([^)]*\))?"
-_FUTURE = re.compile(r"\b(expected|could|will|would|may|might|hopes?|likely|eligible|set|poised|candidate|window|"
-                     r"plans?|planning|considering|on track|in line|figures)\b[^.;]{0,35}?\b(remov|reinstat|activat|"
+_FUTURE = re.compile(r"\b(expected|could|will|would|may|might|hopes?|likely|eligible|set|poised|candidate|window|won't|"
+                     r"isn't|not|on track|ahead of schedule|nearing|"
+                     r"plans?|planning|considering|on track|in line|figures)\b[^.;]{0,35}?\b(remov|reinstat|activat|return|come off|go on|ready|"
                      r"releas|waiv|cut|trad|sign|plac|suspend)", re.I)
 _RULES = [
     # (kind, long, regex)  - order matters: first match wins
