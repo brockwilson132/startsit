@@ -175,6 +175,19 @@ main{max-width:600px;margin:0 auto;padding:4px 16px calc(96px + var(--bot))}
 .lu-row.moved{background:color-mix(in srgb,var(--up-bg) 60%,transparent)}
 .lu-row.moved .lu-s{background:var(--up);color:#fff}
 .lu-row.bench .lu-v{color:var(--muted);font-size:16px}
+.pv{margin-top:14px;text-align:left;border-top:1px solid var(--line);padding-top:14px}
+.pv p{color:var(--ink-2);margin:0 0 10px}
+.pv form{display:flex;flex-direction:column;gap:8px}
+.pv label{display:flex;flex-direction:column;gap:4px;font:600 12.5px var(--body);color:var(--muted)}
+.pv input{flex:none;height:44px;border-radius:12px;border:1px solid var(--line-2);background:var(--bg);color:var(--ink);padding:0 12px;font:500 14px ui-monospace,Menlo,monospace}
+.pv details{margin-top:12px;font-size:14px;color:var(--ink-2)}
+.pv summary{cursor:pointer;font-weight:600;color:var(--turf,var(--up))}
+.pv ol{padding-left:20px;margin:8px 0;line-height:1.5}
+.tm-menu{margin-top:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.tm-menu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;border-top:1px solid var(--line);background:none;padding:13px 14px;font:500 15px var(--body);color:var(--ink)}
+.tm-menu button:first-child{border-top:0}
+.tm-menu .ic{width:18px;height:18px;color:var(--muted);flex:none}
+.tm-menu .danger{color:var(--down)}.tm-menu .danger .ic{color:var(--down)}
 .tm-pick{width:100%;text-align:left;border:0;border-top:1px solid var(--line);grid-template-columns:44px 0 1fr 20px!important}
 .tm-pick .ic{width:16px;height:16px;color:var(--faint)}
 .wx{display:inline-flex;align-items:center;gap:3px;margin-top:3px;font-size:12px;color:var(--muted);white-space:nowrap}
@@ -1183,10 +1196,16 @@ let LG=store.get('ss_league',null);          // {id, team, at, data}
 let byEspn={}, wByEspn={};
 function indexEspn(){byEspn={};wByEspn={};P.forEach(p=>{if(p.espn)byEspn[p.espn]=p});W.forEach(p=>{if(p.espn)wByEspn[p.espn]=p})}
 function leagueIdFrom(s){const m=String(s||'').match(/leagueId=(\d+)/i)||String(s||'').match(/^\s*(\d{4,})\s*$/);return m?m[1]:null}
+/* Private leagues go through a small relay (relay/worker.js) that adds this phone's own ESPN cookies to the
+   request. The cookies are kept only in this browser's storage; the relay stores nothing. */
+const RELAY='';   // e.g. https://startsit-relay.<you>.workers.dev
+let AUTH=store.get('ss_espn_auth',null);   // {s2, swid}
 async function fetchLeague(id){
-  const u=`https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${M.season}/segments/0/leagues/${id}?view=mTeam&view=mRoster&view=mSettings`;
-  let r;try{r=await fetch(u,{credentials:'omit'})}catch(e){throw {code:'network'}}
-  if(r.status===401||r.status===403)throw {code:'private'};
+  const q=`view=mTeam&view=mRoster&view=mSettings`;
+  const viaRelay=!!(AUTH&&RELAY);
+  const u=viaRelay?`${RELAY}/?season=${M.season}&league=${id}&${q}`:`https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${M.season}/segments/0/leagues/${id}?${q}`;
+  let r;try{r=await fetch(u,viaRelay?{headers:{'X-ESPN-S2':AUTH.s2,'X-ESPN-SWID':AUTH.swid}}:{credentials:'omit'})}catch(e){throw {code:'network'}}
+  if(r.status===401||r.status===403)throw {code:viaRelay?'badauth':'private'};
   if(r.status===404)throw {code:'missing'};
   if(!r.ok)throw {code:'http',status:r.status};
   return parseLeague(await r.json())}
@@ -1241,7 +1260,7 @@ function moves(){
     sub:`+${fmt(gain)} pts this week${ins.length>1||outs.length!==1?` · sit ${outs.map(x=>short(x.name)).join(', ')}`:''}`,
     act:ins.length===1&&outs.length===1?{type:'cmp',ids:[ins[0].p&&ins[0].p.id,outs[0].p&&outs[0].p.id]}:{type:'lineup'},tone:'up'});
   // 2. starters who won't play and nobody healthy behind them
-  opt.starters.forEach(s=>{if((!s.x||s.v<=0)&&s.slot!==16&&s.slot!==17){const best=P.filter(q=>SLOT_OK[s.slot].includes(q.pos)&&live(q)&&!taken.has(q.id)).sort((a,b)=>val(b)-val(a))[0];
+  opt.starters.forEach(s=>{const sp=s.x&&s.x.p;if(!s.lock&&(!s.x||(sp&&(sp.bye||inactive(sp))))&&s.slot!==16&&s.slot!==17){const best=P.filter(q=>SLOT_OK[s.slot].includes(q.pos)&&live(q)&&!taken.has(q.id)).sort((a,b)=>val(b)-val(a))[0];
     if(best)out.push({kind:'hole',score:20,icon:'cross',title:`Empty ${SLOT_NAME[s.slot]} spot: pick up ${short(best.name)}`,sub:`${fmt(val(best))} pts projected · free agent`,act:{type:'add',id:best.id},tone:'bad'})}});
   // 3. waiver upgrades for the rest of the season: free agent vs your least valuable bench player at any position
   const luR=entries=>bestLineup(entries,L.slots,rosV).total, myBase=luR(mine);
@@ -1277,24 +1296,49 @@ function moves(){
     if(p.qb&&p.qb_adj&&Math.abs(p.qb_adj)>=.5)out.push({kind:'qb',score:4,icon:'throw',title:`${short(x.name)}: ${p.qb.new} at QB`,sub:`${p.qb_adj>0?'+':''}${fmt(p.qb_adj*scale(p))} pts vs with ${p.qb.old}`,act:{type:'open',id:p.id},tone:p.qb_adj>0?'up':'bad'})});
   return out.sort((a,b)=>b.score-a.score)}
 
-let lgBusy=false, lgErr=null;
+let lgBusy=false, lgErr=null, lgPending='';
 async function connectLeague(input){
-  const id=leagueIdFrom(input);if(!id){lgErr='Paste the league link from ESPN, or just the number after leagueId=';renderTeam();return}
+  const id=leagueIdFrom(input);lgPending=id||String(input||'');if(!id){lgErr='Paste the league link from ESPN, or just the number after leagueId=';renderTeam();return}
   lgBusy=true;lgErr=null;renderTeam();
-  try{const data=await fetchLeague(id);LG={id,team:null,at:Date.now(),data};store.set('ss_league',LG);
+  try{const data=await fetchLeague(id);LG={id,team:LG&&LG.id===id?LG.team:null,at:Date.now(),data};store.set('ss_league',LG);
     if(data.fmt!==S){S=data.fmt;store.set('ss_scoring',S);$$('.fmt button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.s===S))}}
-  catch(e){lgErr=e.code==='private'?'private':e.code==='missing'?'No league with that ID for this season.':e.code==='network'?'Couldn\'t reach ESPN. Check your connection and try again.':`ESPN returned an error (${e.status}).`}
+  catch(e){lgErr=e.code==='private'?'private':e.code==='badauth'?'badauth':e.code==='missing'?'No league with that ID for this season.':e.code==='network'?'Couldn\'t reach ESPN. Check your connection and try again.':`ESPN returned an error (${e.status}).`}
   lgBusy=false;renderTeam()}
 async function refreshLeague(force){if(!LG||!LG.id)return;if(!force&&LG.at&&Date.now()-LG.at<10*60e3)return;
   try{const data=await fetchLeague(LG.id);LG={...LG,at:Date.now(),data};store.set('ss_league',LG);if(tab==='team')renderTeam()}catch(e){}}
+function privateHelp(){
+  if(!RELAY)return `<div class="alert bad" style="margin-top:12px;text-align:left"><span class="ai">${ic('cross')}</span><span><b>This league is private.</b> Private leagues need the app's relay, which isn't set up yet. Or the League Manager can turn on “Make League Viewable to Public” (LM Tools → Basic Settings).</span></div>`;
+  return `<div class="pv">${lgErr==='badauth'?`<p class="err">ESPN didn't accept those cookies. Copy them again; they change when you log out.</p>`:`<p><b>Private league.</b> Add your ESPN cookies once. They stay on this device and only go to ESPN.</p>`}
+    <form id="authForm"><label>espn_s2<input id="s2In" autocomplete="off" spellcheck="false" placeholder="AEB…" value="${esc(AUTH&&AUTH.s2||'')}"></label>
+      <label>SWID<input id="swidIn" autocomplete="off" spellcheck="false" placeholder="{XXXXXXXX-XXXX-…}" value="${esc(AUTH&&AUTH.swid||'')}"></label>
+      <button class="btn">Connect privately</button></form>
+    <details><summary>Where do I find these?</summary><ol>
+      <li>On a computer, log in at <b>fantasy.espn.com</b> in Chrome.</li>
+      <li>Right-click the page → <b>Inspect</b> → <b>Application</b> tab → <b>Cookies</b> → <b>https://fantasy.espn.com</b>.</li>
+      <li>Copy the values of <b>espn_s2</b> and <b>SWID</b> into the boxes above.</li>
+      <li>Then, from the Team tab menu, copy your <b>phone setup link</b> and open it on your phone.</li></ol>
+      <p class="cap">Safari: Settings → Advanced → “Show features for web developers”, then Develop → Show Web Inspector → Storage → Cookies.</p></details></div>`}
+/* one link that sets up another device (league, team, cookies). The part after # never reaches any server. */
+function setupLink(){const b=btoa(unescape(encodeURIComponent(JSON.stringify({id:LG.id,team:LG.team,a:AUTH||null})))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  return location.origin+location.pathname+'#setup='+b}
+function readSetup(){const m=location.hash.match(/^#setup=([\w-]+)$/);if(!m)return false;
+  try{const j=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/')))));
+    if(j.a&&j.a.s2&&j.a.swid){AUTH=j.a;store.set('ss_espn_auth',AUTH)}
+    LG={id:String(j.id),team:j.team==null?null:+j.team,at:0,data:null};store.set('ss_league',LG);tab='team';store.set('ss_tab','team')}catch(e){}
+  history.replaceState(null,'',location.pathname);return true}
+let tmMenu=false;
 function renderTeam(){
   const el=$('#s-team');indexEspn();
   if(!LG||!LG.data){
     el.innerHTML=`<h2 class="h2" style="margin-top:10px">My team</h2>
     <div class="connect"><div class="cn-ic">${ic('users')}</div><b>Connect your ESPN league</b><p>Paste your league's link. The app reads rosters from ESPN on this phone only; no login.</p>
-      <form id="lgForm"><input id="lgIn" inputmode="url" autocomplete="off" placeholder="fantasy.espn.com/…leagueId=123456" value="${esc(LG&&LG.id||'')}"><button class="btn" ${lgBusy?'disabled':''}>${lgBusy?'Connecting…':'Connect'}</button></form>
-      ${lgErr==='private'?`<div class="alert bad" style="margin-top:12px;text-align:left"><span class="ai">${ic('cross')}</span><span><b>This league is private.</b> The League Manager can open it up on a computer: fantasy.espn.com → LM Tools → Basic Settings → Edit → turn on “Make League Viewable to Public”. It's read-only and only reachable with the league ID.</span></div>`:lgErr?`<p class="err">${esc(lgErr)}</p>`:''}</div>`;
-    $('#lgForm').onsubmit=e=>{e.preventDefault();connectLeague($('#lgIn').value)};return}
+      <form id="lgForm"><input id="lgIn" inputmode="url" autocomplete="off" placeholder="fantasy.espn.com/…leagueId=123456" value="${esc(LG&&LG.id||lgPending||'')}"><button class="btn" ${lgBusy?'disabled':''}>${lgBusy?'Connecting…':'Connect'}</button></form>
+      ${lgErr==='private'||lgErr==='badauth'?privateHelp():lgErr?`<p class="err">${esc(lgErr)}</p>`:''}</div>`;
+    $('#lgForm').onsubmit=e=>{e.preventDefault();connectLeague($('#lgIn').value)};
+    const af=$('#authForm');if(af)af.onsubmit=e=>{e.preventDefault();const s2=$('#s2In').value.trim(),swid=$('#swidIn').value.trim();
+      if(!s2||!/^\{?[0-9A-Fa-f-]{36}\}?$/.test(swid)){lgErr='badauth';renderTeam();return}
+      AUTH={s2,swid:swid.startsWith('{')?swid:`{${swid}}`};store.set('ss_espn_auth',AUTH);connectLeague($('#lgIn').value)};
+    return}
   const L=LG.data;
   if(LG.team==null||!myTeam()){
     el.innerHTML=`<h2 class="h2" style="margin-top:10px">Which team is yours?</h2><p class="cap">${esc(L.name)}</p>
@@ -1310,7 +1354,10 @@ function renderTeam(){
     return `<div class="lu-row${moved?' moved':''}" data-open="${p.id}"><span class="lu-s">${SLOT_NAME[s.slot]}</span>
       <span class="lu-p">${crest(p.team,22)}<span style="min-width:0"><b>${esc(x.name||p.name)}</b><small>${x.p?(x.p.bye?'Bye':x.p.final?'Final':vs(x.p)+' · '+fmtTime(x.p)):'No game data'}${moved?` · <em>from bench</em>`:''}</small></span></span>
       <span class="lu-v">${s.lock?ic('clock'):''}${x.p&&x.p.final&&actual(x.p)!=null?fmt(actual(x.p)):fmt(wk(x.p))}</span></div>`};
-  el.innerHTML=`<div class="tm-head"><div><h2 class="h2">${esc(me.name)}</h2><p class="cap">${esc(L.name)} · Week ${M.week}</p></div><button class="iconbtn" id="lgMenu" aria-label="League settings">${ic('users')}</button></div>
+  el.innerHTML=`<div class="tm-head"><div><h2 class="h2">${esc(me.name)}</h2><p class="cap">${esc(L.name)} · Week ${M.week}</p></div><button class="iconbtn" id="lgMenu" aria-label="League settings" aria-expanded="${tmMenu}">${ic('users')}</button></div>
+    ${tmMenu?`<div class="tm-menu"><button id="tmSwitch">${ic('flip')}Switch team</button><button id="tmLeague">${ic('users')}Use a different league</button>
+      <button id="tmLink">${ic('news')}${AUTH?'Phone setup link (includes your ESPN cookies: send only to yourself)':'Phone setup link'}</button>
+      ${AUTH?`<button id="tmForget" class="danger">${ic('x')}Remove my ESPN cookies from this device</button>`:''}</div>`:''}
     <div class="sec-h"><h3>Moves</h3><small>${mv.length?mv.length+' ideas':''}</small></div>
     ${mv.length?`<div class="moves">${mv.slice(0,8).map((m,i)=>`<button class="mv ${m.tone}" data-mv="${i}"><span class="mv-i">${ic(m.icon)}</span><span class="mv-t"><b>${esc(m.title)}</b><small>${m.sub}</small></span>${ic('flip')}</button>`).join('')}</div>`
       :`<div class="empty"><b>Nothing to change</b>Your lineup is set and no free agent beats your bench.</div>`}
@@ -1322,7 +1369,11 @@ function renderTeam(){
   $$('#s-team [data-mv]').forEach(b=>b.onclick=()=>doMove(mv[+b.dataset.mv]));
   $$('#s-team [data-open]').forEach(b=>b.onclick=()=>{const id=b.dataset.open;if(byId[id]){picks=[id];save();go('ss')}});
   $('#lgRefresh').onclick=()=>{LG.at=0;refreshLeague(true)};
-  $('#lgMenu').onclick=()=>{if(confirm('Switch team or league?')){LG.team=null;store.set('ss_league',LG);renderTeam()}};
+  $('#lgMenu').onclick=()=>{tmMenu=!tmMenu;renderTeam()};
+  if(tmMenu){$('#tmSwitch').onclick=()=>{tmMenu=false;LG.team=null;store.set('ss_league',LG);renderTeam()};
+    $('#tmLeague').onclick=()=>{tmMenu=false;LG=null;store.set('ss_league',null);renderTeam()};
+    const sl=$('#tmLink');if(sl)sl.onclick=async()=>{const u=setupLink();try{if(navigator.share)await navigator.share({title:'Start/Sit setup',url:u});else{await navigator.clipboard.writeText(u);sl.textContent='Copied. Open it on your phone'}}catch(e){prompt('Copy this link and open it on your phone:',u)}};
+    const rm=$('#tmForget');if(rm)rm.onclick=()=>{AUTH=null;store.set('ss_espn_auth',null);tmMenu=false;renderTeam()}}
 }
 function doMove(m){const a=m.act;
   if(a.type==='cmp'){picks=a.ids.filter(Boolean);save();go('ss')}
@@ -1336,8 +1387,10 @@ function doMove(m){const a=m.act;
 setW();header();
 $$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
 ['team','ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==tab);
+if(readSetup()){$$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));['team','ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==tab)}
 render(tab);
-refreshLeague(false);
+if(LG&&LG.id&&!LG.data)connectLeague(LG.id).then(()=>{if(LG&&LG.data&&LG.team!=null)renderTeam()});else refreshLeague(false);
+addEventListener('hashchange',()=>{if(readSetup()){go('team');if(LG&&LG.id)connectLeague(LG.id)}});
 </script>
 </body>
 </html>
