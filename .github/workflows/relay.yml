@@ -1,0 +1,29 @@
+name: Deploy ESPN relay
+# Deploys relay/worker.js to Cloudflare Workers as "startsit-relay" whenever it changes.
+# Needs repo secrets CLOUDFLARE_API_TOKEN (template "Edit Cloudflare Workers") and CLOUDFLARE_ACCOUNT_ID.
+on:
+  push:
+    branches: [main]
+    paths: ['relay/**', '.github/workflows/relay.yml']
+  workflow_dispatch: {}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - if: env.HAS_TOKEN != 'true'
+        run: echo "::notice title=relay::Cloudflare secrets not set yet; skipping deploy"
+      - if: env.HAS_TOKEN == 'true'
+        id: wr
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy relay/worker.js --name startsit-relay --compatibility-date 2026-01-01
+      - if: env.HAS_TOKEN == 'true'
+        run: |
+          echo "::notice title=relay::deployed ${{ steps.wr.outputs.deployment-url }}"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://brockwilson132.github.io' -X OPTIONS "${{ steps.wr.outputs.deployment-url }}/")
+          echo "::notice title=relay-check::preflight $code"
