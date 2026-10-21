@@ -33,19 +33,18 @@ jobs:
           key: nfl-cache-${{ steps.day.outputs.day }}
           restore-keys: nfl-cache-
       - run: pip install -r requirements.txt
-      - name: Probe ESPN fantasy API (temporary)
+      - name: Probe ESPN league (temporary)
         continue-on-error: true
         run: |
-          for u in \
-            "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2026?view=proTeamSchedules_wl" \
-            "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2026/segments/0/leagues/1?view=mTeam" ; do
-            code=$(curl -s -o body.json -D h.txt -w '%{http_code}' -H 'Origin: https://brockwilson132.github.io' "$u")
-            acao=$(grep -i '^access-control-allow-origin' h.txt | tr -d '\r' | cut -c1-120)
-            acac=$(grep -i '^access-control-allow-credentials' h.txt | tr -d '\r')
-            echo "::notice title=probe::$code | $acao | $acac | $(head -c 160 body.json | tr -d '\n') | $u"
-            pf=$(curl -s -o /dev/null -D p.txt -w '%{http_code}' -X OPTIONS -H 'Origin: https://brockwilson132.github.io' -H 'Access-Control-Request-Method: GET' -H 'Access-Control-Request-Headers: x-fantasy-filter' "$u")
-            echo "::notice title=preflight::$pf | $(grep -i '^access-control' p.txt | tr -d '\r' | tr '\n' ' ' | cut -c1-300)"
+          B="https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/2026/segments/0/leagues/370896190"
+          for v in mSettings mTeam mRoster mMatchup; do
+            code=$(curl -s -o $v.json -w '%{http_code}' "$B?view=$v")
+            echo "::notice title=league::$v $code $(wc -c < $v.json) bytes $(head -c 100 $v.json | tr -d '\n')"
           done
+          mkdir -p probe && mv m*.json probe/ || true
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with: { name: league-probe, path: probe, retention-days: 1 }
       - name: Status rules still pass (if not, the live site keeps its last good version)
         run: python tests/test_status.py
       - run: python pipeline.py
