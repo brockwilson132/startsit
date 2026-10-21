@@ -1198,7 +1198,7 @@ function indexEspn(){byEspn={};wByEspn={};P.forEach(p=>{if(p.espn)byEspn[p.espn]
 function leagueIdFrom(s){const m=String(s||'').match(/leagueId=(\d+)/i)||String(s||'').match(/^\s*(\d{4,})\s*$/);return m?m[1]:null}
 /* Private leagues go through a small relay (relay/worker.js) that adds this phone's own ESPN cookies to the
    request. The cookies are kept only in this browser's storage; the relay stores nothing. */
-const RELAY='';   // e.g. https://startsit-relay.<you>.workers.dev
+const RELAY='https://startsit-relay.brockwilson1.workers.dev';   // relay/worker.js, deployed by .github/workflows/relay.yml
 let AUTH=store.get('ss_espn_auth',null);   // {s2, swid}
 async function fetchLeague(id){
   const q=`view=mTeam&view=mRoster&view=mSettings`;
