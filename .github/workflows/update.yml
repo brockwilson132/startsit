@@ -1,5 +1,6 @@
 name: Update projections
-# Every hour: pull fresh stats, injuries, news, expert projections and Vegas lines, rebuild,
+# Triggered every 10 minutes in game windows and hourly otherwise by the Cloudflare scheduler (relay/cron.js);
+# GitHub's own schedule below is a backup (it skips many runs). Every run: pull fresh stats, injuries, news, expert projections and Vegas lines, rebuild,
 # and redeploy only if something users would see changed. Also runs when the app or model code changes.
 on:
   schedule:
@@ -48,7 +49,7 @@ jobs:
         run: |
           new=$(cat site/hash.txt)
           old=$(curl -fsSL "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/hash.txt" || echo none)
-          if [ "$new" != "$old" ] || [ "${{ github.event_name }}" != "schedule" ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; else echo "changed=false" >> "$GITHUB_OUTPUT"; echo "No changes since last deploy"; fi
+          if [ "$new" != "$old" ] || [ "${{ github.event_name }}" = "push" ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; else echo "changed=false" >> "$GITHUB_OUTPUT"; echo "No changes since last deploy"; fi
       - name: Save weekly snapshots (used to score model vs experts)
         run: |
           git config user.name "startsit-bot"

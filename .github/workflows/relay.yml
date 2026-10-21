@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+      HAS_GH: ${{ secrets.GH_DISPATCH_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - if: env.HAS_TOKEN != 'true'
@@ -36,4 +37,19 @@ jobs:
           S2="AEB$(head -c 120 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 150)%2F%3D"
           code=$(curl -s -o b.txt -D h.txt -w '%{http_code}' -H "$O" -H "X-ESPN-S2: $S2" -H 'X-ESPN-SWID: {12345678-1234-1234-1234-123456789ABC}' "$R/?season=2026&league=370896190&view=mTeam&view=mRoster&view=mSettings")
           echo "::notice title=diag-get::$code | $(grep -i '^access-control-allow-origin' h.txt | tr -d '\r') | $(head -c 200 b.txt | tr -d '\n')"
+      # update scheduler: Cloudflare's cron is reliable where GitHub's schedule skips runs
+      - if: env.HAS_TOKEN == 'true' && env.HAS_GH == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy relay/cron.js --name startsit-cron --compatibility-date 2026-01-01 --triggers "*/10 * * * *"
+      - if: env.HAS_TOKEN == 'true' && env.HAS_GH == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GH_TOKEN_VALUE: ${{ secrets.GH_DISPATCH_TOKEN }}
+        run: |
+          printf '%s' "$GH_TOKEN_VALUE" | npx --yes wrangler@3 secret put GH_TOKEN --name startsit-cron
+          echo "::notice title=cron::scheduler deployed with token"
+      - if: env.HAS_GH != 'true'
+        run: echo "::notice title=cron::GH_DISPATCH_TOKEN not set; scheduler not deployed"
 

@@ -1414,6 +1414,15 @@ $$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t
 if(readSetup()){$$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));['team','ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==tab)}
 render(tab);
 if(LG&&LG.id&&!LG.data)connectLeague(LG.id).then(()=>{if(LG&&LG.data&&LG.team!=null)renderTeam()});else refreshLeague(false);
+/* an open tab (phones restore them without reloading) checks for a newer version and reloads itself */
+function checkFresh(){const me=(document.querySelector('meta[name=build]')||{}).content;if(!me)return;
+  fetch('hash.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(x=>{x=(x||'').trim();
+    if(!x||x===me)return;let tried={};try{tried=JSON.parse(sessionStorage.getItem('ss_reload')||'{}')}catch(e){}
+    if(tried[x])return;tried[x]=1;try{sessionStorage.setItem('ss_reload',JSON.stringify(tried))}catch(e){}
+    location.reload()}).catch(()=>{})}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkFresh()});
+setInterval(()=>{if(document.visibilityState==='visible')checkFresh()},5*60e3);
+setTimeout(checkFresh,3000);
 addEventListener('hashchange',()=>{if(readSetup()){go('team');if(LG&&LG.id)connectLeague(LG.id)}});
 </script>
 </body>
