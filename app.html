@@ -142,6 +142,8 @@ main{max-width:600px;margin:0 auto;padding:4px 16px calc(96px + var(--bot))}
 .bc-photo::before{content:"";position:absolute;left:-30%;right:-30%;bottom:16px;height:16px;background:linear-gradient(var(--tc2) 0 5px,transparent 5px 11px,var(--tc2) 11px 16px);transform:rotate(-8deg);opacity:.85;pointer-events:none}
 .bc-photo .crest{filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}
 .crest{flex:none;display:block}
+.crest.logo{object-fit:contain;border-radius:50%;background:#fff;padding:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.bc-photo .crest.logo{box-shadow:0 1px 3px rgba(0,0,0,.35)}
 .li .crest{justify-self:center}
 /* lead card: a slow foil sheen, like a parallel insert */
 .bcw.lead .bc-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.28) 45%,rgba(255,236,150,.22) 50%,transparent 62%);background-size:250% 100%;animation:foil 4.5s ease-in-out infinite;pointer-events:none;mix-blend-mode:screen}
@@ -542,7 +544,12 @@ const TEAM={ARI:'#97233F',ATL:'#A71930',BAL:'#241773',BUF:'#00338D',CAR:'#0085CA
 const LIGHT=new Set(['NO','PIT']);
 const TEAM2={ARI:'#FFB612',ATL:'#101820',BAL:'#9E7C0C',BUF:'#C60C30',CAR:'#101820',CHI:'#C83803',CIN:'#101820',CLE:'#FF3C00',DAL:'#869397',DEN:'#002244',DET:'#B0B7BC',GB:'#FFB612',HOU:'#A71930',IND:'#A2AAAD',JAX:'#D7A22A',KC:'#FFB81C',LA:'#FFA300',LAC:'#FFC20E',LV:'#A5ACAF',MIA:'#FC4C02',MIN:'#FFC62F',NE:'#C60C30',NO:'#101820',NYG:'#A71930',NYJ:'#FFFFFF',PHI:'#A5ACAF',PIT:'#101820',SEA:'#69BE28',SF:'#B3995D',TB:'#34302B',TEN:'#4B92DB',WAS:'#FFB612',FA:'#9CA3AF'};
 /* an original shield in team colors (not a team logo): primary field, secondary rim and chevron, abbreviation */
-const crest=(t,sz=26)=>{const a=TEAM[t]||'#6B7280',b=TEAM2[t]||'#D1D5DB',ink=LIGHT.has(t)?'#141414':'#fff',s=String(t||'').slice(0,3),fs=s.length>2?13:15.5;
+/* team logo from ESPN's public image server (address list from nflverse); if it fails, the shield takes its place */
+const logoSrc=t=>{const u=(DATA.logos||{})[t];return u?u.replace(/^https:\/\/a\.espncdn\.com(\/i\/teamlogos\/nfl\/500\/[a-z]+\.png)$/,'https://a.espncdn.com/combiner/i?img=$1&w=96&h=96'):null};
+function logoFail(img){const t=img.dataset.t;if(img.dataset.raw!=='1'&&DATA.logos[t]){img.dataset.raw='1';img.src=DATA.logos[t];return}
+  const s=document.createElement('span');s.innerHTML=shield(t,+img.dataset.sz);img.replaceWith(s.firstChild)}
+const crest=(t,sz=26)=>{const u=logoSrc(t);return u?`<img class="crest logo" src="${u}" width="${sz}" height="${sz}" alt="${esc(t)}" loading="lazy" decoding="async" data-t="${esc(t)}" data-sz="${sz}" onerror="logoFail(this)">`:shield(t,sz)};
+const shield=(t,sz=26)=>{const a=TEAM[t]||'#6B7280',b=TEAM2[t]||'#D1D5DB',ink=LIGHT.has(t)?'#141414':'#fff',s=String(t||'').slice(0,3),fs=s.length>2?13:15.5;
   return `<svg class="crest" width="${sz}" height="${Math.round(sz*1.12)}" viewBox="0 0 40 45" role="img" aria-label="${esc(s)}"><path d="M20 2 36.5 7.5v13.6C36.5 31.4 29.4 39 20 43 10.6 39 3.5 31.4 3.5 21.1V7.5z" fill="${a}" stroke="${b}" stroke-width="3" stroke-linejoin="round"/><path d="M9 31.5 20 26l11 5.5v3.4L20 29.4 9 34.9z" fill="${b}"/><text x="20" y="${s.length>2?22:22.5}" text-anchor="middle" dominant-baseline="middle" fill="${ink}" font-size="${fs}" font-weight="900" font-family="Big Shoulders Display,Barlow,sans-serif" letter-spacing=".5">${esc(s)}</text></svg>`};
 const tc=t=>`--tc:${TEAM[t]||'#6B7280'};--tc2:${TEAM2[t]||'#D1D5DB'}`;
 const badge=t=>`<span class="badge${LIGHT.has(t)?' lt':''}" style="${tc(t)}">${esc(t)}</span>`;

@@ -1435,7 +1435,15 @@ meta = dict(season=SEASON, week=WEEK, generated=dt.datetime.now(dt.timezone.utc)
             status_overrides=len(OVERRIDE), news_unparsed=len(UNPARSED),
             coef={p: [round(float(x), 3) for x in model.C[p]] for p in POS}, matchup_coef=round(model.cm, 3),
             backtest=bt, live=live, expert=expert, ros_backtest=ros_bt, scoreboard=scoreboard, n_injury_reports=int(len(iw)))
-payload = json.dumps(dict(players=out, defense=defense, sched=SCHED, imp=IMP_NOW, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
+# team logos: nflverse's public table of ESPN logo addresses (the app falls back to color shields if one fails)
+try:
+    _tl = pd.read_csv(fetch('https://raw.githubusercontent.com/nflverse/nflfastR-data/master/teams_colors_logos.csv', 'teams.csv',
+                            refresh=not os.path.exists(os.path.join(CACHE, 'teams.csv'))))
+    LOGOS = {r.team_abbr: r.team_logo_espn for r in _tl.itertuples() if r.team_abbr in teams and isinstance(r.team_logo_espn, str)}
+except Exception as e:
+    print('WARN team logos unavailable', e)
+    LOGOS = {}
+payload = json.dumps(dict(players=out, defense=defense, sched=SCHED, logos=LOGOS, imp=IMP_NOW, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
 open(os.path.join(OUT, 'data.json'), 'w').write(payload)
 open(os.path.join(OUT, 'data.js'), 'w').write('window.SS_DATA=' + payload + ';\n')
 print(f'wrote {len(out)} players, {len(payload)//1024} KB')
