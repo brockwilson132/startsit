@@ -26,3 +26,14 @@ jobs:
           echo "::notice title=relay::deployed ${{ steps.wr.outputs.deployment-url }}"
           code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Origin: https://brockwilson132.github.io' -X OPTIONS "${{ steps.wr.outputs.deployment-url }}/")
           echo "::notice title=relay-check::preflight $code"
+      - name: Relay diagnostics
+        if: env.HAS_TOKEN == 'true'
+        run: |
+          R=https://startsit-relay.brockwilson1.workers.dev
+          O='Origin: https://brockwilson132.github.io'
+          pf=$(curl -s -o /dev/null -D p.txt -w '%{http_code}' -X OPTIONS -H "$O" -H 'Access-Control-Request-Method: GET' -H 'Access-Control-Request-Headers: x-espn-s2,x-espn-swid' "$R/?season=2026&league=370896190&view=mTeam")
+          echo "::notice title=diag-preflight::$pf $(grep -i '^access-control' p.txt | tr -d '\r' | tr '\n' ' ')"
+          S2="AEB$(head -c 120 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 150)%2F%3D"
+          code=$(curl -s -o b.txt -D h.txt -w '%{http_code}' -H "$O" -H "X-ESPN-S2: $S2" -H 'X-ESPN-SWID: {12345678-1234-1234-1234-123456789ABC}' "$R/?season=2026&league=370896190&view=mTeam&view=mRoster&view=mSettings")
+          echo "::notice title=diag-get::$code | $(grep -i '^access-control-allow-origin' h.txt | tr -d '\r') | $(head -c 200 b.txt | tr -d '\n')"
+
