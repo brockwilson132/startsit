@@ -450,6 +450,88 @@ print('defense backtest', [round(x, 1) for x in bt['bypos']['DST']])
 dmodel = dstm.DModel().fit(pd.concat([dtr, dte]), LEAGUE_IMP, LEAGUE_GIVE)
 dst_asof = dstm.asof(dw, dgive, SEASON, WEEK)
 
+# ---------------------------------------------------------------- matchups for kickers and defenses
+# Same idea as the skill-position matchups: what each opponent allows above the player's own baseline,
+# this season fully weighted, last season at 0.35, shrunk toward zero by two games.
+_KA, _DA2 = {}, {}
+
+
+def _kasof(s, w):
+    if (s, w) not in _KA:
+        _KA[(s, w)] = kickers.asof(kd, s, w)
+    return _KA[(s, w)]
+
+
+def _dasof(s, w):
+    if (s, w) not in _DA2:
+        _DA2[(s, w)] = dstm.asof(dw, dgive, s, w)
+    return _DA2[(s, w)]
+
+
+def k_def_adj(season, week):
+    """Per defense: kicker points allowed above the kicker's own baseline, per game."""
+    rows = []
+    for s, wmax, wt in [(season, week, 1.0), (season - 1, 19, 0.35)]:
+        sub = kd[(kd.season == s) & (kd.week < wmax)]
+        for w, grp in sub.groupby('week'):
+            if w < 2 and s == season:
+                continue
+            m = grp.join(_kasof(s, w)['base'], on='player_id').dropna(subset=['base'])
+            rows.append(pd.DataFrame(dict(opp=m.opponent_team, poe=(m.kpts - m.base) * wt, wt=wt, fga=m.fga * wt)))
+    a = pd.concat(rows).groupby('opp').agg(poe=('poe', 'sum'), n=('wt', 'sum'), fga=('fga', 'sum'))
+    return (a.poe / (a.n + 2.0)), (a.fga / a.n)
+
+
+def dst_off_adj(season, week):
+    """Per offense: DST points it gives up above the opposing defense's own baseline, per game."""
+    rows = []
+    for s, wmax, wt in [(season, week, 1.0), (season - 1, 19, 0.35)]:
+        sub = dw[(dw.season == s) & (dw.week < wmax)]
+        for w, grp in sub.groupby('week'):
+            if w < 2 and s == season:
+                continue
+            m = grp.join(_dasof(s, w)['base'], on='team')
+            rows.append(pd.DataFrame(dict(off=m.opp, poe=(m.dpts - m.base) * wt, wt=wt)))
+    a = pd.concat(rows).groupby('off').agg(poe=('poe', 'sum'), n=('wt', 'sum'))
+    return a.poe / (a.n + 2.0)
+
+
+K_MATCH = 0.25   # backtest (2025): close calls 56.3% -> 57.0%; a DST version added nothing beyond Vegas + giveaways
+KDEF_NOW, KFGA_NOW = k_def_adj(SEASON, WEEK)
+_kopp = kd.set_index(['season', 'week', 'player_id']).opponent_team
+_kc = {}
+_kte = kte.assign(kdef=[(_kc.setdefault((s, w), k_def_adj(s, w)[0])).get(_kopp.get((s, w, p_)), 0.0)
+                        for s, w, p_ in zip(kte.season, kte.week, kte.player_id)])
+_kte['proj'] = (kickers.KModel().fit(ktr, LEAGUE_IMP).predict(_kte) + K_MATCH * _kte.kdef).clip(lower=0)
+bt['bypos']['K'] = [pairs(_kte, 'naive', 3)[0] * 100, pairs(_kte, 'proj', 3)[0] * 100]
+print('kicker backtest with matchup', [round(x, 1) for x in bt['bypos']['K']])
+ODEF_NOW = dst_off_adj(SEASON, WEEK)
+
+if os.environ.get('MX'):
+    # does a defense-vs-kicker term add anything beyond the Vegas implied total?
+    def _with_k(f):
+        f = f.copy()
+        opp = kd.set_index(['season', 'week', 'player_id']).opponent_team
+        f['opp'] = [opp.get((s, w, p)) for s, w, p in zip(f.season, f.week, f.player_id)]
+        cache = {}
+        f['kdef'] = [(cache.setdefault((s, w), k_def_adj(s, w)[0])).get(o, 0.0) for s, w, o in zip(f.season, f.week, f.opp)]
+        return f
+    a_, b_ = _with_k(ktr), _with_k(kte.drop(columns=['proj']))
+    for beta in [0, .25, .5, .75, 1.0]:
+        km = kickers.KModel().fit(a_, LEAGUE_IMP)
+        b2 = b_.assign(proj=km.predict(b_) + beta * b_.kdef)
+        print('K matchup beta', beta, round(pairs(b2, 'proj', 3)[0] * 100, 2), round(float(np.mean(abs(b2.kpts - b2.proj))), 3))
+    def _with_d(f):
+        f = f.copy(); cache = {}
+        f['odef'] = [(cache.setdefault((s, w), dst_off_adj(s, w))).get(o, 0.0) for s, w, o in zip(f.season, f.week, f.opp)]
+        return f
+    a_, b_ = _with_d(dtr), _with_d(dte.drop(columns=['proj']))
+    for beta in [0, .25, .5, .75, 1.0]:
+        dm = dstm.DModel().fit(a_, LEAGUE_IMP, LEAGUE_GIVE)
+        b2 = b_.assign(proj=dm.predict(b_) + beta * b_.odef)
+        print('DST matchup beta', beta, round(pairs(b2, 'proj', 3)[0] * 100, 2), round(float(np.mean(abs(b2.dpts - b2.proj))), 3))
+    sys.exit(0)
+
 # ---------------------------------------------------------------- live season scoring (as-of projections, no leakage)
 live = None
 if WEEK > 2:
@@ -773,8 +855,10 @@ kk = universe_wk[(universe_wk.position == 'K') & universe_wk.team.isin(kick)]
 krows = pd.DataFrame([dict(season=SEASON, week=WEEK, player_id=r.player_id, team=r.team) for r in kk.itertuples()])
 kf = kickers.frame(kd, tg, roof, SEASON, WEEK, krows).dropna(subset=['base', 'imp']) if len(krows) else pd.DataFrame()
 if len(kf):
-    kf['proj'] = kmodel.predict(kf)
+    kf['kdef'] = [float(KDEF_NOW.get(kick[t_][0], 0.0)) for t_ in kf.team]
+    kf['proj'] = (kmodel.predict(kf) + K_MATCH * kf.kdef).clip(lower=0)
     kf['c_form'], kf['c_vegas'], kf['c_match'] = kmodel.parts(kf)
+    kf['c_match'] = kf.c_match + K_MATCH * kf.kdef
     kf['position'] = 'K'
 
 out = []
@@ -847,7 +931,7 @@ for r in (kf.itertuples() if len(kf) else []):
              form=round(r.c_form, 2), usage=0.0, matchup=round(r.c_match, 2), vegas=round(r.c_vegas, 2),
              base=round(r.base, 1), xfp=round(r.base, 1), imp=round(r.imp, 1), xdef=0.0,
              tgt=0, car=0, att=0, rz=0, snap=0, trend=0, cv=round(r.cv, 2), gp=int(r.n_cur),
-             fga=round(r.fga, 1), pata=round(r.pata, 1), fg50=round(r.fg50, 2), dome=int(r.dome))
+             fga=round(r.fga, 1), pata=round(r.pata, 1), fg50=round(r.fg50, 2), dome=int(r.dome), kdef=round(r.kdef, 2))
     out.append(e)
 
 # team defenses
@@ -928,6 +1012,34 @@ for p in POS:
     m, s = v.mean(), v.std() or 1
     defense[p] = sorted([dict(team=t, adj=round(float(x), 2), z=round(float((x - m) / s), 2), raw=round(float(raw.get((t, p), 0)), 1))
                          for t, x in zip(teams, v)], key=lambda r: -r['z'])
+
+
+def _zrows(vals, extra):
+    v = np.array([vals.get(t, 0.0) for t in teams], dtype=float)
+    m, s = v.mean(), v.std() or 1
+    return sorted([dict(team=t, adj=round(float(x), 2), z=round(float((x - m) / s), 2), **extra(t)) for t, x in zip(teams, v)],
+                  key=lambda r: -r['z'])
+
+
+# kickers: points allowed to kickers above their usual output, and field goal tries allowed per game
+defense['K'] = _zrows(KDEF_NOW, lambda t: dict(raw=round(float(KFGA_NOW.get(t, 0)), 1)))
+# defenses: which offenses to stream against. Ranked by sacks + turnovers they give up per game (a model input,
+# shrunk toward their season-long rate); raw = DST points opposing defenses have scored against them
+_dpa = dw[(dw.season == SEASON) & (dw.week < WEEK)].groupby('opp').dpts.mean()
+_give = dst_asof.give
+defense['DST'] = _zrows({t: float(_give.get(t, LEAGUE_GIVE)) - LEAGUE_GIVE for t in teams},
+                        lambda t: dict(raw=round(float(_dpa.get(t, 0)), 1), give=round(float(_give.get(t, LEAGUE_GIVE)), 2)))
+# schedule from this week through 18, for the next-weeks view: opponent, '@' when away, null on bye
+SCHED = {}
+_fut = games[(games.season == SEASON) & (games.week >= WEEK)]
+for t_ in teams:
+    row = []
+    for w in range(WEEK, 19):
+        gm = _fut[((_fut.home_team == t_) | (_fut.away_team == t_)) & (_fut.week == w)]
+        row.append(None if gm.empty else (gm.away_team.iloc[0] if gm.home_team.iloc[0] == t_ else '@' + gm.home_team.iloc[0]))
+    SCHED[t_] = row
+IMP_NOW = {t_: round(float(x), 1) for (s_, w_, t_), x in tg.set_index(['season', 'week', 'team']).imp.items()
+           if s_ == SEASON and w_ == WEEK and pd.notna(x)}
 
 
 # ---------------------------------------------------------------- rest of season (waivers)
@@ -1083,9 +1195,10 @@ for r in pool.itertuples():
 # kickers, rest of season: baseline scaled by each team's expected scoring, plus dome games
 ts_ = team_strength(SEASON, WEEK)
 fut = games[(games.season == SEASON) & (games.week >= WEEK)]
-sched_k = {}
+sched_k, opp_k = {}, {}
 for r in fut.itertuples():
     sched_k[(r.home_team, r.week)] = sched_k[(r.away_team, r.week)] = 1 if r.roof in ('dome', 'closed') else 0
+    opp_k[(r.home_team, r.week)], opp_k[(r.away_team, r.week)] = r.away_team, r.home_team
 for r in universe[universe.position == 'K'].itertuples():
     if r.player_id not in kicker_asof.index:
         continue
@@ -1096,7 +1209,8 @@ for r in universe[universe.position == 'K'].itertuples():
         if (r.team, w) not in sched_k:
             wk.append(None)
         else:
-            wk.append(max(0.0, kmodel.c[0] * b_ + kmodel.c[1] * b_ * xi + kmodel.c[2] * sched_k[(r.team, w)]))
+            wk.append(max(0.0, kmodel.c[0] * b_ + kmodel.c[1] * b_ * xi + kmodel.c[2] * sched_k[(r.team, w)]
+                          + K_MATCH * FUTURE_MATCH * float(KDEF_NOW.get(opp_k[(r.team, w)], 0.0))))
     wk = zero_out(wk, r.player_id)
     core = kmodel.c[0] * b_ + kmodel.c[1] * b_ * xi
     if core < 4:
@@ -1321,7 +1435,7 @@ meta = dict(season=SEASON, week=WEEK, generated=dt.datetime.now(dt.timezone.utc)
             status_overrides=len(OVERRIDE), news_unparsed=len(UNPARSED),
             coef={p: [round(float(x), 3) for x in model.C[p]] for p in POS}, matchup_coef=round(model.cm, 3),
             backtest=bt, live=live, expert=expert, ros_backtest=ros_bt, scoreboard=scoreboard, n_injury_reports=int(len(iw)))
-payload = json.dumps(dict(players=out, defense=defense, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
+payload = json.dumps(dict(players=out, defense=defense, sched=SCHED, imp=IMP_NOW, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
 open(os.path.join(OUT, 'data.json'), 'w').write(payload)
 open(os.path.join(OUT, 'data.js'), 'w').write('window.SS_DATA=' + payload + ';\n')
 print(f'wrote {len(out)} players, {len(payload)//1024} KB')
