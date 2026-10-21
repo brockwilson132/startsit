@@ -8,7 +8,7 @@
  * It stores nothing and logs nothing. It only talks to ESPN's fantasy-league read endpoint, only for
  * GET requests from the app's own web address.
  *
- * Deploy: Cloudflare dashboard -> Workers & Pages -> Create -> Worker -> paste this file -> Deploy.
+ * Deployed automatically by .github/workflows/relay.yml whenever this file changes.
  */
 const ALLOWED_ORIGINS = ['https://brockwilson132.github.io', 'http://localhost:8765'];
 const VIEWS = new Set(['mTeam', 'mRoster', 'mSettings', 'mMatchup', 'mMatchupScore', 'mStatus']);
