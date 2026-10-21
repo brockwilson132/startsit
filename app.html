@@ -1200,11 +1200,22 @@ function leagueIdFrom(s){const m=String(s||'').match(/leagueId=(\d+)/i)||String(
    request. The cookies are kept only in this browser's storage; the relay stores nothing. */
 const RELAY='https://startsit-relay.brockwilson1.workers.dev';   // relay/worker.js, deployed by .github/workflows/relay.yml
 let AUTH=store.get('ss_espn_auth',null);   // {s2, swid}
+/* cookie text as copied from a browser can carry spaces, quotes or line breaks; keep only what ESPN uses */
+const cleanS2=s=>String(s||'').replace(/^["'\s]+|["'\s]+$/g,'').replace(/^espn_s2=/i,'').replace(/[^A-Za-z0-9%+/=._-]/g,'');
+const cleanSwid=s=>{const m=String(s||'').match(/[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}/);return m?`{${m[0]}}`:''};
 async function fetchLeague(id){
   const q=`view=mTeam&view=mRoster&view=mSettings`;
-  const viaRelay=!!(AUTH&&RELAY);
-  const u=viaRelay?`${RELAY}/?season=${M.season}&league=${id}&${q}`:`https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${M.season}/segments/0/leagues/${id}?${q}`;
-  let r;try{r=await fetch(u,viaRelay?{headers:{'X-ESPN-S2':AUTH.s2,'X-ESPN-SWID':AUTH.swid}}:{credentials:'omit'})}catch(e){throw {code:'network'}}
+  const direct=`https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${M.season}/segments/0/leagues/${id}?${q}`;
+  const relayU=`${RELAY}/?season=${M.season}&league=${id}&${q}`;
+  let r, viaRelay=!!(AUTH&&RELAY);
+  if(viaRelay){
+    try{r=await fetch(relayU,{headers:{'X-ESPN-S2':cleanS2(AUTH.s2),'X-ESPN-SWID':cleanSwid(AUTH.swid)}})}catch(e){throw {code:'network',where:'relay'}}
+  } else {
+    try{r=await fetch(direct,{credentials:'omit'})}
+    catch(e){   // ESPN blocked in this browser (ad blocker / privacy setting): a private-league path still works
+      if(!RELAY)throw {code:'network',where:'espn'};
+      throw {code:'private'}}
+  }
   if(r.status===401||r.status===403)throw {code:viaRelay?'badauth':'private'};
   if(r.status===404)throw {code:'missing'};
   if(!r.ok)throw {code:'http',status:r.status};
@@ -1302,13 +1313,13 @@ async function connectLeague(input){
   lgBusy=true;lgErr=null;renderTeam();
   try{const data=await fetchLeague(id);LG={id,team:LG&&LG.id===id?LG.team:null,at:Date.now(),data};store.set('ss_league',LG);
     if(data.fmt!==S){S=data.fmt;store.set('ss_scoring',S);$$('.fmt button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.s===S))}}
-  catch(e){lgErr=e.code==='private'?'private':e.code==='badauth'?'badauth':e.code==='missing'?'No league with that ID for this season.':e.code==='network'?'Couldn\'t reach ESPN. Check your connection and try again.':`ESPN returned an error (${e.status}).`}
+  catch(e){lgErr=e.code==='private'?'private':e.code==='badauth'?'badauth':e.code==='missing'?'No league with that ID for this season.':e.code==='network'?(e.where==='relay'?'Couldn\'t reach the app\'s relay. Check your connection, or turn off ad or content blockers for this site, and try again.':'Couldn\'t reach ESPN. An ad or content blocker may be blocking it; try turning it off for this site.'):`ESPN returned an error (${e.status}).`}
   lgBusy=false;renderTeam()}
 async function refreshLeague(force){if(!LG||!LG.id)return;if(!force&&LG.at&&Date.now()-LG.at<10*60e3)return;
   try{const data=await fetchLeague(LG.id);LG={...LG,at:Date.now(),data};store.set('ss_league',LG);if(tab==='team')renderTeam()}catch(e){}}
 function privateHelp(){
   if(!RELAY)return `<div class="alert bad" style="margin-top:12px;text-align:left"><span class="ai">${ic('cross')}</span><span><b>This league is private.</b> Private leagues need the app's relay, which isn't set up yet. Or the League Manager can turn on “Make League Viewable to Public” (LM Tools → Basic Settings).</span></div>`;
-  return `<div class="pv">${lgErr==='badauth'?`<p class="err">ESPN didn't accept those cookies. Copy them again; they change when you log out.</p>`:`<p><b>Private league.</b> Add your ESPN cookies once. They stay on this device and only go to ESPN.</p>`}
+  return `<div class="pv">${lgErr==='badformat'?`<p class="err">Those don't look like ESPN's values. espn_s2 is a long string starting with AEB; SWID looks like {XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX}. Copy just the Value column.</p>`:lgErr==='badauth'?`<p class="err">ESPN didn't accept those cookies. Copy them again; they change when you log out.</p>`:`<p><b>Private league.</b> Add your ESPN cookies once. They stay on this device and only go to ESPN.</p>`}
     <form id="authForm"><label>espn_s2<input id="s2In" autocomplete="off" spellcheck="false" placeholder="AEB…" value="${esc(AUTH&&AUTH.s2||'')}"></label>
       <label>SWID<input id="swidIn" autocomplete="off" spellcheck="false" placeholder="{XXXXXXXX-XXXX-…}" value="${esc(AUTH&&AUTH.swid||'')}"></label>
       <button class="btn">Connect privately</button></form>
@@ -1333,11 +1344,12 @@ function renderTeam(){
     el.innerHTML=`<h2 class="h2" style="margin-top:10px">My team</h2>
     <div class="connect"><div class="cn-ic">${ic('users')}</div><b>Connect your ESPN league</b><p>Paste your league's link. The app reads rosters from ESPN on this phone only; no login.</p>
       <form id="lgForm"><input id="lgIn" inputmode="url" autocomplete="off" placeholder="fantasy.espn.com/…leagueId=123456" value="${esc(LG&&LG.id||lgPending||'')}"><button class="btn" ${lgBusy?'disabled':''}>${lgBusy?'Connecting…':'Connect'}</button></form>
-      ${lgErr==='private'||lgErr==='badauth'?privateHelp():lgErr?`<p class="err">${esc(lgErr)}</p>`:''}</div>`;
+      ${lgErr==='private'||lgErr==='badauth'||lgErr==='badformat'?privateHelp():lgErr?`<p class="err">${esc(lgErr)}</p>`:''}</div>`;
     $('#lgForm').onsubmit=e=>{e.preventDefault();connectLeague($('#lgIn').value)};
     const af=$('#authForm');if(af)af.onsubmit=e=>{e.preventDefault();const s2=$('#s2In').value.trim(),swid=$('#swidIn').value.trim();
-      if(!s2||!/^\{?[0-9A-Fa-f-]{36}\}?$/.test(swid)){lgErr='badauth';renderTeam();return}
-      AUTH={s2,swid:swid.startsWith('{')?swid:`{${swid}}`};store.set('ss_espn_auth',AUTH);connectLeague($('#lgIn').value)};
+      const s2c=cleanS2(s2), swc=cleanSwid(swid);
+      if(s2c.length<20||!swc){lgErr='badformat';renderTeam();return}
+      AUTH={s2:s2c,swid:swc};store.set('ss_espn_auth',AUTH);connectLeague($('#lgIn').value)};
     return}
   const L=LG.data;
   if(LG.team==null||!myTeam()){
