@@ -13,6 +13,7 @@ from numpy.linalg import lstsq
 import kickers
 import news as newsfeed
 import defense as dstm
+import status as status_mod
 
 POS = ['QB', 'RB', 'WR', 'TE']
 CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
@@ -499,38 +500,73 @@ bye_teams = all_teams - set(kick)
 # not just "who has recorded a stat", so returning and traded players aren't missed
 ro = pd.read_csv(fetch(f'{NV}/weekly_rosters/roster_weekly_{SEASON}.csv', f'roster{SEASON}.csv'), low_memory=False)
 ro = ro[ro.position.isin(POS + ['K'])].sort_values('week')
-# week each player's current roster status began (so news older than an IR / exempt move can't undo it)
-_st = ro.groupby('gsis_id').status.last()
 # who was sidelined (IR, exempt, inactive) in the last two roster weeks: only they count as "returning" live,
 # so a healthy scratch who lost his job doesn't take work back from the starters
 WAS_OUT = set(ro[(ro.week >= ro.week.max() - 1) & ro.status.isin(['RES', 'EXE', 'INA', 'SUS', 'NWT'])].gsis_id)
-_chg = ro[ro.status != ro.gsis_id.map(_st)].groupby('gsis_id').week.max()
-FLAG_WEEK = {g_: int(_chg.get(g_, 0)) + 1 for g_ in _st.index}
-ro = ro.groupby('gsis_id').last().reset_index()
-ro = ro[ro.status.isin(['ACT', 'INA', 'RES', 'EXE'])]
+ro_last = ro.groupby('gsis_id').last().reset_index()
 stat_names = pd.concat([d, kd]).sort_values(['season', 'week']).groupby('player_id').player_display_name.last()
-ro['pname'] = ro.gsis_id.map(stat_names).fillna(ro.full_name)
-ON_IR = set(ro[ro.status == 'RES'].gsis_id)
-JERSEY = {g_: int(n_) for g_, n_ in zip(ro.gsis_id, ro.jersey_number) if pd.notna(n_)}
-EXEMPT = set(ro[ro.status == 'EXE'].gsis_id)
-name_of_ro = dict(zip(ro.gsis_id, ro.pname))
-universe = ro.rename(columns={'gsis_id': 'player_id'})[['player_id', 'pname', 'position', 'team']]
-universe = universe[universe.team.isin(all_teams)]
+ro_last['pname'] = ro_last.gsis_id.map(stat_names).fillna(ro_last.full_name)
+JERSEY = {g_: int(n_) for g_, n_ in zip(ro_last.gsis_id, ro_last.jersey_number) if pd.notna(n_)}
+name_of_ro = dict(zip(ro_last.gsis_id, ro_last.pname))
+pos_of_ro = dict(zip(ro_last.gsis_id, ro_last.position))
 
-# injuries: latest report this week
+# ---------------------------------------------------------------- who can play, and for whom
+# Every source's claims go to status.resolve(), freshest claim wins (see status.py).
+ET = ZoneInfo('America/New_York')
+NOW_UTC = dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M')
+
+
+def utc(day, hhmm='12:00'):
+    """ET game date/time -> 'YYYY-MM-DDTHH:MM' UTC, comparable with ESPN and Sleeper timestamps."""
+    if not isinstance(day, str) or not day:
+        return ''
+    t_ = dt.datetime.fromisoformat(f'{day}T{hhmm if isinstance(hhmm, str) and hhmm else "12:00"}').replace(tzinfo=ET)
+    return t_.astimezone(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M')
+
+
+sg = games[games.season == SEASON]
+game_ts = {}
+for r in sg.itertuples():
+    game_ts[(r.home_team, r.week)] = game_ts[(r.away_team, r.week)] = utc(r.gameday, r.gametime)
+week_first = sg.groupby('week').gameday.min().to_dict()
+WEEK_START = utc(str((pd.to_datetime(week_first.get(WEEK)) - pd.Timedelta(days=3)).date())) if WEEK in week_first else ''
+
+
+def roster_ts(team, wk):
+    """The weekly roster reflects game-day status. For a game not played yet, assume it was pulled 3 days before."""
+    t_ = game_ts.get((team, wk))
+    if t_ and t_ <= NOW_UTC:
+        return t_
+    f_ = week_first.get(wk)
+    return utc(str((pd.to_datetime(f_) - pd.Timedelta(days=3)).date())) if f_ else ''
+
+
+claims = {}
+for r in ro_last.itertuples():
+    lg = status_mod.ROSTER_LONG.get(r.status)
+    if lg is None:
+        continue
+    claims.setdefault(r.gsis_id, []).append(status_mod.Claim(
+        'roster', roster_ts(r.team, int(r.week)), long=lg, team='FA' if lg == 'FA' else r.team))
+ROSTER_LONG = {g_: c[0].long for g_, c in claims.items()}
+_tw = ro[ro.week >= ro.week.max() - 1].groupby('gsis_id').team.nunique()
+NEW_TEAM = set(_tw[_tw > 1].index)      # changed teams in the last two roster weeks
+ROSTER_TEAM = {g_: c[0].team for g_, c in claims.items()}
+
+# official injury report for this week (game designations only)
 inj = pd.read_csv(fetch(f'{NV}/injuries/injuries_{SEASON}.csv', f'inj{SEASON}.csv'))
 iw = inj[(inj.season == SEASON) & (inj.week == WEEK)]
-status = dict(zip(iw.gsis_id, iw.report_status.fillna('')))
-for pid in ON_IR:
-    if status.get(pid, '') in ('', 'Questionable'):
-        status[pid] = 'IR'
-for pid in EXEMPT:
-    status[pid] = 'Exempt'   # league exempt/suspension list: not eligible to play
+for r in iw.itertuples():
+    rs = r.report_status if isinstance(r.report_status, str) else ''
+    if rs in ('Out', 'Doubtful', 'Questionable', ''):
+        t_ = game_ts.get((r.team, WEEK)) or ''
+        ts_ = utc(str((pd.to_datetime(t_[:10]) - pd.Timedelta(days=2)).date()), '16:00') if t_ else WEEK_START
+        claims.setdefault(r.gsis_id, []).append(status_mod.Claim('injury report', ts_, week=rs))
 practice = dict(zip(iw.gsis_id, iw.practice_status.fillna('')))
 injury = dict(zip(iw.gsis_id, iw.report_primary_injury.fillna('')))
 OUT_SET = ('Out', 'IR', 'Exempt', 'Suspended', 'FA')
 
-# live news and status (ESPN every run, Sleeper daily): fresher than the weekly official report
+# live news (ESPN every run, Sleeper daily)
 NEWS = newsfeed.load(CACHE, offline=OFFLINE)
 espn2gsis = {}
 for e_, g_ in zip(ids.espn_id, ids.gsis_id):
@@ -539,39 +575,103 @@ for e_, g_ in zip(ids.espn_id, ids.gsis_id):
 for g_, v in NEWS['sleeper'].items():
     if v.get('espn_id'):
         espn2gsis.setdefault(v['espn_id'], g_)
-SEVERITY = {'': 0, 'Questionable': 1, 'Doubtful': 2, 'Out': 3, 'Suspended': 4, 'IR': 5, 'Exempt': 6}
-news_by = {}
+for g_, v in zip(ro_last.gsis_id, ro_last.espn_id):
+    if pd.notna(v):
+        espn2gsis.setdefault(str(int(v)), g_)
+
+
+def team_from_name(nm):
+    nm = (nm or '').lower()
+    return next((k for k, v in status_mod.TEAMS.items() if nm.endswith(v.lower())), None)
+
+
+news_by, HEADLINE, UNPARSED = {}, {}, []
 for eid, v in NEWS['espn'].items():
     g_ = espn2gsis.get(eid)
     if not g_:
         continue
     news_by[g_] = v
-    if SEVERITY.get(v['status'], 0) > SEVERITY.get(status.get(g_, ''), 0):
-        status[g_] = v['status']
+    ts_ = v.get('ts') or v.get('date') or ''
+    raw = v.get('raw', '')
+    c_ = status_mod.Claim('ESPN', ts_, long=status_mod.ESPN_LONG.get(raw), week=status_mod.ESPN_WEEK.get(raw),
+                          team=team_from_name(v.get('team_name')))
+    h_ = status_mod.parse_headline(v.get('news'))
+    if h_ and h_[0]:
+        kind, lg, tm = h_
+        HEADLINE[g_] = kind
+        if lg:
+            c_.long = lg
+            if lg == 'FA':
+                c_.team = 'FA'
+        if lg == 'active' and c_.week is None:
+            c_.week = ''
+        if tm:
+            c_.team = tm
+        c_.note = kind
+    elif h_:
+        UNPARSED.append(dict(date=v.get('date'), player=name_of_ro.get(g_, v.get('name')), text=v.get('news')))
+    claims.setdefault(g_, []).append(c_)
     if v['injury'] and not injury.get(g_):
         injury[g_] = v['injury']
-# The weekly roster file lags news by days, so its exempt / IR flags can outlive the real move.
-# Fresher evidence that a player is available again overrides them: ESPN listing him as Active,
-# or a "removed from the exempt list" / "activated from IR" headline. Only ESPN (fetched every run) can clear:
-# Sleeper's file is daily and can predate an IR move.
-CLEARED = set()
-for g_ in EXEMPT | ON_IR | {k for k, v in status.items() if v in ('Exempt', 'IR', 'Suspended')}:
-    e_ = news_by.get(g_) or {}
-    if e_.get('status') in ('Out', 'Doubtful', 'IR', 'Suspended'):
-        continue                                  # ESPN currently has him out: trust that
-    wk_ = games[(games.season == SEASON) & (games.week == FLAG_WEEK.get(g_, 1))].gameday
-    since = str((pd.to_datetime(wk_.min()) - pd.Timedelta(days=3)).date()) if len(wk_) else ''
-    if (e_.get('date') or '') < since:
-        continue                                  # this news predates the move
-    if e_.get('raw') == 'Active' or newsfeed.says_cleared(e_.get('news')):
-        CLEARED.add(g_)
-for g_ in CLEARED:
-    EXEMPT.discard(g_)
-    ON_IR.discard(g_)
-    status[g_] = (news_by.get(g_) or {}).get('status', '')
-if CLEARED:
-    print('cleared by fresher news:', sorted(name_of_ro.get(g_, g_) for g_ in CLEARED))
-print('statuses after news:', pd.Series(list(status.values())).value_counts().to_dict())
+for g_, v in NEWS['sleeper'].items():
+    if not v.get('ts'):
+        continue
+    inj_ = v.get('inj') or ''
+    lg = status_mod.SLEEPER_INJ_LONG.get(inj_) or ('IR' if v.get('status') == 'Injured Reserve' else
+                                                   'active' if v.get('status') == 'Active' else None)
+    claims.setdefault(g_, []).append(status_mod.Claim(
+        'Sleeper', v['ts'], long=lg, week=status_mod.SLEEPER_WEEK.get(inj_), team=v.get('team') or ('FA' if lg != 'IR' else None)))
+
+RESOLVED = {g_: status_mod.resolve(c, WEEK_START) for g_, c in claims.items()}
+status = {g_: status_mod.final_status(r) for g_, r in RESOLVED.items()}
+TEAM_NOW = {g_: r['team'] for g_, r in RESOLVED.items() if r['team']}
+ON_IR = {g_ for g_, r in RESOLVED.items() if r['long'] == 'IR'}
+EXEMPT = {g_ for g_, r in RESOLVED.items() if r['long'] == 'Exempt'}
+CLEARED = {g_ for g_, lg in ROSTER_LONG.items() if lg in ('IR', 'Exempt', 'Suspended') and RESOLVED[g_]['long'] == 'active'}
+
+# where fresher news overrode the roster file, say so on the player's card
+KIND_TXT = dict(cleared='Cleared to play', ir='Placed on IR', suspended='Suspended', exempt='Placed on exempt list',
+                released='Released', traded='Traded', signed='Signed')
+LONG_TXT = dict(active='Active again', IR='On injured reserve', Exempt='On the exempt list', Suspended='Suspended',
+                FA='Not on a team')
+OVERRIDE = {}
+for g_, r in RESOLVED.items():
+    if g_ not in ROSTER_LONG:
+        continue
+    lsrc, tsrc = r['long_src'], r['team_src']
+    moved = tsrc is not None and tsrc.src != 'roster' and r['team'] != ROSTER_TEAM[g_]
+    flipped = lsrc is not None and lsrc.src != 'roster' and r['long'] != ROSTER_LONG[g_]
+    if moved or flipped:
+        w_ = tsrc if moved else lsrc
+        what = KIND_TXT.get(w_.note) if w_.note else None
+        if not what:
+            what = (f"Now with {r['team']}" if moved and r['team'] != 'FA' else LONG_TXT.get(r['long'], r['long']))
+        elif w_.note in ('traded', 'signed') and r['team'] not in (None, 'FA'):
+            what += f" to {r['team']}" if w_.note == 'traded' else f" by {r['team']}"
+        OVERRIDE[g_] = dict(what=what, src=w_.src, date=w_.ts[:10])
+print('status overrides from fresher news:', len(OVERRIDE),
+      sorted(f"{name_of_ro.get(g_, g_)}: {v['what']} ({v['src']})" for g_, v in OVERRIDE.items())[:40])
+if UNPARSED:
+    _up = os.path.join(HIST, 'news_unparsed.csv')
+    _old = pd.read_csv(_up) if os.path.exists(_up) else pd.DataFrame(columns=['date', 'player', 'text'])
+    pd.concat([_old, pd.DataFrame(UNPARSED)]).drop_duplicates(['player', 'text']).tail(200).to_csv(_up, index=False)
+    print('WARN status headlines not understood (add to tests/test_status.py):', len(UNPARSED))
+    for u_ in UNPARSED[:10]:
+        print('   ', u_['player'], '|', (u_['text'] or '')[:140])
+
+# player universe = current NFL rosters, with team and availability from the resolver
+ro = ro_last
+keep = ro_last.status.isin(['ACT', 'INA', 'RES', 'EXE', 'SUS']) | ro_last.gsis_id.isin(
+    [g_ for g_, v in OVERRIDE.items() if RESOLVED[g_]['long'] == 'active'])
+universe = ro_last[keep].rename(columns={'gsis_id': 'player_id'})[['player_id', 'pname', 'position', 'team']].copy()
+universe['team'] = universe.player_id.map(TEAM_NOW).fillna(universe.team)
+RELEASED = set(universe[universe.team == 'FA'].player_id)
+universe = universe[universe.team.isin(all_teams)]
+# this week: a player who already played for his old team before a trade stays on that game this week
+_played_for = {p_: t_ for p_, t_ in zip(d[(d.season == SEASON) & (d.week == WEEK)].player_id, d[(d.season == SEASON) & (d.week == WEEK)].team)}
+universe_wk = universe.copy()
+universe_wk['team'] = universe_wk.player_id.map(_played_for).fillna(universe_wk.team)
+print('statuses:', pd.Series(list(status.get(p_, '') for p_ in universe.player_id)).value_counts().to_dict())
 prev_wk = pd.concat([cur, kd[kd.season == SEASON]])
 prev_wk = prev_wk[prev_wk.week == WEEK - 1]
 played_prev, teams_prev = set(prev_wk.player_id), set(prev_wk.team)
@@ -630,7 +730,7 @@ def ecr_num(er):
 
 
 # skill players
-sk = universe[universe.position.isin(POS) & universe.team.isin(kick)]
+sk = universe_wk[universe_wk.position.isin(POS) & universe_wk.team.isin(kick)]
 rows = [dict(season=SEASON, week=WEEK, player_id=r.player_id, player_display_name=r.pname, position=r.position,
              team=r.team, opponent_team=kick[r.team][0]) for r in sk.itertuples()]
 # teammates who won't play: ruled out / on IR / suspended / exempt, or no longer on that team's roster
@@ -649,6 +749,8 @@ fwk = absorb(pd.concat([fwk, vacated(SEASON, WEEK, fwk, absent_now)], axis=1))
 # regulars back this week after missing the team's last two games take work back from whoever covered
 _inj_prev = inj[(inj.season == SEASON) & (inj.week.between(WEEK - 2, WEEK - 1)) & inj.report_status.isin(['Out', 'Doubtful'])]
 WAS_OUT |= set(_inj_prev.gsis_id) | CLEARED
+# new arrivals (trades, signings) take work from their new teammates the same way
+WAS_OUT |= {g_ for g_ in TEAM_NOW if g_ in ROSTER_TEAM and TEAM_NOW[g_] != ROSTER_TEAM[g_]} | NEW_TEAM
 avail_now = {r.player_id for r in sk.itertuples() if status.get(r.player_id, '') not in OUT_SET and r.player_id in WAS_OUT}
 back_now = returning(SEASON, WEEK, sk, avail_now)
 avail_long = {p_ for p_ in universe.player_id if status.get(p_, '') not in LONG_OUT and p_ in WAS_OUT
@@ -667,7 +769,7 @@ no_hist = sk[~sk.player_id.isin(up.player_id)]
 
 # kickers
 ka = kicker_asof
-kk = universe[(universe.position == 'K') & universe.team.isin(kick)]
+kk = universe_wk[(universe_wk.position == 'K') & universe_wk.team.isin(kick)]
 krows = pd.DataFrame([dict(season=SEASON, week=WEEK, player_id=r.player_id, team=r.team) for r in kk.itertuples()])
 kf = kickers.frame(kd, tg, roof, SEASON, WEEK, krows).dropna(subset=['base', 'imp']) if len(krows) else pd.DataFrame()
 if len(kf):
@@ -697,7 +799,8 @@ def base_entry(pid, name, pos, team):
                 miss=bool(pos != 'DST' and pid not in played_prev and team in teams_prev and team not in bye_teams),
                 new=bool(pos != 'DST' and pid not in played_season and WEEK >= 3),
                 news=(news_by.get(pid) or {}).get('news') or sleeper_note(pid), news_date=(news_by.get(pid) or {}).get('date') or None,
-                ret=(news_by.get(pid) or {}).get('ret'), adds=NEWS['trending'].get(pid), num=JERSEY.get(pid))
+                ret=(news_by.get(pid) or {}).get('ret'), adds=NEWS['trending'].get(pid), num=JERSEY.get(pid),
+                upd=OVERRIDE.get(pid))
 
 
 for r in up.itertuples():
@@ -773,9 +876,12 @@ for t_ in sorted(bye_teams):
 # notable free agents (not on any NFL roster), from Sleeper's player file
 in_app = {e['id'] for e in out} | set(universe.player_id)
 abase_fa = A[(SEASON, WEEK)]
-for v in NEWS['sleeper'].values():
+fa_pool = [v for v in NEWS['sleeper'].values() if v.get('gsis_id') and not v.get('team') and v.get('active')]
+fa_pool += [dict(gsis_id=g_, name=name_of_ro.get(g_, g_), pos=pos_of_ro.get(g_), rank=0, body=None, notes=None)
+            for g_ in RELEASED if g_ not in {v['gsis_id'] for v in fa_pool}]
+for v in fa_pool:
     g_ = v.get('gsis_id')
-    if not g_ or v.get('team') or not v.get('active') or v['pos'] not in POS + ['K'] or v['rank'] > 300 or g_ in in_app:
+    if v['pos'] not in POS + ['K'] or v['rank'] > 300 or g_ in in_app:
         continue
     b_ = abase_fa.base_ppr.get(g_)
     if b_ is None or pd.isna(b_) or b_ < 6:
@@ -791,7 +897,7 @@ for v in NEWS['sleeper'].values():
 # players on bye: listed (so they can be found) but not projected this week
 abase = A[(SEASON, WEEK)]
 kbase = kicker_asof
-for r in universe[universe.team.isin(bye_teams)].itertuples():
+for r in universe_wk[universe_wk.team.isin(bye_teams)].itertuples():
     b = (kbase.base.get(r.player_id) if r.position == 'K' else abase.base_ppr.get(r.player_id))
     if b is None or pd.isna(b) or b < (5 if r.position == 'K' else 6):
         continue
@@ -971,6 +1077,7 @@ for r in pool.itertuples():
                        own=None if o_ is None or pd.isna(o_) else round(float(o_)),
                        rs=round(float(a_.base_std / a_.base_ppr), 3) if a_.base_ppr > 0 else 1, rh=round(float(a_.base_half / a_.base_ppr), 3) if a_.base_ppr > 0 else 1,
                        status=status.get(r.player_id, ''), adds=NEWS['trending'].get(r.player_id), num=JERSEY.get(r.player_id),
+                       upd=OVERRIDE.get(r.player_id),
                        news=(news_by.get(r.player_id) or {}).get('news'), back=back_info(r.player_id)))
 
 # kickers, rest of season: baseline scaled by each team's expected scoring, plus dome games
@@ -1000,6 +1107,7 @@ for r in universe[universe.position == 'K'].itertuples():
                        ppg=round(core, 1), cv=round(float(kicker_asof.cv[r.player_id]), 2), trend=0, snap=0,
                        own=None if o_ is None or pd.isna(o_) else round(float(o_)), rs=1, rh=1,
                        status=status.get(r.player_id, ''), adds=NEWS['trending'].get(r.player_id), num=JERSEY.get(r.player_id),
+                       upd=OVERRIDE.get(r.player_id),
                        news=(news_by.get(r.player_id) or {}).get('news')))
 
 # team defenses, rest of season: baseline plus each future opponent's expected scoring and mistakes
@@ -1210,6 +1318,7 @@ print('season table:', len(season_tbl), 'players through week', last_wk)
 
 meta = dict(season=SEASON, week=WEEK, generated=dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%MZ'),
             updated=dt.datetime.now(ZoneInfo('America/New_York')).strftime('%b %-d, %-I:%M %p ET'), league_imp=round(LEAGUE_IMP, 1), expert_date=fp_fresh,
+            status_overrides=len(OVERRIDE), news_unparsed=len(UNPARSED),
             coef={p: [round(float(x), 3) for x in model.C[p]] for p in POS}, matchup_coef=round(model.cm, 3),
             backtest=bt, live=live, expert=expert, ros_backtest=ros_bt, scoreboard=scoreboard, n_injury_reports=int(len(iw)))
 payload = json.dumps(dict(players=out, defense=defense, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)

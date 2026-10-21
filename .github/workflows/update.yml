@@ -7,7 +7,7 @@ on:
   workflow_dispatch: {}
   push:
     branches: [main]
-    paths: ['app.html', 'fonts/**', 'pipeline.py', 'kickers.py', 'defense.py', 'news.py', 'build_site.py', '.github/workflows/update.yml']
+    paths: ['app.html', 'fonts/**', 'pipeline.py', 'kickers.py', 'defense.py', 'news.py', 'status.py', 'tests/**', 'build_site.py', '.github/workflows/update.yml']
 permissions:
   contents: write
   pages: write
@@ -33,6 +33,8 @@ jobs:
           key: nfl-cache-${{ steps.day.outputs.day }}
           restore-keys: nfl-cache-
       - run: pip install -r requirements.txt
+      - name: Status rules still pass (if not, the live site keeps its last good version)
+        run: python tests/test_status.py
       - run: python pipeline.py
       - run: python build_site.py
       - id: check

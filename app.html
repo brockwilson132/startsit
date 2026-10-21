@@ -524,6 +524,7 @@ function inj(p){
   if(p.status==='Doubtful')return {lvl:'bad',tag:'DOUBTFUL',txt:`Doubtful${p.injury?' ('+p.injury+')':''}. Unlikely to play.`};
   const pr=(p.practice||'').startsWith('Did Not')?"didn't practice":(p.practice||'').startsWith('Limited')?'limited in practice':'';
   if(p.status==='Questionable')return {lvl:'warn',tag:'QUESTIONABLE',txt:`Questionable${p.injury?' ('+p.injury+')':''}${pr?', '+pr:''}. Check before kickoff.`};
+  if(p.upd&&!/IR|Released|Suspended|exempt|Not on/.test(p.upd.what))return null;
   if(p.miss&&pr)return {lvl:'warn',tag:'INJURY',txt:`Missed last week and ${pr} this week. Check his status.`};
   if(p.miss)return {lvl:'warn',tag:'CHECK',txt:`Didn't play last week. Check his status.`};
   if(p.new)return {lvl:'warn',tag:'NO GAMES',txt:`Hasn't played yet this season. The projection leans on last season, so check his role.`};
@@ -617,6 +618,8 @@ const ICONS={
   plus:'<path d="M12 5v14M5 12h14"/>'
 };
 const backTxt=(t,c,frm)=>`${[t>=.3?'−'+fmt(t)+' targets':'',c>=.5?'−'+fmt(c)+' carries':''].filter(Boolean).join(', ')} a game with ${frm.map(x=>esc(short(x))).join(' and ')} back`;
+const updAlert=p=>{const u=p.upd,bad=/IR|Released|Suspended|exempt|Not on/.test(u.what);
+  return `<div class="alert ${bad?'bad':'vac'}"><span class="ai">${ic(bad?'cross':'news')}</span><span><b>${esc(short(p.name))}</b> ${esc(u.what)}<small>${esc(u.src)}, ${shortDate(u.date)} · newer than the roster</small></span></div>`};
 const who=(p,txt)=>{const s=short(p.name);return (txt||'').startsWith(s)||(txt||'').startsWith(p.name)?'':`<b>${esc(s)}</b> `};
 const ic=n=>`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
 
@@ -674,6 +677,7 @@ function bcard(p,o={}){
 function alertsHTML(list){
   const out=[];
   list.forEach(p=>{const i=inj(p);
+    if(p.upd)out.push(updAlert(p));
     if(i)out.push(`<div class="alert ${i.lvl}"><span class="ai">${ic('cross')}</span><span><b>${esc(short(p.name))}</b> ${i.txt}</span></div>`);
     if(p.news)out.push(`<div class="alert"><span class="ai">${ic('news')}</span><span>${who(p,p.news)}${esc(p.news)}<small>${p.news_date?shortDate(p.news_date):''}</small></span></div>`);
     if((p.back_tgt>=.3||p.back_car>=.5)&&p.back_from&&p.back_from.length)out.push(`<div class="alert warn"><span class="ai">${ic('down')}</span><span><b>${esc(short(p.name))}</b> ${backTxt(p.back_tgt,p.back_car,p.back_from)}</span></div>`);
@@ -760,6 +764,7 @@ function renderWV(){
     if(a.trend>=8)al.push(['vac','up',`${S_(a)} snap share up ${a.trend} pts. Growing role.`]);
     if(d.trend<=-8)al.push(['bad','snap',`${S_(d)} snap share down ${-d.trend} pts.`]);
     if(d.trend>=8)al.push(['warn','snap',`${S_(d)} role is growing (+${d.trend} snaps). Careful.`]);
+    [a,d].forEach(x=>{if(x.upd)al.push(['_raw','',updAlert(x)])});
     [a,d].forEach(x=>{const i=inj(x);if(i)al.push([i.lvl,'cross',`${S_(x)} ${i.txt}`])});
     [a,d].forEach(x=>{if(x.back)al.push(['warn','down',`${S_(x)} ${backTxt(x.back.tgt,x.back.car,x.back.frm)}`])});
     if(a.adds)al.push(['vac','fire',`${compact(a.adds)} adds for ${S_(a)} in 24h. Move fast.`]);
@@ -775,7 +780,7 @@ function renderWV(){
       <p class="why">${why}</p></div>
       <div class="wkchart"><div class="wklegend"><span><i style="background:var(--yellow)"></i>${esc(short(a.name))} (add)</span><span><i style="background:rgba(244,247,242,.5)"></i>${esc(short(d.name))} (drop)</span></div><div class="bars" role="img" aria-label="Projected points each remaining week">${cols}</div></div>
       <div style="height:12px"></div></section>
-      ${al.length?`<div class="alerts">${al.map(([c,i,x])=>`<div class="alert ${c}"><span class="ai">${ic(i)}</span><span>${x}</span></div>`).join('')}</div>`:''}`;
+      ${al.length?`<div class="alerts">${al.map(([c,i,x])=>c==='_raw'?x:`<div class="alert ${c}"><span class="ai">${ic(i)}</span><span>${x}</span></div>`).join('')}</div>`:''}`;
   } else html+=`<div class="empty" style="margin-top:14px"><b>${!d&&!a?'Pick a drop and an add':!d?'Who would you drop?':'Who would you add?'}</b></div>`;
   const pool=bestAvailable(wvPos).slice(0,15);
   html+=`<div class="sec-h"><h3>Best available</h3><small>under 50% rostered</small></div>
