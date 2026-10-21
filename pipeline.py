@@ -687,12 +687,19 @@ def roster_ts(team, wk):
 
 
 claims = {}
+# first week of each player's current roster status and current team (the file repeats them week after week)
+_rw = ro[['gsis_id', 'week', 'status', 'team']].sort_values('week')
+_last = _rw.groupby('gsis_id').last()
+_chg_s = _rw[_rw.status != _rw.gsis_id.map(_last.status)].groupby('gsis_id').week.max()
+_chg_t = _rw[_rw.team != _rw.gsis_id.map(_last.team)].groupby('gsis_id').week.max()
 for r in ro_last.itertuples():
     lg = status_mod.ROSTER_LONG.get(r.status)
     if lg is None:
         continue
+    ws_, wt_ = int(_chg_s.get(r.gsis_id, 0)) + 1, int(_chg_t.get(r.gsis_id, 0)) + 1
     claims.setdefault(r.gsis_id, []).append(status_mod.Claim(
-        'roster', roster_ts(r.team, int(r.week)), long=lg, team='FA' if lg == 'FA' else r.team))
+        'roster', roster_ts(r.team, int(r.week)), long=lg, team='FA' if lg == 'FA' else r.team,
+        since_long=roster_ts(r.team, ws_), since_team=roster_ts(r.team, wt_)))
 ROSTER_LONG = {g_: c[0].long for g_, c in claims.items()}
 _tw = ro[ro.week >= ro.week.max() - 1].groupby('gsis_id').team.nunique()
 NEW_TEAM = set(_tw[_tw > 1].index)      # changed teams in the last two roster weeks

@@ -124,6 +124,11 @@ class Claim:
     week: str = None         # '' / Questionable / Doubtful / Out
     team: str = None         # team abbreviation or 'FA'
     note: str = None
+    # roster only: when its current status / team began. The weekly roster file carries a status forward
+    # week after week, so a newer file isn't newer evidence; against an explicit news event (a headline
+    # like "removed from the exempt list") the roster counts from when its value actually started.
+    since_long: str = None
+    since_team: str = None
 
 
 def _ts(x):
@@ -135,13 +140,19 @@ def resolve(claims, week_start):
     Returns dict(long, week, team, long_src, team_src) with the winning claims."""
     out = dict(long='active', week='', team=None, long_src=None, team_src=None, week_src=None)
     for field in ('team', 'long', 'week'):
+        event = any(c.note and getattr(c, field) is not None for c in claims)
+
+        def eff(c):
+            if event and c.src == 'roster':
+                return getattr(c, 'since_' + field, None) or c.ts
+            return c.ts
         best = None
         for c in claims:
             v = getattr(c, field)
             if v is None or (field == 'week' and c.ts < week_start):
                 continue
             # ties go to the later-listed (more authoritative for that field) source
-            if best is None or c.ts >= best.ts:
+            if best is None or eff(c) >= eff(best):
                 best = c
         if best is not None:
             out[field] = getattr(best, field)

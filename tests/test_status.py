@@ -84,6 +84,20 @@ def test_jacobs_reinstated_after_roster_snapshot():
     assert final_status(r) == '' and r['team'] == 'GB', r
 
 
+def test_carried_forward_roster_loses_to_newer_headline():
+    # the week-7 roster file (published after the news) still repeats Jacobs' week-1 exempt status
+    r = resolve([Claim('roster', '2026-10-19T16:00', long='Exempt', team='GB', since_long='2026-09-10T17:00', since_team='2026-09-10T17:00'),
+                 Claim('espn', '2026-10-19T14:10', long='active', week='', note='cleared')], WEEK_START)
+    assert final_status(r) == '' and r['team'] == 'GB', r
+
+
+def test_old_headline_loses_to_later_roster_change():
+    # "placed on IR" in early October, then activated (the roster changed to active after the headline)
+    r = resolve([Claim('roster', '2026-10-18T17:00', long='active', team='DAL', since_long='2026-10-18T17:00'),
+                 Claim('espn', '2026-10-01T15:00', long='IR', note='ir')], WEEK_START)
+    assert final_status(r) == '', r
+
+
 def test_stale_active_cannot_undo_ir():
     # Hurts: ESPN and Sleeper still said Active from before the IR move that the game-day roster shows
     r = resolve([Claim('roster', '2026-10-18T13:00', long='IR', team='PHI'),
