@@ -598,6 +598,49 @@ footer .linkish{font-size:14px}
 .tile .tl{font:700 12px var(--body);color:var(--muted)}
 .tile b{font:900 26px/1.05 var(--display)}
 .tile .td{font-size:12.5px;color:var(--muted)}.tile .td.up{color:var(--up)}.tile .td.dn{color:var(--down)}
+
+/* ---------- ranking cards ---------- */
+.mpick{display:flex;align-items:center;gap:10px;width:100%;margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);text-align:left}
+.mpick>.ic{width:20px;height:20px;flex:none;color:var(--muted)}
+.mpick span{flex:1;min-width:0;font-size:13.5px;line-height:1.35}
+.mpick small{display:block;font:700 11px var(--body);color:var(--muted);letter-spacing:.02em}
+.mpick b{font-weight:600;color:var(--muted)}.mpick b.on{color:var(--ink);font-weight:800}
+.mpick span i{font-style:normal;color:var(--faint);margin:0 5px}
+.mpick em{font:700 13px var(--body);font-style:normal;color:var(--turf-hi);flex:none}
+.rk-list{overflow:visible}
+.rc-head{position:sticky;top:var(--tbh,64px);z-index:5;display:grid;grid-template-columns:22px 1fr;align-items:center;gap:8px;padding:6px 12px 6px 8px;background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);border-radius:var(--r) var(--r) 0 0}
+.rc-hl{font:700 12px var(--body);color:var(--muted)}
+.rc-m{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:left}
+.rc-head .mh{border:0;background:none;padding:6px 0;font:700 12px var(--body);color:var(--muted);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:2px solid transparent}
+.rc-head .mh.on{color:var(--ink);border-bottom-color:var(--yellow)}
+.rc-head .mh i{font-style:normal;font-size:9px;margin-left:2px}
+.li.rc{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:22px 1fr;grid-template-areas:"rk id" ". m" ". ch";gap:8px 8px;align-items:center;padding:12px 12px 12px 8px;content-visibility:auto;contain-intrinsic-size:auto 140px}
+.li.rc .rk{grid-area:rk;font-size:16px}
+.rc-id{grid-area:id;display:flex;align-items:center;gap:10px;min-width:0}
+.rc-id .nm{font:700 15.5px/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li.rc>.rc-m{grid-area:m}
+.li.rc .wc{grid-area:ch}
+.rc-m .m b{display:block;font:800 20px/1 var(--display);color:var(--muted);font-variant-numeric:tabular-nums}
+.rc-m .m.on b{font-size:26px;color:var(--ink)}
+.rc-m .m b.na{color:var(--faint);font-weight:600}
+.li.rc.ax{display:grid;grid-template-columns:22px 1fr;grid-template-areas:none;padding:6px 12px 4px 8px;min-height:0;contain-intrinsic-size:auto 20px;background:var(--surface-2)}
+.li.rc.ax .wc-ax{grid-column:2}
+.mdefs{display:grid;gap:4px;margin:12px 2px 0;font-size:12.5px;color:var(--muted)}.mdefs b{color:var(--ink-2);font-weight:700}
+.mchips{display:flex;flex-wrap:wrap;gap:6px}
+.mchip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:600 14px var(--body)}
+.mchip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mchip i{font:800 11px/18px var(--display);font-style:normal;width:18px;height:18px;border-radius:50%;background:var(--yellow);color:#141414;text-align:center}
+.mchip:disabled{opacity:.38}
+/* holographic team logo: a projected, scan-lined, color-split recreation behind each card (masks fade its edges) */
+.holo{position:absolute;right:-34px;top:-38px;width:190px;height:190px;z-index:-1;pointer-events:none;perspective:480px;
+  -webkit-mask-image:radial-gradient(closest-side at 62% 45%,#000 30%,transparent 100%);mask-image:radial-gradient(closest-side at 62% 45%,#000 30%,transparent 100%)}
+.holo::before{content:"";position:absolute;inset:16%;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--tc) 34%,transparent),transparent);opacity:.5}
+.holo img{position:absolute;inset:26px;width:138px;height:138px;object-fit:contain;transform:rotateY(-34deg) rotateX(14deg) rotateZ(-4deg);transform-origin:80% 50%;opacity:.11;filter:saturate(1.3) drop-shadow(0 0 8px var(--tc))}
+.holo img.ghost{opacity:.12;filter:brightness(0) invert(1);mix-blend-mode:overlay;translate:4px -2px}
+.holo::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 2px,var(--surface) 2px 3.5px);opacity:.9}
+.li.rc.open .holo img{opacity:.16}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .holo img{opacity:.15}:root:not([data-theme="light"]) .holo img.ghost{opacity:.16;mix-blend-mode:screen;filter:brightness(0) invert(1) drop-shadow(0 0 2px var(--tc2))}}
+:root[data-theme="dark"] .holo img{opacity:.15}
 </style>
 </head>
 <body>
@@ -635,6 +678,12 @@ footer .linkish{font-size:14px}
   <div class="searchbox"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20 20"/></svg>
     <input id="sq" type="search" placeholder="Search players or a team (KC)" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" aria-label="Search players"></div>
   <div class="sh-list" id="shList"></div>
+</div>
+<div class="sheet-bg" id="msheetBg" hidden></div>
+<div class="sheet" id="msheet" role="dialog" aria-modal="true" aria-labelledby="msTitle" hidden>
+  <div class="grab"></div>
+  <div class="sh-top"><h3 id="msTitle">Metrics</h3><button class="close" id="msClose" aria-label="Close">✕</button></div>
+  <div class="sh-list" id="msList"></div>
 </div>
 <script>
 let DATA={};
@@ -737,6 +786,7 @@ function openSheet(ctx){sheetCtx=ctx;
 function closeSheet(){const bg=$('#sheetBg'),sh=$('#sheet');bg.classList.remove('on');sh.classList.remove('on');document.body.style.overflow='';
   setTimeout(()=>{bg.hidden=true;sh.hidden=true},280)}
 $('#sheetBg').onclick=closeSheet;$('#sheetClose').onclick=closeSheet;
+$('#msheetBg').onclick=()=>closeMetrics();$('#msClose').onclick=()=>closeMetrics();
 function resRow(p,i,isW){const right=isW?`<b>${fmt(p.ppg*wsc(p))}</b><small class="muted">/g</small>`:p.bye?'<span class="tag plain">Bye</span>':inactive(p)?`<span class="tag out">${p.status==='FA'?'FA':'Out'}</span>`:`<b>${fmt(val(p))}</b>`;
   return `<button class="res${i===sheetActive?' active':''}" data-id="${p.id}"><span class="st" style="${tc(p.team)}"></span><span><span class="nm">${esc(p.name)}</span><span class="sub">${badge(p.team)}<span class="pos">${p.pos}</span>${isW?'':injTag(p)}${!isW&&p.opp?`<span>${vs(p)}</span>`:''}</span></span><span>${right}</span></button>`}
 function sheetResults(){
@@ -1066,7 +1116,7 @@ function renderTR(){
 }
 
 /* ---------- rankings ---------- */
-let rankPos='ALL', rkView=store.get('ss_rkview','week'), rkOpen=null, rkSub=Object.assign({week:'proj',season:'ppg',ros:'tot'},store.get('ss_rksub',{}));
+let rankPos='ALL', rkView=store.get('ss_rkview','week'), rkOpen=null;
 const SEA=()=>DATA.season||[];
 const wkPts=p=>p.wp.map((x,i)=>x==null?null:S==='std'?p.ws[i]:S==='half'?(x+p.ws[i])/2:x);
 const TIERS={QB:[[12,'QB1']],RB:[[12,'RB1'],[24,'RB2']],WR:[[12,'WR1'],[24,'WR2'],[36,'WR3']],TE:[[12,'TE1']],K:[[12,'K1']],DST:[[12,'DST1']]};
@@ -1114,11 +1164,13 @@ function weekSeries(id){
       if(x==null)o.t=byes.has(wk)?'bye':w&&x===null?'out':'none';else{o.t='next';o.pj=x*wsc(w)}}
     out.push(o)}
   return out}
-/* which weeks a view is about */
-function emphFor(view,sub,ser){
-  if(view==='week')return c=>c.wk===M.week;
-  if(view==='ros')return sub==='n4'?c=>c.wk>=M.week&&c.wk<M.week+4:c=>c.wk>=M.week;
-  if(sub==='l3'){const l=ser.filter(c=>c.t==='past').slice(-3).map(c=>c.wk);return c=>l.includes(c.wk)}
+/* which weeks a view is about: the sorted metric's own window when it has one, else the period's */
+function emphFor(view,em,ser){
+  em=em||{week:'week',season:'past',ros:'future'}[view];
+  if(em==='week')return c=>c.wk===M.week;
+  if(em==='future')return c=>c.wk>=M.week;
+  if(em==='n4')return c=>c.wk>=M.week&&c.wk<M.week+4;
+  if(em==='l3'){const l=ser.filter(c=>c.t==='past').slice(-3).map(c=>c.wk);return c=>l.includes(c.wk)}
   return c=>c.wk<M.week||(c.wk===M.week&&c.t==='past')}
 function weekChart(ser,o){
   const ym=o.ymax, Y=v=>Math.max(0,Math.min(100,v/ym*100)), emph=o.emph||(()=>true), big=!!o.big;
@@ -1147,68 +1199,127 @@ function readout(c,p){
 const KEY=`<div class="wc-key"><span><i class="k act"></i>Scored</span><span><i class="k gain"></i>Above pre-game projection</span><span><i class="k short"></i>Short of it</span><span><i class="k now"></i>Week ${M.week}</span><span><i class="k fut"></i>Projected</span></div>`;
 function vsProj(ser){const d=ser.filter(c=>c.t==='past'&&c.pj!=null).map(c=>c.act-c.pj);return d.length?{n:d.length,beat:d.filter(x=>x>=0).length,avg:sum(d)/d.length}:null}
 
+/* ---------- ranking metrics ----------
+   Every metric reads from one context per player (this week, season, rest of year). Pick up to 3; one sorts.
+   low: lower is better (sorted ascending). em: the weeks the chart highlights when this metric sorts. */
+const f1=n=>fmt(n,1), f0=n=>fmt(n,0), sg1=n=>(n>=0?'+':'−')+fmt(Math.abs(n),1), sg0=n=>(n>=0?'+':'−')+fmt(Math.abs(n),0), pc=n=>fmt(n,0)+'%';
+const SKILL=x=>['QB','RB','WR','TE'].includes(x.pos), LIVE=x=>x.p&&live(x.p);
+const MET=[
+  ['This week',[
+    {id:'proj',l:'Projection',s:'Proj',em:'week',v:x=>LIVE(x)?val(x.p):null,f:f1,d:'Projected points this week.'},
+    {id:'ceil',l:'Ceiling',s:'Ceiling',em:'week',v:x=>LIVE(x)?x.p.hi*scale(x.p):null,f:f1,d:'A top-10% outcome this week.'},
+    {id:'floor',l:'Floor',s:'Floor',em:'week',v:x=>LIVE(x)?x.p.lo*scale(x.p):null,f:f1,d:'A bottom-10% outcome this week.'},
+    {id:'edge',l:'Matchup edge',s:'Matchup',em:'week',v:x=>LIVE(x)?((x.p.matchup||0)+(x.p.vegas||0))*scale(x.p):null,f:sg1,d:'Points the opponent and the Vegas line add to his usual output.'},
+    {id:'oppd',l:'Defense vs position',s:'Opp D',em:'week',v:x=>LIVE(x)&&SKILL(x)?x.p.xdef:null,f:n=>(n>=0?'+':'−')+pc(Math.abs(n)),d:'How much more (or less) than normal this opponent allows to his position.'},
+    {id:'tt',l:'Team total',s:'Team pts',em:'week',v:x=>LIVE(x)&&x.pos!=='DST'?x.p.imp:null,f:f1,d:"His team's Vegas-implied points this week."},
+    {id:'ecr',l:'Experts rank',s:'Experts',em:'week',low:1,v:x=>LIVE(x)&&x.p.ecr!=null?x.p.ecr:null,f:n=>x_pos+n,d:'FantasyPros consensus rank at his position (lower is better).'},
+    {id:'gap',l:'Model vs experts',s:'vs Exp',em:'week',v:x=>LIVE(x)&&x.p.ecr!=null&&x.p.rank!=null?x.p.ecr-x.p.rank:null,f:sg0,d:'How many spots higher the model ranks him than the experts do.'}]],
+  ['Scoring',[
+    {id:'ppg',l:'Points per game',s:'Pts/g',em:'past',v:x=>x.st&&x.st.gp?x.st.ppg:null,f:f1,d:'Average points in games played.'},
+    {id:'tot',l:'Total points',s:'Total',em:'past',v:x=>x.st&&x.st.gp?x.st.tot:null,f:f0,d:'Season total.'},
+    {id:'l3',l:'Last 3 games',s:'Last 3',em:'l3',v:x=>x.st&&x.st.gp?x.st.l3:null,f:f1,d:'Points a game over his last 3 games.'},
+    {id:'best',l:'Best week',s:'Best',em:'past',v:x=>x.st&&x.st.gp?Math.max(...x.st.w.filter(v=>v!=null)):null,f:f1,d:'His highest-scoring game.'},
+    {id:'t12',l:'Top-12 weeks',s:'Top 12',em:'past',v:x=>x.st&&x.st.gp?x.st.fin.filter(f=>f!=null&&f<=12).length:null,f:f0,d:'Games he finished top 12 at his position.'},
+    {id:'swing',l:'Weekly swing',s:'Swing',em:'past',low:1,v:x=>{const g=x.st?x.st.w.filter(v=>v!=null):[];if(g.length<3)return null;const m=sum(g)/g.length;return Math.sqrt(sum(g.map(v=>(v-m)**2))/(g.length-1))},f:f1,d:'Standard deviation of his weekly points. Lower is steadier.'},
+    {id:'vsp',l:'vs pre-game projection',s:'vs Proj',em:'past',v:x=>{const q=vsProj(x.ser);return q&&q.n>=3?q.avg:null},f:sg1,d:'Average points above or below what was projected before each game.'},
+    {id:'beat',l:'Beat projection',s:'Beat %',em:'past',v:x=>{const q=vsProj(x.ser);return q&&q.n>=3?q.beat/q.n*100:null},f:pc,d:'Share of games he scored at or above his pre-game projection.'}]],
+  ['Workload',[
+    {id:'xfp',l:'Workload value',s:'Work',em:'past',v:x=>x.p&&x.p.xfp!=null&&SKILL(x)?x.p.xfp*scale(x.p):null,f:f1,d:'What his targets, carries and red-zone chances are worth a game for an average player.'},
+    {id:'over',l:'Scoring vs workload',s:'vs Work',em:'past',v:x=>x.p&&x.p.xfp!=null&&SKILL(x)&&x.st&&x.st.gp?x.st.ppg-x.p.xfp*scale(x.p):null,f:sg1,d:'Points a game above his workload value. Big positive numbers tend to cool off.'},
+    {id:'tgt',l:'Targets per game',s:'Tgt/g',em:'past',v:x=>x.s&&['RB','WR','TE'].includes(x.pos)?x.s.u.tgt:null,f:f1},
+    {id:'ts',l:'Target share',s:'Tgt %',em:'past',v:x=>x.s&&['WR','TE','RB'].includes(x.pos)&&x.s.u.ts?x.s.u.ts:null,f:pc,d:"Share of his team's targets."},
+    {id:'car',l:'Carries per game',s:'Car/g',em:'past',v:x=>x.s&&['RB','QB'].includes(x.pos)?x.s.u.car:null,f:f1},
+    {id:'att',l:'Pass attempts per game',s:'Att/g',em:'past',v:x=>x.s&&x.pos==='QB'?x.s.u.att:null,f:f1},
+    {id:'snap',l:'Snap share',s:'Snaps',em:'past',v:x=>x.s&&SKILL(x)&&x.s.u.snap?x.s.u.snap:null,f:pc},
+    {id:'rz',l:'Red-zone chances per game',s:'RZ/g',em:'past',v:x=>x.s&&SKILL(x)?x.s.u.rz:null,f:f1,d:'Targets and carries inside the 20.'},
+    {id:'yds',l:'Yards per game',s:'Yds/g',em:'past',v:x=>x.s&&SKILL(x)?x.s.u.yds:null,f:f0},
+    {id:'td',l:'Touchdowns',s:'TD',em:'past',v:x=>x.s&&x.s.u.td!=null?x.s.u.td:null,f:f0}]],
+  ['Trend',[
+    {id:'l3d',l:'Last 3 vs season',s:'Trend',em:'l3',v:x=>x.st&&x.st.gp>=4?x.st.l3-x.st.ppg:null,f:sg1,d:'Last-3 average minus season average.'},
+    {id:'sntr',l:'Snap share change',s:'Snap Δ',em:'l3',v:x=>{const q=x.p||x.w;return q&&SKILL(x)&&q.trend!=null?q.trend:null},f:sg0,d:'Recent snap share minus his earlier snap share, in points.'},
+    {id:'adds',l:'Adds in 24 hours',s:'Adds',em:'future',v:x=>x.w&&x.w.adds?x.w.adds:null,f:compact,d:'Sleeper adds in the last day.'}]],
+  ['Rest of year',[
+    {id:'ros',l:'Rest-of-year points',s:'ROS',em:'future',v:x=>x.w?rosT(x.w):null,f:f0,d:'Projected points from this week through Week 18.'},
+    {id:'rosg',l:'Rest-of-year per game',s:'ROS/g',em:'future',v:x=>x.w?x.w.ppg*wsc(x.w):null,f:f1},
+    {id:'n4',l:'Next 4 weeks',s:'Next 4',em:'n4',v:x=>x.w?nextN(x.w,4):null,f:f0,d:'Projected points over the next four weeks.'},
+    {id:'vor',l:'Value over waivers',s:'Value',em:'future',v:x=>x.w?vorT(x.w):null,f:sg0,d:'Points above a waiver-level player at his position. Compares across positions, so use it for trades.'},
+    {id:'gl',l:'Games left',s:'Games',em:'future',v:x=>x.w?gamesLeft(x.w):null,f:f0},
+    {id:'own',l:'Rostered',s:'Rost.',em:'future',v:x=>x.w&&x.w.own!=null?x.w.own:null,f:pc,d:'Share of leagues that roster him.'}]]];
+const METS=Object.fromEntries(MET.flatMap(([g,l])=>l.map(m=>[m.id,{...m,g}])));
+let x_pos='';   // set per row so rank-style formats can show the position
+const RK_DEF={week:{m:['proj','ceil','edge'],s:0},season:{m:['ppg','vsp','xfp'],s:0},ros:{m:['ros','n4','vor'],s:0}};
+let rkM=store.get('ss_rkm',null);
+if(!rkM||typeof rkM!=='object')rkM={};
+['week','season','ros'].forEach(k=>{const c=rkM[k];if(!c||!Array.isArray(c.m)||!c.m.length||!c.m.every(id=>METS[id]))rkM[k]=JSON.parse(JSON.stringify(RK_DEF[k]));rkM[k].s=Math.min(rkM[k].s||0,rkM[k].m.length-1)});
+const saveRkM=()=>store.set('ss_rkm',rkM);
+/* the player pool for a period, as metric contexts */
+function rkPool(){
+  const st=seasonStats(), stById=Object.fromEntries(st.map(r=>[r.p.id,r]));
+  const ctx=id=>{const p=byId[id],s=seaOf(id),w=wById[id],o=p||s||w;return {id,p,s,w,st:stById[id],pos:o.pos,team:(p||w||s).team,name:o.name,ser:weekSeries(id)}};
+  let ids;
+  if(rkView==='week')ids=P.filter(p=>!p.bye&&!inactive(p)&&fitPos(p)).map(p=>p.id);
+  else if(rkView==='season'){const s=st.filter(r=>fitPos(r.p)&&r.gp>0),minG=Math.max(1,Math.floor(Math.max(...s.map(r=>r.gp),1)/2));ids=s.filter(r=>r.gp>=minG).map(r=>r.p.id)}
+  else ids=W.filter(fitPos).map(p=>p.id);
+  return ids.map(ctx)}
+function metaLine(x,showPos){
+  const p=x.p,bits=[];if(showPos)bits.push(`<span class="pos">${x.pos}</span>`);
+  if(rkView==='week'&&p)bits.push(`<span>${vs(p)||x.team}${p.final?' · final':live(p)?' · '+fmtTime(p):''}</span>`);
+  else if(rkView==='season'&&x.st)bits.push(`<span>${x.team} · ${x.st.gp} games</span>`);
+  else{const bw=x.w&&byeWk(x.w);bits.push(`<span>${x.team}${bw?` · bye ${bw}`:''}</span>`)}
+  return bits.join('')}
+function holo(t){const u=logoSrc(t);if(!u)return '';const big=u.replace(/w=96&h=96/,'w=240&h=240');
+  return `<div class="holo" aria-hidden="true"><img src="${big}" alt="" loading="lazy" decoding="async" onerror="this.parentNode.remove()"><img class="ghost" src="${big}" alt="" loading="lazy" decoding="async"></div>`}
+
 function renderRank(){
-  const showPos=rankPos==='ALL'||rankPos==='FLEX', sub=rkSub[rkView];
-  const SUBS={week:[['proj','Projection'],['up','Upside'],['mu','Matchup']],season:[['ppg','Per game'],['use','Usage'],['l3','Last 3']],ros:[['tot','Total'],['n4','Next 4'],['vor','Value']]}[rkView];
+  const showPos=rankPos==='ALL'||rankPos==='FLEX', cfg=rkM[rkView], mets=cfg.m.map(id=>METS[id]), sm=mets[cfg.s];
   const ymax=yCap(['K','DST'].includes(rankPos)?rankPos:'QB');
-  const ch=(v,l,cls='')=>`<span class="ch${cls?' '+cls:''}"><b>${v}</b>${l}</span>`;
-  const sgn=(v,d=1)=>(v>=0?'+':'−')+fmt(Math.abs(v),d);
-  const usage=(pos,u)=>pos==='QB'?ch(fmt(u.att,0),'att')+ch(fmt(u.car),'car'):pos==='RB'?ch(fmt(u.car),'car')+ch(fmt(u.tgt),'tgt')+ch(u.snap+'%','snaps'):['WR','TE'].includes(pos)?ch(fmt(u.tgt),'tgt')+(u.ts?ch(fmt(u.ts,0)+'%','share'):'')+ch(u.snap+'%','snaps'):'';
-  const row=(id,i,team,name,sub_,right)=>{const ser=weekSeries(id),open=rkOpen===id;
-    return `<div class="li rr${open?' open':''}" data-id="${id}" role="button" tabindex="0" aria-expanded="${open}"><span class="rk">${i+1}</span>${crest(team,24)}<span style="min-width:0"><div class="nm">${name}</div><div class="sub">${sub_}</div></span><span class="rt">${right}</span>${weekChart(ser,{ymax,emph:emphFor(rkView,sub,ser)})}</div>${open?`<div class="detail">${detailHTML(id,ser)}</div>`:''}`};
-  let rows='',note='',metric='';
-  const posC=p=>showPos?`<span class="pos">${p.pos}</span>`:'';
-  if(rkView==='week'){
-    const k=scale, edge=p=>((p.matchup||0)+(p.vegas||0))*k(p);
-    const key={proj:val,up:p=>p.hi*k(p),mu:edge}[sub];
-    metric={proj:'Projected points',up:'Ceiling: a top-10% week',mu:'Points the matchup and Vegas add'}[sub];
-    const list=P.filter(p=>!p.bye&&!inactive(p)&&fitPos(p)).sort((a,b)=>key(b)-key(a)).slice(0,100);
-    rows=list.map((p,i)=>{const nm=esc(p.name)+' '+injTag(p);
-      if(sub==='up')return row(p.id,i,p.team,nm,`${posC(p)}<span>${vs(p)||p.team}</span>${ch(fmt(val(p)),'proj')}${ch(fmt(p.lo*k(p)),'floor')}`,`<b>${fmt(p.hi*k(p))}</b><small>${fmt(p.hi*k(p)-val(p),1)} upside</small>`);
-      if(sub==='mu'){const e=edge(p);return row(p.id,i,p.team,nm,`${posC(p)}<span>${vs(p)||p.team}</span>${muChip(p)}${ch(fmt(p.imp,1),p.pos==='DST'?'opp pts':'team pts')}`,`<b class="${e>=.5?'up':e<=-.5?'dn':''}">${sgn(e)}</b><small>${fmt(val(p))} proj</small>`)}
-      return row(p.id,i,p.team,nm,`${posC(p)}<span>${vs(p)||p.team}, ${fmtTime(p)}</span>${muChip(p)}${p.ecr!=null?ch('#'+p.ecr,'experts'):''}`,`<b>${fmt(val(p))}</b>${p.final?`<small>${actual(p)!=null?'scored '+fmt(actual(p)):'final'}</small>`:`<small>${fmt(p.lo*k(p),0)}–${fmt(p.hi*k(p),0)}</small>`}`)}).join('');
-    const byes=P.filter(p=>p.bye&&fitPos(p)).sort((a,b)=>b.base-a.base), teams=[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort();
-    note=teams.length?`<div class="sec-h"><h3>On bye in Week ${M.week}</h3><small>${teams.join(', ')}</small></div><div class="bye-pills">${byes.slice(0,24).map(p=>`<button data-open="${p.id}">${badge(p.team)}${esc(p.name)}</button>`).join('')}</div>`:'';
-  } else if(rkView==='season'){
-    const st=seasonStats().filter(r=>fitPos(r.p)&&r.gp>0), minG=Math.max(1,Math.floor(Math.max(...st.map(r=>r.gp),1)/2));
-    const xfp=r=>{const q=byId[r.p.id];return q&&q.xfp!=null&&!['K','DST'].includes(r.p.pos)?q.xfp*scale(q):r.ppg};
-    const key={ppg:r=>r.ppg,use:xfp,l3:r=>r.l3}[sub];
-    metric={ppg:'Points per game',use:'Points his workload is worth a game',l3:'Points a game, last 3'}[sub];
-    const list=st.filter(r=>r.gp>=minG).sort((a,b)=>key(b)-key(a)).slice(0,100);
-    rows=list.map((r,i)=>{const p=r.p,tcn=tierCounts(r),nm=esc(p.name)+' '+injTag(byId[p.id]),vp=vsProj(weekSeries(p.id));
-      if(sub==='use'){const x=xfp(r),d=r.ppg-x;return row(p.id,i,p.team,nm,`${posC(p)}${usage(p.pos,p.u)||`<span>${p.team}, ${r.gp}g</span>`}`,`<b>${fmt(x)}</b><small class="${d>=2?'up':d<=-2?'dn':''}">${['K','DST'].includes(p.pos)?'pts/g':`scores ${sgn(d)}`}</small>`)}
-      if(sub==='l3'){const d=r.l3-r.ppg;return row(p.id,i,p.team,nm,`${posC(p)}<span>${p.team}, ${r.gp}g</span>${ch(fmt(r.ppg),'/g season')}`,`<b>${fmt(r.l3)}</b><small class="${d>=2?'up':d<=-2?'dn':''}">${d>=0?'▲':'▼'} ${fmt(Math.abs(d))}</small>`)}
-      return row(p.id,i,p.team,nm,`${posC(p)}<span>${p.team}, ${r.gp}g</span>${tcn.length&&tcn[0][1]?ch(tcn[0][1]+'×',tcn[0][0]):''}${vp?ch(sgn(vp.avg),'vs proj','vp '+(vp.avg>=1?'up':vp.avg<=-1?'dn':'')):''}`,`<b>${fmt(r.ppg)}</b><small>${fmt(r.tot,0)} total</small>`)}).join('');
-    note=`<p class="cap" style="margin-top:10px">${sub==='use'?'Workload value: what his targets, carries and red-zone chances are worth for an average player. "Scores +3" means he runs 3 points a game above it. ':''}Minimum ${minG} games.</p>`;
-  } else {
-    const key={tot:rosT,n4:p=>nextN(p,4),vor:vorT}[sub];
-    metric={tot:'Projected points, Weeks '+M.week+'–18',n4:'Projected points, Weeks '+M.week+'–'+(M.week+3),vor:'Points above a waiver-level player'}[sub];
-    const list=W.filter(fitPos).sort((a,b)=>key(b)-key(a)).slice(0,100);
-    const prk={};['QB','RB','WR','TE','K','DST'].forEach(q=>W.filter(x=>x.pos===q).sort((a,b)=>rosT(b)-rosT(a)).forEach((x,j)=>prk[x.id]=j+1));
-    rows=list.map((p,i)=>{const nm=esc(p.name)+(p.status?` <span class="tag ${['Out','IR','Exempt','Suspended'].includes(p.status)?'out':'warn'}">${esc(p.status==='Questionable'?'Q':p.status)}</span>`:''),bw=byeWk(p);
-      if(sub==='n4'){const b4=bw&&bw<M.week+4;return row(p.id,i,p.team,nm,`${posC(p)}<span>${p.team}</span>${b4?`<span class="tag warn">bye ${bw}</span>`:''}${ch(fmt(rosT(p),0),'rest of yr')}`,`<b>${fmt(nextN(p,4),0)}</b><small>${fmt(nextN(p,4)/Math.max(1,p.wk.slice(0,4).filter(x=>x!=null).length))}/g</small>`)}
-      if(sub==='vor')return row(p.id,i,p.team,nm,`${posC(p)}${ch(p.pos+prk[p.id],'')}${ch(fmt(rosT(p),0),'pts')}${p.cv!=null?ch(p.cv>.7?'Boom/bust':p.cv<.45?'Steady':'Avg','swing'):''}`,`<b>${sgn(vorT(p),0)}</b><small>over waivers</small>`);
-      return row(p.id,i,p.team,nm,`${posC(p)}<span>${p.team}</span>${bw?`<span>bye ${bw}</span>`:''}${p.own!=null?`<span>${p.own}% rost.</span>`:''}`,`<b>${fmt(rosT(p),0)}</b><small>${fmt(p.ppg*wsc(p))}/g</small>`)}).join('');
-    note=sub==='vor'?`<p class="cap" style="margin-top:10px">Compares across positions, so use it for trades.</p>`:'';
-  }
+  const pool=rkPool(), vals=new Map(pool.map(x=>[x.id,mets.map(m=>{x_pos=x.pos;const v=m.v(x);return v==null||isNaN(v)?null:v})]));
+  const dir=sm.low?1:-1;
+  const list=pool.slice().sort((a,b)=>{const va=vals.get(a.id)[cfg.s],vb=vals.get(b.id)[cfg.s];if(va==null&&vb==null)return 0;if(va==null)return 1;if(vb==null)return -1;return (va-vb)*dir}).slice(0,100);
+  const rows=list.map((x,i)=>{const v=vals.get(x.id),open=rkOpen===x.id;x_pos=x.pos;
+    return `<div class="li rc${open?' open':''}" data-id="${x.id}" role="button" tabindex="0" aria-expanded="${open}" style="${tc(x.team)}">${holo(x.team)}
+      <span class="rk">${i+1}</span><div class="rc-id">${crest(x.team,26)}<span style="min-width:0"><div class="nm">${esc(x.name)} ${injTag(x.p)}</div><div class="sub">${metaLine(x,showPos)}</div></span></div>
+      <div class="rc-m">${mets.map((m,k)=>`<span class="m${k===cfg.s?' on':''}"><b class="${v[k]==null?'na':''}">${v[k]==null?'—':m.f(v[k])}</b></span>`).join('')}</div>
+      ${weekChart(x.ser,{ymax,emph:emphFor(rkView,sm.em,x.ser)})}</div>${open?`<div class="detail">${detailHTML(x.id,x.ser)}</div>`:''}`}).join('');
+  const head=`<div class="rc-head" id="rcHead"><span class="rc-hl">#</span><div class="rc-m">${mets.map((m,k)=>`<button class="mh${k===cfg.s?' on':''}" data-sort="${k}" aria-pressed="${k===cfg.s}" title="${esc(m.l)}">${esc(m.s)}${k===cfg.s?`<i>${m.low?'▲':'▼'}</i>`:''}</button>`).join('')}</div></div>`;
+  const defs=mets.filter(m=>m.d).map(m=>`<div><b>${esc(m.l)}</b> ${esc(m.d)}</div>`).join('');
+  const teams=rkView==='week'?[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort():[];
+  const byes=rkView==='week'?P.filter(p=>p.bye&&fitPos(p)).sort((a,b)=>b.base-a.base):[];
   $('#s-rank').innerHTML=`<div class="seg" role="group" aria-label="Ranking period" style="margin-top:8px">${[['season','Season'],['week',`Week ${M.week}`],['ros','Rest of year']].map(([k,l])=>`<button data-v="${k}" aria-pressed="${k===rkView}">${l}</button>`).join('')}</div>
-    <div class="chips">${['ALL','QB','RB','WR','TE','FLEX','K','DST'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('')}</div>
-    <div class="seg sub" role="group" aria-label="Sort by" style="margin-top:10px">${SUBS.map(([k,l])=>`<button data-s="${k}" aria-pressed="${k===sub}">${l}</button>`).join('')}</div>
-    <div class="rk-head"><span>Sorted by <b>${metric}</b></span></div>
-    <div class="list rk-list">${rows?`<div class="li rr ax" aria-hidden="true"><span></span><span class="wc-ax">${Array.from({length:NWK},(_,i)=>`<span class="${i+1===M.week?'cur':''}">${i+1===1||i+1===NWK||i+1===M.week?(i+1===M.week?'W'+(i+1):i+1):''}</span>`).join('')}</span></div>`:''}${rows||'<div class="cap" style="padding:16px">No players for this filter yet.</div>'}</div>${KEY}${note}`;
+    <div class="rk-tools"><div class="chips">${['ALL','QB','RB','WR','TE','FLEX','K','DST'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('')}</div></div>
+    <button class="mpick" id="mpick">${ic('bar')}<span><small>Showing</small>${mets.map((m,k)=>`<b class="${k===cfg.s?'on':''}">${esc(m.l)}</b>`).join('<i>·</i>')}</span><em>Change</em></button>
+    <div class="list rk-list">${head}${rows?`<div class="li rc ax" aria-hidden="true"><span></span><span class="wc-ax">${Array.from({length:NWK},(_,i)=>`<span class="${i+1===M.week?'cur':''}">${i+1===1||i+1===NWK?i+1:i+1===M.week?'W'+(i+1):''}</span>`).join('')}</span></div>`+rows:'<div class="cap" style="padding:16px">No players for this filter yet.</div>'}</div>
+    ${KEY}${defs?`<div class="mdefs">${defs}</div>`:''}
+    ${teams.length?`<div class="sec-h"><h3>On bye in Week ${M.week}</h3><small>${teams.join(', ')}</small></div><div class="bye-pills">${byes.slice(0,24).map(p=>`<button data-open="${p.id}">${badge(p.team)}${esc(p.name)}</button>`).join('')}</div>`:''}`;
+  const tb=$('#topbar');if(tb)document.documentElement.style.setProperty('--tbh',tb.offsetHeight+'px');
   $$('#s-rank [data-v]').forEach(b=>b.onclick=()=>{rkView=b.dataset.v;store.set('ss_rkview',rkView);rkOpen=null;renderRank()});
   $$('#s-rank .chips button').forEach(b=>b.onclick=()=>{rankPos=b.dataset.p;rkOpen=null;renderRank()});
-  $$('#s-rank [data-s]').forEach(b=>b.onclick=()=>{rkSub[rkView]=b.dataset.s;store.set('ss_rksub',rkSub);rkOpen=null;renderRank()});
-  $$('#s-rank .li:not(.ax)').forEach(r=>{const f=()=>{rkOpen=rkOpen===r.dataset.id?null:r.dataset.id;renderRank();const el=$(`#s-rank .li[data-id="${CSS.escape(r.dataset.id)}"]`);if(el&&rkOpen)el.scrollIntoView({block:'nearest',behavior:'smooth'})};r.onclick=f;r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}});
+  $$('#s-rank [data-sort]').forEach(b=>b.onclick=()=>{cfg.s=+b.dataset.sort;saveRkM();rkOpen=null;renderRank()});
+  $('#mpick').onclick=openMetrics;
+  $$('#s-rank .li.rc:not(.ax)').forEach(r=>{const f=()=>{rkOpen=rkOpen===r.dataset.id?null:r.dataset.id;renderRank();const el=$(`#s-rank .li[data-id="${CSS.escape(r.dataset.id)}"]`);if(el&&rkOpen)el.scrollIntoView({block:'nearest',behavior:'smooth'})};r.onclick=f;r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}});
   $$('#s-rank [data-open]').forEach(b=>b.onclick=()=>{rkView='season';store.set('ss_rkview',rkView);rkOpen=b.dataset.open;rankPos=byId[b.dataset.open]?.pos||rankPos;renderRank()});
   $$('#s-rank [data-cmp]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggle(b.dataset.cmp);goCmp('week')});
   $$('#s-rank [data-wv]').forEach(b=>b.onclick=e=>{e.stopPropagation();wv.add=b.dataset.wv;store.set('ss_wv',wv);goCmp('waiver')});
   $$('#s-rank [data-tr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.tr;tr.give=tr.give.filter(x=>x!==id);if(!tr.get.includes(id))tr.get=[...tr.get,id].slice(-3);store.set('ss_tr',tr);goCmp('trade')});
   $$('#s-rank .detail').forEach(r=>r.onclick=e=>e.stopPropagation());
-  /* tap a week in the big chart to read it */
   const dc=$('#s-rank .detail .wc.big');if(dc){const id=rkOpen,ser=weekSeries(id),out=$('#s-rank .detail .wc-read');
     dc.querySelectorAll('.c').forEach(c=>c.onclick=()=>{dc.querySelectorAll('.c.sel').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');out.innerHTML=readout(ser[+c.dataset.w-1],byId[id])})}
 }
+/* metric picker: grouped chips, up to 3, the order is the column order; a 4th pick replaces the last */
+function openMetrics(){
+  const bg=$('#msheetBg'),sh=$('#msheet');bg.hidden=false;sh.hidden=false;requestAnimationFrame(()=>{bg.classList.add('on');sh.classList.add('on')});document.body.style.overflow='hidden';drawMetrics()}
+function closeMetrics(){const bg=$('#msheetBg'),sh=$('#msheet');bg.classList.remove('on');sh.classList.remove('on');document.body.style.overflow='';setTimeout(()=>{bg.hidden=true;sh.hidden=true},280);renderRank()}
+function drawMetrics(){
+  const cfg=rkM[rkView], pool=rkPool();
+  const has=id=>pool.some(x=>{x_pos=x.pos;const v=METS[id].v(x);return v!=null&&!isNaN(v)});
+  $('#msList').innerHTML=`<p class="cap" style="margin:2px 4px 6px">Pick up to 3. Tap a column header in the list to sort by it.</p>`+MET.map(([g,l])=>`<div class="grp">${g}</div><div class="mchips">${l.map(m=>{const k=cfg.m.indexOf(m.id),ok=has(m.id);
+    return `<button class="mchip${k>=0?' on':''}" data-m="${m.id}" aria-pressed="${k>=0}" ${ok||k>=0?'':'disabled'}>${k>=0?`<i>${k+1}</i>`:''}${esc(m.l)}</button>`}).join('')}</div>`).join('')+
+    `<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" id="msDone" style="flex:1">Done</button><button class="btn ghost" id="msReset">Reset</button></div>`;
+  $$('#msList [data-m]').forEach(b=>b.onclick=()=>{const id=b.dataset.m,k=cfg.m.indexOf(id);
+    if(k>=0){if(cfg.m.length>1){cfg.m.splice(k,1);if(cfg.s>=cfg.m.length||cfg.s===k)cfg.s=0}}
+    else if(cfg.m.length<3)cfg.m.push(id);else cfg.m[2]=id;
+    saveRkM();drawMetrics()});
+  $('#msDone').onclick=closeMetrics;$('#msReset').onclick=()=>{rkM[rkView]=JSON.parse(JSON.stringify(RK_DEF[rkView]));saveRkM();drawMetrics()}}
 function detailHTML(id,ser){
   ser=ser||weekSeries(id);
   const p=byId[id], s=seaOf(id), w=wById[id], st=s?seasonStats().find(r=>r.p.id===id):null, pos=(p||s||w).pos;
