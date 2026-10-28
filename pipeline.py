@@ -597,10 +597,12 @@ if os.environ.get('MX'):
 
 # ---------------------------------------------------------------- live season scoring (as-of projections, no leakage)
 live = None
+RETRO = {}   # (player, week) -> what the model would have projected before that game, from data available then
 if WEEK > 2:
     cur = build([SEASON], wmin=2)
     if len(cur):
         cur = model.apply(cur)
+        RETRO = {(r.player_id, int(r.week)): float(r.proj) for r in cur[['player_id', 'week', 'proj']].itertuples()}
         live = dict(weeks=[int(cur.week.min()), int(cur.week.max())],
                     close_naive=pairs(cur, 'naive', 3)[0] * 100, close_model=pairs(cur, 'proj', 3)[0] * 100,
                     n_close=pairs(cur, 'proj', 3)[1],
@@ -1515,6 +1517,30 @@ def weekly_list(rows, col):
     return [None if w not in m else round(float(m[w]), 1) for w in range(1, last_wk + 1)]
 
 
+# pre-game projections for weeks already played: the app's own saved snapshot (what users saw) when there is one,
+# otherwise the model's reconstruction. ps marks the source per week: 1 = snapshot, 0 = reconstructed.
+SNAP_PP = {}
+for fn in sorted(os.listdir(HIST)):
+    if fn.startswith(f'ecr_{SEASON}_'):
+        w_ = int(fn.split('_')[2].split('.')[0])
+        if w_ < WEEK:
+            _e = pd.read_csv(os.path.join(HIST, fn))
+            _c = 'blend' if 'blend' in _e else 'model'   # before blending existed the app showed the model alone
+            SNAP_PP.update({(i_, w_): float(b_) for i_, b_ in zip(_e.id, _e[_c]) if pd.notna(b_)})
+
+
+def pregame(pid):
+    pp, ps = [], []
+    for w_ in range(1, last_wk + 1):
+        if (pid, w_) in SNAP_PP:
+            pp.append(round(SNAP_PP[(pid, w_)], 1)); ps.append(1)
+        elif (pid, w_) in RETRO:
+            pp.append(round(RETRO[(pid, w_)], 1)); ps.append(0)
+        else:
+            pp.append(None); ps.append(None)
+    return dict(pp=pp, ps=ps) if any(x is not None for x in pp) else {}
+
+
 season_tbl = []
 for pid, g_ in cur_all.groupby('player_id'):
     g_ = g_.sort_values('week')
@@ -1529,7 +1555,7 @@ for pid, g_ in cur_all.groupby('player_id'):
                yds=round((g_.passing_yards.fillna(0) + g_.rushing_yards.fillna(0) + g_.receiving_yards.fillna(0)).mean(), 1),
                td=int((g_.passing_tds.fillna(0) + g_.rushing_tds.fillna(0) + g_.receiving_tds.fillna(0)).sum()),
                snap=round(g_.snap.mean() * 100), ts=None if g_.target_share.isna().all() else round(g_.target_share.mean() * 100, 1),
-               rz=round((g_.rz_tgt + g_.rz_car).mean(), 1))))
+               rz=round((g_.rz_tgt + g_.rz_car).mean(), 1)), **pregame(pid)))
 for pid, g_ in kd[kd.season == SEASON].groupby('player_id'):
     g_ = g_.sort_values('week')
     team = cur_team.get(pid, g_.team.iloc[-1])
@@ -1537,14 +1563,14 @@ for pid, g_ in kd[kd.season == SEASON].groupby('player_id'):
         id=pid, name=cur_name.get(pid, g_.player_display_name.iloc[-1]), pos='K', team=team, gp=len(g_),
         wp=weekly_list(g_, 'kpts'), ws=weekly_list(g_, 'kpts'), bye=team_bye.get(team, []), status=status_now.get(pid, ''),
         u=dict(fgm=int(g_.fg_made.fillna(0).sum()), fga=int(g_.fg_att.fillna(0).sum()), fg50=int(g_.fg50.sum()),
-               pat=int(g_.pat_made.fillna(0).sum()), lng=int(g_.fg_long.fillna(0).max()))))
+               pat=int(g_.pat_made.fillna(0).sum()), lng=int(g_.fg_long.fillna(0).max())), **pregame(pid)))
 for t_, g_ in dw[dw.season == SEASON].groupby('team'):
     g_ = g_.sort_values('week')
     season_tbl.append(dict(
         id='DST-' + t_, name=TEAM_NAME.get(t_, t_) + ' D/ST', pos='DST', team=t_, gp=len(g_),
         wp=weekly_list(g_, 'dpts'), ws=weekly_list(g_, 'dpts'), bye=team_bye.get(t_, []), status='',
         u=dict(sacks=round(g_.sacks.mean(), 1), to=round((g_.ints + g_.fum).mean(), 1), pa=round(g_.pa.mean(), 1),
-               td=int((g_.td_d + g_.td_k).sum()))))
+               td=int((g_.td_d + g_.td_k).sum())), **pregame('DST-' + t_)))
 print('season table:', len(season_tbl), 'players through week', last_wk)
 
 meta = dict(season=SEASON, week=WEEK, generated=dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%MZ'),
