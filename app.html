@@ -363,6 +363,11 @@ details.pc[open] .chev{transform:rotate(180deg)}
 .li .rt{text-align:right;min-width:52px}
 .li .rt b{display:block;font:900 24px/0.95 var(--display);font-variant-numeric:tabular-nums}
 .li .rt small{font-size:11.5px;color:var(--muted)}
+.li .rt b.up,.li .rt small.up{color:var(--up)}.li .rt b.dn,.li .rt small.dn{color:var(--down)}
+.li .ch{font-size:12.5px;color:var(--muted)}.li .ch b{font:800 13.5px var(--display);color:var(--ink-2);margin-right:2px;font-variant-numeric:tabular-nums}
+.seg.sub{background:none;border:0;padding:0;gap:6px}.seg.sub button{height:32px;font-size:13.5px;border:1px solid var(--line);background:var(--surface)}
+.seg.sub button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+
 .li.open{background:var(--surface-2)}
 .li .mu{font:800 12.5px var(--display);letter-spacing:.03em;padding:2px 6px;border-radius:4px}
 .mu.good{background:var(--up-bg);color:var(--up)}.mu.bad{background:var(--down-bg);color:var(--down)}.mu.neu{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
@@ -1010,7 +1015,7 @@ function renderTR(){
 }
 
 /* ---------- rankings ---------- */
-let rankPos='ALL', rkView=store.get('ss_rkview','week'), rkSort='ppg', rkOpen=null;
+let rankPos='ALL', rkView=store.get('ss_rkview','week'), rkOpen=null, rkSub=Object.assign({week:'proj',season:'ppg',ros:'tot'},store.get('ss_rksub',{}));
 const SEA=()=>DATA.season||[];
 const wkPts=p=>p.wp.map((x,i)=>x==null?null:S==='std'?p.ws[i]:S==='half'?(x+p.ws[i])/2:x);
 const TIERS={QB:[[12,'QB1']],RB:[[12,'RB1'],[24,'RB2']],WR:[[12,'WR1'],[24,'WR2'],[36,'WR3']],TE:[[12,'TE1']],K:[[12,'K1']],DST:[[12,'DST1']]};
@@ -1036,34 +1041,54 @@ function renderRank(){
   const showPos=rankPos==='ALL'||rankPos==='FLEX';
   let rows='',note='',sortbar='',spk=false;
   const row=(id,i,team,name,sub,right,extra='')=>`<div class="li${extra?' with-spark':''}${rkOpen===id?' open':''}" data-id="${id}" role="button" tabindex="0" aria-expanded="${rkOpen===id}"><span class="rk">${i+1}</span>${crest(team,24)}<span style="min-width:0"><div class="nm">${name}</div><div class="sub">${sub}</div></span>${extra}<span class="rt">${right}</span></div>${rkOpen===id?`<div class="detail">${detailHTML(id)}</div>`:''}`;
+  const sub=rkSub[rkView], SUBS={week:[['proj','Projection'],['up','Upside'],['mu','Matchup']],season:[['ppg','Per game'],['use','Usage'],['l3','Last 3']],ros:[['tot','Total'],['n4','Next 4'],['vor','Value']]}[rkView];
+  sortbar=`<div class="seg sub" role="group" aria-label="Sort by" style="margin-top:10px">${SUBS.map(([k,l])=>`<button data-s="${k}" aria-pressed="${k===sub}">${l}</button>`).join('')}</div>`;
+  const ch=(v,l,cls='')=>`<span class="ch${cls?' '+cls:''}"><b>${v}</b>${l}</span>`;
+  const usage=(pos,u)=>pos==='QB'?ch(fmt(u.att,0),'att')+ch(fmt(u.car),'car'):pos==='RB'?ch(fmt(u.car),'car')+ch(fmt(u.tgt),'tgt')+ch(u.snap+'%','snaps'):['WR','TE'].includes(pos)?ch(fmt(u.tgt),'tgt')+(u.ts?ch(fmt(u.ts,0)+'%','share'):'')+ch(u.snap+'%','snaps'):'';
   if(rkView==='week'){
-    const list=P.filter(p=>!p.bye&&!inactive(p)&&fitPos(p)).sort((a,b)=>val(b)-val(a)).slice(0,100);
-    rows=list.map((p,i)=>row(p.id,i,p.team,esc(p.name)+' '+injTag(p),`${showPos?`<span class="pos">${p.pos}</span>`:''}<span>${p.team} ${vs(p)}</span>${muChip(p)}${p.ecr!=null?`<span>experts #${p.ecr}</span>`:''}`,`<b>${fmt(val(p))}</b>${p.final?`<small>${actual(p)!=null?'scored '+fmt(actual(p)):'final'}</small>`:`<small>${fmt(p.lo*scale(p),0)}–${fmt(p.hi*scale(p),0)}</small>`}`)).join('');
+    const k=scale, edge=p=>((p.matchup||0)+(p.vegas||0))*k(p);
+    const key={proj:val,up:p=>p.hi*k(p),mu:edge}[sub];
+    const list=P.filter(p=>!p.bye&&!inactive(p)&&fitPos(p)).sort((a,b)=>key(b)-key(a)).slice(0,100);
+    const top=Math.max(1,...list.map(p=>p.hi*k(p)));
+    const rangeBar=p=>{const x=v=>Math.max(0,Math.min(64,v/top*64)),lo=x(p.lo*k(p)),hi=x(p.hi*k(p)),m=x(val(p));
+      return `<svg class="spark" viewBox="0 0 64 26" width="64" height="26" aria-hidden="true"><rect x="0" y="12" width="64" height="2" rx="1" class="sp-dnp"/><rect x="${lo}" y="9" width="${Math.max(2,hi-lo)}" height="8" rx="4" class="sp-fut" opacity=".55"/><rect x="${Math.max(0,m-1.25)}" y="5" width="2.5" height="16" rx="1.2" class="sp-bar"/></svg>`};
+    rows=list.map((p,i)=>{const pos=showPos?`<span class="pos">${p.pos}</span>`:'',nm=esc(p.name)+' '+injTag(p);
+      if(sub==='up')return row(p.id,i,p.team,nm,`${pos}<span>${p.team} ${vs(p)}</span>${ch(fmt(val(p)),'proj')}${p.cv!=null?'':''}`,`<b>${fmt(p.hi*k(p))}</b><small>floor ${fmt(p.lo*k(p))}</small>`,rangeBar(p));
+      if(sub==='mu'){const e=edge(p);return row(p.id,i,p.team,nm,`${pos}<span>${vs(p)||p.team}</span>${muChip(p)}${ch(fmt(p.imp,1),p.pos==='DST'?'opp total':'team total')}`,`<b class="${e>=.5?'up':e<=-.5?'dn':''}">${e>0?'+':''}${fmt(e)}</b><small>${fmt(val(p))} proj</small>`)}
+      return row(p.id,i,p.team,nm,`${pos}<span>${p.team} ${vs(p)}</span>${muChip(p)}${p.ecr!=null?`<span>experts #${p.ecr}</span>`:''}`,`<b>${fmt(val(p))}</b>${p.final?`<small>${actual(p)!=null?'scored '+fmt(actual(p)):'final'}</small>`:`<small>${fmt(p.lo*k(p),0)}–${fmt(p.hi*k(p),0)}</small>`}`)}).join('');
     const byes=P.filter(p=>p.bye&&fitPos(p)).sort((a,b)=>b.base-a.base), teams=[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort();
-    note=teams.length?`<div class="sec-h"><h3>On bye in Week ${M.week}</h3><small>${teams.join(', ')}</small></div><div class="bye-pills">${byes.slice(0,24).map(p=>`<button data-open="${p.id}">${badge(p.team)}${esc(p.name)}</button>`).join('')}</div>`:'';
+    note=(sub==='up'?`<p class="cap" style="margin-top:10px">Ceiling and floor: a good week and a bad week (about 1 in 10 each). Bar = range, tick = projection.</p>`:sub==='mu'?`<p class="cap" style="margin-top:10px">Points the matchup and Vegas line add to (or take from) his usual output.</p>`:'')+
+      (teams.length?`<div class="sec-h"><h3>On bye in Week ${M.week}</h3><small>${teams.join(', ')}</small></div><div class="bye-pills">${byes.slice(0,24).map(p=>`<button data-open="${p.id}">${badge(p.team)}${esc(p.name)}</button>`).join('')}</div>`:'');
   } else if(rkView==='season'){
     const st=seasonStats().filter(r=>fitPos(r.p)&&r.gp>0), minG=Math.max(1,Math.floor(Math.max(...st.map(r=>r.gp),1)/2));
-    const key={ppg:r=>r.ppg,tot:r=>r.tot,l3:r=>r.l3}[rkSort];
-    const list=st.filter(r=>rkSort==='tot'||r.gp>=minG).sort((a,b)=>key(b)-key(a)).slice(0,100);
+    const xfp=r=>{const q=byId[r.p.id];return q&&q.xfp!=null&&!['K','DST'].includes(r.p.pos)?q.xfp*scale(q):r.ppg};
+    const key={ppg:r=>r.ppg,use:xfp,l3:r=>r.l3}[sub];
+    const list=st.filter(r=>r.gp>=minG).sort((a,b)=>key(b)-key(a)).slice(0,100);
     const mx=Math.max(...list.map(r=>Math.max(0,...r.w.map(x=>x||0))),1);
-    sortbar=`<div class="seg" style="margin-top:4px">${[['ppg','Per game'],['tot','Total'],['l3','Last 3']].map(([k,l])=>`<button data-s="${k}" aria-pressed="${k===rkSort}">${l}</button>`).join('')}</div>`;
-    rows=list.map((r,i)=>{const p=r.p,tcn=tierCounts(r),main=rkSort==='tot'?r.tot:rkSort==='l3'?r.l3:r.ppg;
-      return row(p.id,i,p.team,esc(p.name)+' '+injTag(byId[p.id]),`${showPos?`<span class="pos">${p.pos}</span>`:''}<span>${p.team}, ${r.gp}g</span>${tcn.length&&tcn[0][1]?`<span>${tcn[0][1]}× ${tcn[0][0]}</span>`:''}`,
-        `<b>${fmt(main)}</b><small>${rkSort==='tot'?fmt(r.ppg)+'/g':rkSort==='l3'?fmt(r.ppg)+'/g yr':fmt(r.tot,0)+' tot'}</small>`,spark(r.w,p.bye.map(b=>b-1),{max:mx}))}).join('');
-    note=`<p class="cap" style="margin-top:10px">"3× RB1" = 3 top-12 weeks. Dash = bye.${rkSort!=='tot'?` Min ${minG} games.`:''}</p>`;
+    rows=list.map((r,i)=>{const p=r.p,tcn=tierCounts(r),pos=showPos?`<span class="pos">${p.pos}</span>`:'',nm=esc(p.name)+' '+injTag(byId[p.id]),sp=spark(r.w,p.bye.map(b=>b-1),{max:mx});
+      if(sub==='use'){const x=xfp(r),d=r.ppg-x;return row(p.id,i,p.team,nm,`${pos}${usage(p.pos,p.u)||`<span>${p.team}, ${r.gp}g</span>`}`,`<b>${fmt(x)}</b><small>${['K','DST'].includes(p.pos)?'pts/g':`${d>=0?'+':''}${fmt(d)} vs work`}</small>`,sp)}
+      if(sub==='l3'){const d=r.l3-r.ppg;return row(p.id,i,p.team,nm,`${pos}<span>${p.team}, ${r.gp}g</span>${ch(fmt(r.ppg),'/g yr')}`,`<b>${fmt(r.l3)}</b><small class="${d>=2?'up':d<=-2?'dn':''}">${d>=0?'▲':'▼'} ${fmt(Math.abs(d))}</small>`,sp)}
+      return row(p.id,i,p.team,nm,`${pos}<span>${p.team}, ${r.gp}g</span>${tcn.length&&tcn[0][1]?`<span>${tcn[0][1]}× ${tcn[0][0]}</span>`:''}${ch(fmt(Math.max(...r.w.filter(x=>x!=null)),0),'best')}`,`<b>${fmt(r.ppg)}</b><small>${fmt(r.tot,0)} tot</small>`,sp)}).join('');
+    note=`<p class="cap" style="margin-top:10px">${sub==='use'?'Usage = points his targets, carries and field position are worth for an average player. Right: how far his scoring runs above or below that (luck or talent). ':sub==='l3'?'Last 3 games vs his season average. ':'"3× RB1" = 3 top-12 weeks. '}Dash = bye. Min ${minG} games.</p>`;
   } else {
-    const list=W.filter(fitPos).sort((a,b)=>rosT(b)-rosT(a)).slice(0,100);
-    const mx=Math.max(...list.map(p=>Math.max(0,...p.wk.map(x=>(x||0)*wsc(p)))),1);
-    rows=list.map((p,i)=>row(p.id,i,p.team,esc(p.name)+(p.status?` <span class="tag ${['Out','IR','Exempt','Suspended'].includes(p.status)?'out':'warn'}">${esc(p.status==='Questionable'?'Q':p.status)}</span>`:''),`${showPos?`<span class="pos">${p.pos}</span>`:''}<span>${p.team}</span>${byeWk(p)?`<span>bye ${byeWk(p)}</span>`:''}${p.own!=null?`<span>${p.own}% rost.</span>`:''}`,
-      `<b>${fmt(rosT(p),0)}</b><small>${fmt(p.ppg*wsc(p))}/g</small>`,spark(p.wk.map(x=>x==null?null:x*wsc(p)),p.wk.map((x,k)=>x==null?k:-1).filter(k=>k>=0),{max:mx,cls:'sp-fut'}))).join('');
-    note=`<p class="cap" style="margin-top:10px">Each remaining week through 18. Dash = bye.</p>`;
+    const key={tot:rosT,n4:p=>nextN(p,4),vor:vorT}[sub];
+    const list=W.filter(fitPos).sort((a,b)=>key(b)-key(a)).slice(0,100);
+    const n=sub==='n4'?4:99, mx=Math.max(...list.map(p=>Math.max(0,...p.wk.slice(0,n).map(x=>(x||0)*wsc(p)))),1);
+    const prk={};['QB','RB','WR','TE','K','DST'].forEach(q=>W.filter(x=>x.pos===q).sort((a,b)=>rosT(b)-rosT(a)).forEach((x,j)=>prk[x.id]=j+1));
+    rows=list.map((p,i)=>{const wk_=p.wk.slice(0,n).map(x=>x==null?null:x*wsc(p)),sp=spark(wk_,wk_.map((x,k)=>x==null?k:-1).filter(k=>k>=0),{max:mx,cls:'sp-fut'});
+      const pos=showPos?`<span class="pos">${p.pos}</span>`:'',nm=esc(p.name)+(p.status?` <span class="tag ${['Out','IR','Exempt','Suspended'].includes(p.status)?'out':'warn'}">${esc(p.status==='Questionable'?'Q':p.status)}</span>`:'');
+      const bw=byeWk(p);
+      if(sub==='n4'){const b4=bw&&bw<M.week+4;return row(p.id,i,p.team,nm,`${pos}<span>${p.team}</span>${b4?`<span class="tag warn">bye ${bw}</span>`:''}${ch(fmt(rosT(p),0),'rest of yr')}`,`<b>${fmt(nextN(p,4),0)}</b><small>wks ${M.week}–${M.week+3}</small>`,sp)}
+      if(sub==='vor')return row(p.id,i,p.team,nm,`${pos}<span>${p.pos}${prk[p.id]}</span>${ch(fmt(rosT(p),0),'pts')}${p.cv!=null?ch(p.cv>.7?'Boom/bust':p.cv<.45?'Steady':'Avg','swing'):''}`,`<b>${vorT(p)>=0?'+':''}${fmt(vorT(p),0)}</b><small>vs waivers</small>`,sp);
+      return row(p.id,i,p.team,nm,`${pos}<span>${p.team}</span>${bw?`<span>bye ${bw}</span>`:''}${p.own!=null?`<span>${p.own}% rost.</span>`:''}`,`<b>${fmt(rosT(p),0)}</b><small>${fmt(p.ppg*wsc(p))}/g</small>`,sp)}).join('');
+    note=`<p class="cap" style="margin-top:10px">${sub==='vor'?'Value = points above a waiver-level player at his position. Compares across positions, so use it for trades. ':sub==='n4'?'Next 4 weeks only: for playoff pushes and bye coverage. ':''}Dash = bye.</p>`;
   }
-  $('#s-rank').innerHTML=`<div class="seg" role="group" aria-label="Ranking period" style="margin-top:8px">${[['week',`Week ${M.week}`],['season','Season'],['ros','Rest of year']].map(([k,l])=>`<button data-v="${k}" aria-pressed="${k===rkView}">${l}</button>`).join('')}</div>
+  $('#s-rank').innerHTML=`<div class="seg" role="group" aria-label="Ranking period" style="margin-top:8px">${[['season','Season'],['week',`Week ${M.week}`],['ros','Rest of year']].map(([k,l])=>`<button data-v="${k}" aria-pressed="${k===rkView}">${l}</button>`).join('')}</div>
     <div class="chips">${['ALL','QB','RB','WR','TE','FLEX','K','DST'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('')}</div>
     ${sortbar}<div class="list">${rows||'<div class="cap" style="padding:16px">No players for this filter yet.</div>'}</div>${note}`;
   $$('#s-rank [data-v]').forEach(b=>b.onclick=()=>{rkView=b.dataset.v;store.set('ss_rkview',rkView);rkOpen=null;renderRank()});
   $$('#s-rank .chips button').forEach(b=>b.onclick=()=>{rankPos=b.dataset.p;rkOpen=null;renderRank()});
-  $$('#s-rank [data-s]').forEach(b=>b.onclick=()=>{rkSort=b.dataset.s;renderRank()});
+  $$('#s-rank [data-s]').forEach(b=>b.onclick=()=>{rkSub[rkView]=b.dataset.s;store.set('ss_rksub',rkSub);rkOpen=null;renderRank()});
   $$('#s-rank .li').forEach(r=>{const f=()=>{rkOpen=rkOpen===r.dataset.id?null:r.dataset.id;renderRank();const el=$(`#s-rank .li[data-id="${CSS.escape(r.dataset.id)}"]`);if(el&&rkOpen)el.scrollIntoView({block:'nearest',behavior:'smooth'})};r.onclick=f;r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}});
   $$('#s-rank [data-open]').forEach(b=>b.onclick=()=>{rkView='season';store.set('ss_rkview',rkView);rkOpen=b.dataset.open;rankPos=byId[b.dataset.open]?.pos||rankPos;renderRank()});
   $$('#s-rank [data-cmp]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggle(b.dataset.cmp);goCmp('week')});
