@@ -369,6 +369,18 @@ details.pc[open] .chev{transform:rotate(180deg)}
 .li .add{width:40px;height:40px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);font:600 22px/1 var(--body);color:var(--ink)}
 .li .add[aria-pressed="true"]{background:var(--turf);border-color:var(--turf);color:#fff}
 .li.wv{grid-template-columns:26px 24px 1fr auto 40px}
+#cmpBody{margin-top:12px}
+.tr-sides{display:grid;gap:12px}
+.tr-h{display:flex;align-items:baseline;justify-content:space-between;margin:0 2px -2px}
+.tr-tag{font:800 15px var(--display);letter-spacing:.06em;text-transform:uppercase}
+.tr-tag.give{color:var(--down)}.tr-tag.get{color:var(--up)}
+.tr-h small{color:var(--muted);font-size:12.5px}
+.li.tr{grid-template-columns:24px 1fr auto 40px;padding-left:12px;cursor:default}
+.li .add.rm{font-size:16px;color:var(--muted)}
+.tr-add{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;border:0;border-top:1px dashed var(--line-2);background:transparent;color:var(--muted);font:600 15px var(--body)}
+.list .tr-add:first-child{border-top:0}
+.tr-add .ic{width:20px;height:20px}
+.mv-list .li{grid-template-columns:24px 1fr auto}
 .spark{display:block}.sp-bar{fill:var(--ink);opacity:.78}.sp-dnp{fill:var(--line-2)}.sp-bye{fill:var(--faint)}.sp-fut{fill:var(--turf-hi)}
 .detail{background:var(--surface-2);border-top:1px solid var(--line);padding:14px 16px 16px;cursor:default}
 .dt{display:grid;gap:12px;font-size:14.5px;line-height:1.45}
@@ -378,6 +390,9 @@ details.pc[open] .chev{transform:rotate(180deg)}
 .wkbars .c{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
 .wkbars .b{width:100%;max-width:28px;background:var(--turf-hi);border-radius:4px 4px 1px 1px}
 .wkbars .b.hi{background:var(--yellow)}
+.wkbars .b.fut{background:repeating-linear-gradient(135deg,var(--turf-hi) 0 3px,color-mix(in srgb,var(--turf-hi) 40%,transparent) 3px 6px);border:1px solid var(--turf-hi)}
+.wkbars .b.fut.hi{background:repeating-linear-gradient(135deg,var(--yellow) 0 3px,color-mix(in srgb,var(--yellow) 45%,transparent) 3px 6px);border-color:var(--yellow)}
+.dt .k small{font-weight:600;color:var(--faint)}
 .wkbars .v{font:800 12px var(--display);color:var(--muted);margin-bottom:3px}
 .wkbars .w{font:700 11px var(--display);color:var(--faint);margin-top:4px;letter-spacing:.04em}
 .dt-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -542,8 +557,7 @@ footer .linkish{font-size:14px}
 
 <main>
   <section id="s-team" class="screen" aria-label="My team" hidden></section>
-  <section id="s-ss" class="screen" aria-label="Start or sit"></section>
-  <section id="s-wv" class="screen" aria-label="Waivers" hidden></section>
+  <section id="s-ss" class="screen" aria-label="Compare players"></section>
   <section id="s-rank" class="screen" aria-label="Rankings" hidden></section>
   <section id="s-def" class="screen" aria-label="Matchups" hidden></section>
   <section id="s-how" class="screen" aria-label="Method" hidden><div class="prose" id="howOut"></div></section>
@@ -552,8 +566,7 @@ footer .linkish{font-size:14px}
 
 <nav class="tabbar" role="tablist" aria-label="Sections">
   <button role="tab" data-tab="team" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M8.5 3.5 4 6v5h3v9.5h10V11h3V6l-4.5-2.5a3.5 3.5 0 0 1-7 0z"/></svg>Team</button>
-  <button role="tab" data-tab="ss" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M12 3.5v17M6.5 20.5h11M4 7.5h16"/><path d="M6.5 7.5L3.6 13.6a3 3 0 0 0 5.8 0L6.5 7.5zM17.5 7.5l-2.9 6.1a3 3 0 0 0 5.8 0l-2.9-6.1z"/></svg>Start/Sit</button>
-  <button role="tab" data-tab="wv" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M7.5 4L3.5 8l4 4M3.5 8H17M16.5 20l4-4-4-4M20.5 16H7"/></svg>Waivers</button>
+  <button role="tab" data-tab="ss" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M12 3.5v17M6.5 20.5h11M4 7.5h16"/><path d="M6.5 7.5L3.6 13.6a3 3 0 0 0 5.8 0L6.5 7.5zM17.5 7.5l-2.9 6.1a3 3 0 0 0 5.8 0l-2.9-6.1z"/></svg>Compare</button>
   <button role="tab" data-tab="rank" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 6h2.5M4 12h2.5M4 18h2.5M10 6h10M10 12h7M10 18h4"/></svg>Rankings</button>
   <button role="tab" data-tab="def" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M12 3.2l7 2.8v6c0 4.4-2.9 7.6-7 8.8-4.1-1.2-7-4.4-7-8.8V6l7-2.8z"/><path d="M9 12.2l2 2 4-4.2"/></svg>Matchups</button>
   <button role="tab" data-tab="how" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4.5 17.5a7.5 7.5 0 1 1 15 0"/><path d="M12 17.5l3.6-5.2"/><circle cx="12" cy="17.5" r="1.3"/></svg>Method</button>
@@ -575,7 +588,7 @@ setData(DATA);
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 let S=store.get('ss_scoring','proj'); if(!['proj','half','std'].includes(S))S='proj';
-let tab=store.get('ss_tab',null); if(!['team','ss','wv','rank','def','how'].includes(tab))tab=(store.get('ss_league',null)||{}).team!=null?'team':'ss';
+let tab=store.get('ss_tab',null); if(tab==='wv'){tab='ss';store.set('ss_cmp','waiver')} if(!['team','ss','rank','def','how'].includes(tab))tab=(store.get('ss_league',null)||{}).team!=null?'team':'ss';
 
 /* ---------- formatting & helpers ---------- */
 const fmt=(n,d=1)=>(Math.round(n*10**d)/10**d).toFixed(d);
@@ -635,9 +648,12 @@ function header(){
   $('#footLive').onclick=()=>{howSec='live';go('how')};
 }
 function go(t){tab=t;store.set('ss_tab',t);$$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
-  ['team','ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==t);
+  ['team','ss','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==t);
   render(t);window.scrollTo({top:0})}
-function render(t){({team:renderTeam,ss:renderSS,wv:renderWV,rank:renderRank,def:renderDef,how:renderHow})[t]()}
+/* Compare tab: Start/Sit (this week), Waivers (add/drop) and Trade (give/get) share one tab */
+let cmpMode=store.get('ss_cmp','week'); if(!['week','waiver','trade'].includes(cmpMode))cmpMode='week';
+function goCmp(m){cmpMode=m;store.set('ss_cmp',m);go('ss')}
+function render(t){({team:renderTeam,ss:renderCmp,rank:renderRank,def:renderDef,how:renderHow})[t]()}
 $$('.tabbar button').forEach(b=>b.onclick=()=>go(b.dataset.tab));
 $$('.fmt button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.s===S);b.onclick=()=>{S=b.dataset.s;store.set('ss_scoring',S);$$('.fmt button').forEach(x=>x.setAttribute('aria-pressed',x===b));render(tab)}});
 addEventListener('scroll',()=>$('#topbar').classList.toggle('scrolled',scrollY>4),{passive:true});
@@ -658,7 +674,7 @@ function findPlayers(list,t){return list.map(p=>[p,p.team.toLowerCase()===t?0:na
 
 let sheetCtx=null, sheetActive=0;
 function openSheet(ctx){sheetCtx=ctx;
-  $('#sheetTitle').textContent=ctx==='drop'?'Who would you drop?':ctx==='add'?'Who would you add?':'Add a player';
+  $('#sheetTitle').textContent=ctx==='drop'?'Who would you drop?':ctx==='add'?'Who would you add?':ctx==='give'?'Who are you giving?':ctx==='get'?'Who are you getting?':'Add a player';
   const bg=$('#sheetBg'),sh=$('#sheet');bg.hidden=false;sh.hidden=false;
   requestAnimationFrame(()=>{bg.classList.add('on');sh.classList.add('on')});
   $('#sq').value='';sheetResults();setTimeout(()=>$('#sq').focus(),260);document.body.style.overflow='hidden'}
@@ -674,13 +690,16 @@ function sheetResults(){
     const sug=P.filter(p=>live(p)&&!picks.includes(p.id)&&(!pos||p.pos===pos||(['RB','WR','TE'].includes(pos)&&['RB','WR','TE'].includes(p.pos)))).sort((a,b)=>val(b)-val(a)).slice(0,10);
     html=`<div class="grp">${pos?'Similar players this week':'Top projections this week'}</div>`+sug.map((p,i)=>resRow(p,-1,false)).join('')}
   else if(sheetCtx==='add'){const sug=bestAvailable('ALL').slice(0,10);html=`<div class="grp">Best available</div>`+sug.map(p=>resRow(p,-1,true)).join('')}
+  else if(sheetCtx==='give'||sheetCtx==='get'){const [lbl,sug]=tradeSuggest(sheetCtx);html=`<div class="grp">${lbl}</div>`+sug.map(p=>resRow(p,-1,true)).join('')}
   else html=`<div class="cap" style="padding:14px 4px">Type the name of a player on your roster.</div>`;
   $('#shList').innerHTML=html;$$('#shList .res').forEach(b=>b.onclick=()=>pickFromSheet(b.dataset.id))}
 $('#sq').addEventListener('input',sheetResults);
 $('#sq').addEventListener('keydown',e=>{const bs=$$('#shList .res');if(!bs.length)return;
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();sheetActive=(sheetActive+(e.key==='ArrowDown'?1:-1)+bs.length)%bs.length;bs.forEach((b,i)=>b.classList.toggle('active',i===sheetActive))}
   if(e.key==='Enter'){pickFromSheet((bs[sheetActive]||bs[0]).dataset.id)} if(e.key==='Escape')closeSheet()});
-function pickFromSheet(id){closeSheet();if(sheetCtx==='ss')add(id);else{wv[sheetCtx]=id;store.set('ss_wv',wv);renderWV()}}
+function pickFromSheet(id){closeSheet();if(sheetCtx==='ss')add(id);
+  else if(sheetCtx==='give'||sheetCtx==='get'){const o=sheetCtx==='give'?'get':'give';tr[o]=tr[o].filter(x=>x!==id);if(!tr[sheetCtx].includes(id))tr[sheetCtx].push(id);tr[sheetCtx]=tr[sheetCtx].slice(-3);store.set('ss_tr',tr);renderTR()}
+  else{wv[sheetCtx]=id;store.set('ss_wv',wv);renderWV()}}
 
 /* ---------- icons ---------- */
 const ICONS={
@@ -828,8 +847,9 @@ function renderSS(){
   if(ps.length<2)cards+=`<button class="addcard" data-slot="ss"><span class="plus">${ic('plus')}</span>Add player</button>`;
   if(ps.length===0)cards+=`<button class="addcard" data-slot="ss"><span class="plus">${ic('plus')}</span>Add player</button>`;
   if(ps.length>=2&&ps.length<4)cards+=`<button class="addcard slim" data-slot="ss"><span class="plus">${ic('plus')}</span>Compare another</button>`;
-  $('#s-ss').innerHTML=`<div class="cards2">${cards}</div>${verdict}${alertsHTML(ps)}`;
-  wireCards($('#s-ss'),remove);
+  const el=cmpEl('week');if(!el)return;
+  el.innerHTML=`<div class="cards2">${cards}</div>${verdict}${alertsHTML(ps)}`;
+  wireCards(el,remove);
 }
 
 /* ---------- waivers ---------- */
@@ -846,7 +866,7 @@ const ownTxt=p=>p.own==null?'rarely rostered':`${p.own}% rostered`;
 function bestAvailable(pos){return W.filter(p=>(p.own==null?p.vor<0:p.own<50)&&(pos!=='ALL'||!['K','DST'].includes(p.pos))&&p.id!==wv.drop&&(pos==='ALL'||p.pos===pos))
   .sort((x,y)=>pos==='ALL'?vorT(y)-vorT(x):rosT(y)-rosT(x))}
 function renderWV(){
-  const el=$('#s-wv');
+  const el=cmpEl('waiver');if(!el)return;
   if(!W.length){el.innerHTML='<div class="empty" style="margin-top:16px"><b>Waiver data is on its way</b>It appears after the next hourly update.</div>';return}
   const d=wById[wv.drop], a=wById[wv.add];
   const wslot=(p,role)=>{if(!p)return `<button class="addcard" data-slot="${role}"><span class="plus">${ic('plus')}</span>${role==='drop'?'Drop who?':'Add who?'}</button>`;
@@ -900,8 +920,93 @@ function renderWV(){
   el.innerHTML=html;
   wireCards(el,id=>{const r=wv.drop===id?'drop':'add';wv[r]=null;store.set('ss_wv',wv);renderWV()});
   $$('#wvf button').forEach(b=>b.onclick=()=>{wvPos=b.dataset.p;renderWV()});
-  $$('#s-wv [data-add]').forEach(b=>b.onclick=e=>{e.stopPropagation();wv.add=b.dataset.add;store.set('ss_wv',wv);renderWV();window.scrollTo({top:0,behavior:'smooth'})});
-  $$('#s-wv .li').forEach(r=>r.onclick=()=>{wv.add=r.dataset.id;store.set('ss_wv',wv);renderWV();window.scrollTo({top:0,behavior:'smooth'})});
+  $$('#cmpBody [data-add]').forEach(b=>b.onclick=e=>{e.stopPropagation();wv.add=b.dataset.add;store.set('ss_wv',wv);renderWV();window.scrollTo({top:0,behavior:'smooth'})});
+  $$('#cmpBody .li').forEach(r=>r.onclick=()=>{wv.add=r.dataset.id;store.set('ss_wv',wv);renderWV();window.scrollTo({top:0,behavior:'smooth'})});
+}
+
+/* ---------- compare shell ---------- */
+const cmpEl=m=>cmpMode===m?$('#cmpBody'):null;
+function renderCmp(){
+  $('#s-ss').innerHTML=`<div class="seg" role="group" aria-label="Compare" style="margin-top:8px">${[['week','Start/Sit'],['waiver','Waivers'],['trade','Trade']].map(([k,l])=>`<button data-cm="${k}" aria-pressed="${k===cmpMode}">${l}</button>`).join('')}</div><div id="cmpBody"></div>`;
+  $$('#s-ss [data-cm]').forEach(b=>b.onclick=()=>{cmpMode=b.dataset.cm;store.set('ss_cmp',cmpMode);renderCmp()});
+  ({week:renderSS,waiver:renderWV,trade:renderTR})[cmpMode]()}
+
+/* ---------- trade analyzer ----------
+   With a connected league: the change in each side's best rest-of-season starting lineup (bench depth only counts
+   if it would start), and a roster spot the trade opens is filled with the best free agent.
+   Without one: points above a waiver-level player at the same position, so depth pieces count for little. */
+let tr=store.get('ss_tr',{give:[],get:[]});
+function cleanTr(){tr={give:(tr.give||[]).filter(id=>wById[id]),get:(tr.get||[]).filter(id=>wById[id])};tr.get=tr.get.filter(id=>!tr.give.includes(id))}
+const vorP=p=>Math.max(0,vorT(p));
+function ownerOf(id){if(!LG||!LG.data)return null;return LG.data.teams.find(t=>t.roster.some(e=>{const o=ourPlayer(e);return (o.w&&o.w.id===id)||(o.p&&o.p.id===id)}))||null}
+function luAfter(entries,out,inn,L,taken){
+  const keep=entries.filter(x=>!(x.w&&out.includes(x.w.id))), add=inn.map(id=>({espn:'tr'+id,name:wById[id].name,w:wById[id],p:byId[id]}));
+  let roster=keep.concat(add);const fa=[];
+  const pool=W.filter(w=>!taken.has(w.id)&&!['K','DST'].includes(w.pos)&&w.status!=='FA').sort((a,b)=>rosT(b)-rosT(a)).slice(0,40);
+  for(let k=0;k<out.length-inn.length;k++){let best=null,bv=-1;
+    pool.forEach(w=>{if(fa.includes(w))return;const v=bestLineup(roster.concat([{espn:'fa'+w.id,name:w.name,w,p:byId[w.id]}]),L.slots,rosV).total;if(v>bv){bv=v;best=w}});
+    if(best){fa.push(best);roster.push({espn:'fa'+best.id,name:best.name,w:best,p:byId[best.id]})}}
+  return {total:bestLineup(roster,L.slots,rosV).total,fa}}
+function tradeSuggest(ctx){
+  const chosen=new Set([...tr.give,...tr.get]), me=myTeam();indexEspn();
+  if(me){const ent=ctx==='give'?teamEntries(me):LG.data.teams.filter(t=>t.id!==me.id).flatMap(teamEntries);
+    return [ctx==='give'?'Your roster':'On other teams',ent.map(x=>x.w).filter(w=>w&&!chosen.has(w.id)).sort((a,b)=>rosT(b)-rosT(a)).slice(0,ctx==='give'?20:12)]}
+  return ['Top rest of season',W.filter(w=>!chosen.has(w.id)&&!['K','DST'].includes(w.pos)).sort((a,b)=>rosT(b)-rosT(a)).slice(0,12)]}
+function renderTR(){
+  const el=cmpEl('trade');if(!el)return;
+  if(!W.length){el.innerHTML='<div class="empty" style="margin-top:16px"><b>Trade data is on its way</b>It appears after the next hourly update.</div>';return}
+  indexEspn();cleanTr();
+  const G=tr.give.map(id=>wById[id]), T=tr.get.map(id=>wById[id]), me=myTeam(), L=LG&&LG.data;
+  const S_=x=>`<b>${esc(short(x.name))}</b>`, names=l=>l.map(x=>esc(short(x.name))).join(' + ');
+  const side=(role,list)=>`<div><div class="tr-h"><span class="tr-tag ${role}">${role==='give'?'You give':'You get'}</span><small>${list.length?fmt(sum(list.map(rosT)),0)+' pts rest of year':''}</small></div>
+    <div class="list">${list.map(p=>{const o=me?ownerOf(p.id):null;
+      return `<div class="li tr">${crest(p.team,24)}<span style="min-width:0"><div class="nm">${esc(p.name)} ${injTag(byId[p.id])}</div><div class="sub"><span class="pos">${p.pos}</span><span>${p.team}</span>${byeWk(p)?`<span>bye ${byeWk(p)}</span>`:''}${o&&o.id!==me.id?`<span>${esc(o.abbrev||o.name)}</span>`:''}</div></span>
+      <span class="rt"><b>${fmt(rosT(p),0)}</b><small>${fmt(p.ppg*wsc(p))}/g</small></span><button class="add rm" data-trrm="${role}:${p.id}" aria-label="Remove ${esc(p.name)}">${ic('x')}</button></div>`}).join('')}
+    ${list.length<3?`<button class="tr-add" data-slot="${role}">${ic('plus')}${list.length?'Add another':role==='give'?'Who are you giving?':'Who are you getting?'}</button>`:''}</div></div>`;
+  let html=`<div class="tr-sides">${side('give',G)}${side('get',T)}</div>`;
+  if(G.length&&T.length){
+    const rawG=sum(G.map(rosT)), rawT=sum(T.map(rosT));
+    let mine_=null, them=null, partner=null;
+    const lgMode=!!me&&G.every(p=>{const o=ownerOf(p.id);return o&&o.id===me.id});
+    if(lgMode){const taken=rostered(), mE=teamEntries(me), base=bestLineup(mE,L.slots,rosV).total, aft=luAfter(mE,tr.give,tr.get,L,taken);
+      mine_={g:aft.total-base,fa:aft.fa};
+      const ow=[...new Set(T.map(p=>(ownerOf(p.id)||{}).id))];
+      if(ow.length===1&&ow[0]!=null&&ow[0]!==me.id){partner=L.teams.find(t=>t.id===ow[0]);const tE=teamEntries(partner),tb=bestLineup(tE,L.slots,rosV).total,ta=luAfter(tE,tr.get,tr.give,L,taken);them={g:ta.total-tb,fa:ta.fa}}}
+    const gain=mine_?mine_.g:sum(T.map(vorP))-sum(G.map(vorP));
+    const sdv=M.ros_backtest?.sd||3.6, spread=sdv*Math.sqrt(sum([...G,...T].map(p=>(gamesLeft(p)*wsc(p))**2)))||1, pr=Phi(gain/spread);
+    const n4=sum(T.map(p=>nextN(p,4)))-sum(G.map(p=>nextN(p,4)));
+    let head,why;
+    if(pr>=.6&&gain>=8){head='Accept';why=`<b>${Math.round(pr*100)}%</b> chance it helps you.`}
+    else if(pr<=.4&&gain<=-8){head='Decline';why=`<b>${Math.round((1-pr)*100)}%</b> chance it hurts you.`}
+    else{head='Close call';why=`Roughly even. Go with roster need.`}
+    if(mine_&&mine_.fa.length)why+=` Counts picking up ${names(mine_.fa)} for the open spot.`;
+    if(T.length>G.length)why+=` You'd drop ${T.length-G.length===1?'a bench player':T.length-G.length+' bench players'}.`;
+    if(G.length===T.length&&Math.sign(n4)!==Math.sign(gain)&&Math.abs(n4)>=3)why+=` Next 4 weeks favor ${n4>0?'your side':'their side'} (+${fmt(Math.abs(n4),0)}).`;
+    const al=[];
+    if(them){al.push([them.g>=0?'vac':'warn','users',`${esc(partner.name)}'s lineup ${them.g>=0?'gains':'loses'} <b>${fmt(Math.abs(them.g),0)}</b>${them.g<0?'. Expect a no or a counter.':gain>=0?'. Both sides win.':'.'}`])}
+    else if(!mine_&&G.length===T.length){const r=rawT/Math.max(1,rawG);if(r>1.25||r<.8)al.push(['warn','users',`Raw totals ${fmt(rawG,0)} vs ${fmt(rawT,0)}. ${r>1?'Lopsided for you; they may say no.':'You give more raw points.'}`])}
+    if(!me)al.push(['','users',`Connect your league on the Team tab to judge it by your actual lineup.`]);
+    else if(!lgMode)al.push(['warn','users',`Someone you're giving isn't on your roster, so this uses value over a waiver player.`]);
+    [...G,...T].forEach(x=>{const p=byId[x.id];if(p&&p.upd)al.push(['_raw','',updAlert(p)]);const i=p&&inj(p);if(i)al.push([i.lvl,'cross',`${S_(x)} ${i.txt}`])});
+    T.forEach(x=>{if(x.trend>=8)al.push(['vac','up',`${S_(x)} snap share up ${x.trend} pts.`]);if(x.trend<=-8)al.push(['bad','snap',`${S_(x)} snap share down ${-x.trend} pts.`])});
+    G.forEach(x=>{if(x.trend>=8)al.push(['warn','snap',`${S_(x)} role is growing (+${x.trend} snaps).`])});
+    const wkSum=l=>(l[0]?l[0].wk:[]).map((_,i)=>sum(l.map(p=>(p.wk[i]||0)*wsc(p))));
+    const wa=wkSum(T), wd=wkSum(G), mx=Math.max(1,...wa,...wd);
+    const cols=wa.map((x,i)=>{const y=wd[i]||0,h=v=>Math.max(v>0?3:0,v/mx*100);
+      return `<div class="wk" title="Week ${M.week+i}: get ${fmt(x)}, give ${fmt(y)}"><div class="pair"><i class="d" style="height:${h(y)}%"></i><i class="a" style="height:${h(x)}%"></i></div><div class="wl">${M.week+i}</div></div>`}).join('');
+    html+=`<section class="field"><div class="v-top"><div class="kicker">Weeks ${M.week}–18 · ${mine_?'your lineup':'value over waivers'}</div><h2>${head}</h2>
+      <div class="gain"><b>${gain>=0?'+':'−'}${fmt(Math.abs(gain),0)}</b><span>pts for you</span></div>
+      <p class="why">${why}</p></div>
+      <div class="wkchart"><div class="wklegend"><span><i style="background:var(--yellow)"></i>${names(T)} (get)</span><span><i style="background:rgba(244,247,242,.5)"></i>${names(G)} (give)</span></div><div class="bars" role="img" aria-label="Projected points each remaining week">${cols}</div></div>
+      <div style="height:12px"></div></section>
+      ${al.length?`<div class="alerts">${al.map(([c,i,x])=>c==='_raw'?x:`<div class="alert ${c}"><span class="ai">${ic(i)}</span><span>${x}</span></div>`).join('')}</div>`:''}`;
+  } else html+=`<div class="empty" style="margin-top:14px"><b>${!G.length&&!T.length?'Add players to both sides':!G.length?'Who are you giving?':'Who are you getting?'}</b>Up to 3 a side.</div>`;
+  if(me){const ideas=moves().filter(m=>m.kind==='trade');
+    if(ideas.length)html+=`<div class="sec-h"><h3>Trade ideas</h3><small>help both lineups</small></div><div class="moves">${ideas.map((m,i)=>`<button class="mv up" data-ti="${i}"><span class="mv-i">${ic('turn')}</span><span class="mv-t"><b>${esc(m.title)}</b><small>${m.sub}</small></span>${ic('flip')}</button>`).join('')}</div>`;
+    el.innerHTML=html;$$('#cmpBody [data-ti]').forEach(b=>b.onclick=()=>{const a=ideas[+b.dataset.ti].act;tr={give:[a.a],get:[a.b]};store.set('ss_tr',tr);renderTR();window.scrollTo({top:0,behavior:'smooth'})})}
+  else el.innerHTML=html;
+  wireCards(el,()=>{});
+  $$('#cmpBody [data-trrm]').forEach(b=>b.onclick=e=>{e.stopPropagation();const [r,id]=b.dataset.trrm.split(':');tr[r]=tr[r].filter(x=>x!==id);store.set('ss_tr',tr);renderTR()});
 }
 
 /* ---------- rankings ---------- */
@@ -961,8 +1066,9 @@ function renderRank(){
   $$('#s-rank [data-s]').forEach(b=>b.onclick=()=>{rkSort=b.dataset.s;renderRank()});
   $$('#s-rank .li').forEach(r=>{const f=()=>{rkOpen=rkOpen===r.dataset.id?null:r.dataset.id;renderRank();const el=$(`#s-rank .li[data-id="${CSS.escape(r.dataset.id)}"]`);if(el&&rkOpen)el.scrollIntoView({block:'nearest',behavior:'smooth'})};r.onclick=f;r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}});
   $$('#s-rank [data-open]').forEach(b=>b.onclick=()=>{rkView='season';store.set('ss_rkview',rkView);rkOpen=b.dataset.open;rankPos=byId[b.dataset.open]?.pos||rankPos;renderRank()});
-  $$('#s-rank [data-cmp]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggle(b.dataset.cmp);go('ss')});
-  $$('#s-rank [data-wv]').forEach(b=>b.onclick=e=>{e.stopPropagation();wv.add=b.dataset.wv;store.set('ss_wv',wv);go('wv')});
+  $$('#s-rank [data-cmp]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggle(b.dataset.cmp);goCmp('week')});
+  $$('#s-rank [data-wv]').forEach(b=>b.onclick=e=>{e.stopPropagation();wv.add=b.dataset.wv;store.set('ss_wv',wv);goCmp('waiver')});
+  $$('#s-rank [data-tr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.tr;tr.give=tr.give.filter(x=>x!==id);if(!tr.get.includes(id))tr.get=[...tr.get,id].slice(-3);store.set('ss_tr',tr);goCmp('trade')});
   $$('#s-rank .detail').forEach(r=>r.onclick=e=>e.stopPropagation());
 }
 function detailHTML(id){
@@ -978,8 +1084,11 @@ function detailHTML(id){
     if(tcn.length)h+=`<div><span class="k">Finishes</span><span>${tcn.map(([l,c])=>`<b>${c}</b> ${l} week${c===1?'':'s'}`).join(', ')} in ${st.gp} games.</span></div>`;
     const u=s.u;h+=`<div><span class="k">Usage</span><span>${pos==='K'?`${u.fgm}/${u.fga} field goals, ${u.fg50} from 50+, long ${u.lng}, ${u.pat} extra points`:pos==='DST'?`${fmt(u.sacks)} sacks, ${fmt(u.to)} takeaways, ${fmt(u.pa)} points allowed a game, ${u.td} TD`:pos==='QB'?`${fmt(u.att,0)} attempts, ${fmt(u.car)} carries, ${fmt(u.yds,0)} yards a game, ${u.td} TD`:pos==='RB'?`${fmt(u.car)} carries, ${fmt(u.tgt)} targets, ${fmt(u.yds,0)} yards a game, ${u.snap}% of snaps, ${u.td} TD`:`${fmt(u.tgt)} targets${u.ts!=null?` (${fmt(u.ts)}% share)`:''}, ${fmt(u.rec)} catches, ${fmt(u.yds,0)} yards a game, ${u.snap}% of snaps, ${u.td} TD`}</span></div>`}
   if(w){const all=W.filter(x=>x.pos===pos).sort((a,b)=>rosT(b)-rosT(a)),rk=all.findIndex(x=>x.id===id)+1;
-    h+=`<div><span class="k">Rest of season</span><span><b>${fmt(rosT(w),0)}</b> points (${fmt(w.ppg*wsc(w))} a game), <b>${pos}${rk}</b>. Next 4 weeks: ${fmt(nextN(w,4),0)}${byeWk(w)?`. Bye in Week ${byeWk(w)}`:''}.</span></div>`}
-  h+=`<div class="dt-actions">${p&&live(p)?`<button class="btn" data-cmp="${id}">${picks.includes(id)?'Remove from Start/Sit':'Compare in Start/Sit'}</button>`:''}${w?`<button class="btn ghost" data-wv="${id}">Waiver pickup</button>`:''}</div></div>`;
+    const k=wsc(w),pj=w.wk.map(x=>x==null?null:x*k),mx=Math.max(1,...pj.map(x=>x||0)),hi=Math.max(...pj.map(x=>x||0));
+    const ros=`<div><span class="k">Rest of season <small>projected</small></span><span><b>${fmt(rosT(w),0)}</b> points (${fmt(w.ppg*k)} a game), <b>${pos}${rk}</b>. Next 4 weeks: ${fmt(nextN(w,4),0)}${byeWk(w)?`. Bye in Week ${byeWk(w)}`:''}.</span></div>`+
+      `<div class="wkbars" role="img" aria-label="Projected points each remaining week">${pj.map((v,i)=>`<div class="c" title="Week ${M.week+i}: ${v==null?'bye':fmt(v)+' projected'}"><span class="v">${v==null?'':fmt(v,0)}</span><span class="b fut${v!=null&&v===hi?' hi':''}" style="height:${v==null?0:Math.max(3,v/mx*70)}px"></span><span class="w">${v==null?'BYE':M.week+i}</span></div>`).join('')}</div>`;
+    h=rkView==='ros'?h.replace('<div class="dt">','<div class="dt">'+ros):h+ros}
+  h+=`<div class="dt-actions">${p&&live(p)?`<button class="btn" data-cmp="${id}">${picks.includes(id)?'Remove from Start/Sit':'Compare in Start/Sit'}</button>`:''}${w?`<button class="btn ghost" data-wv="${id}">Waiver pickup</button><button class="btn ghost" data-tr="${id}">Trade for him</button>`:''}</div></div>`;
   return h}
 
 /* ---------- matchups ---------- */
@@ -1391,7 +1500,7 @@ function renderTeam(){
     <div class="list lu">${mine.filter(x=>!startIds.has(x.espn)).map(x=>{const p=x.p||x.w;return p?`<div class="lu-row bench" data-open="${p.id}"><span class="lu-s">${x.slot===21?'IR':'BN'}</span><span class="lu-p">${crest(p.team,22)}<span style="min-width:0"><b>${esc(x.name||p.name)}</b><small>${p.pos}${x.w?' · '+fmt(rosT(x.w),0)+' rest of yr':''}</small></span></span><span class="lu-v">${x.p?fmt(wk(x.p)):''}</span></div>`:`<div class="lu-row bench"><span class="lu-s">BN</span><span class="lu-p"><span><b>${esc(x.name)}</b><small>Not in our data</small></span></span><span></span></div>`}).join('')}</div>
     <p class="cap" style="margin-top:10px">From ESPN ${LG.at?'at '+new Date(LG.at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):''} · <button class="linkish" id="lgRefresh">Refresh</button></p>`;
   $$('#s-team [data-mv]').forEach(b=>b.onclick=()=>doMove(mv[+b.dataset.mv]));
-  $$('#s-team [data-open]').forEach(b=>b.onclick=()=>{const id=b.dataset.open;if(byId[id]){picks=[id];save();go('ss')}});
+  $$('#s-team [data-open]').forEach(b=>b.onclick=()=>{const id=b.dataset.open;if(byId[id]){picks=[id];save();goCmp('week')}});
   $('#lgRefresh').onclick=()=>{LG.at=0;refreshLeague(true)};
   $('#lgMenu').onclick=()=>{tmMenu=!tmMenu;renderTeam()};
   if(tmMenu){$('#tmSwitch').onclick=()=>{tmMenu=false;LG.team=null;store.set('ss_league',LG);renderTeam()};
@@ -1400,18 +1509,18 @@ function renderTeam(){
     const rm=$('#tmForget');if(rm)rm.onclick=()=>{AUTH=null;store.set('ss_espn_auth',null);tmMenu=false;renderTeam()}}
 }
 function doMove(m){const a=m.act;
-  if(a.type==='cmp'){picks=a.ids.filter(Boolean);save();go('ss')}
-  else if(a.type==='wv'){wv={drop:a.drop,add:a.add};store.set('ss_wv',wv);go('wv')}
-  else if(a.type==='add'){if(byId[a.id]){picks=[a.id];save();go('ss')}}
-  else if(a.type==='trade'){wv={drop:a.a,add:a.b};store.set('ss_wv',wv);go('wv')}
+  if(a.type==='cmp'){picks=a.ids.filter(Boolean);save();goCmp('week')}
+  else if(a.type==='wv'){wv={drop:a.drop,add:a.add};store.set('ss_wv',wv);goCmp('waiver')}
+  else if(a.type==='add'){if(byId[a.id]){picks=[a.id];save();goCmp('week')}}
+  else if(a.type==='trade'){tr={give:[a.a],get:[a.b]};store.set('ss_tr',tr);goCmp('trade')}
   else if(a.type==='lineup'){$('#s-team .lu')&&$('#s-team .lu').scrollIntoView({behavior:'smooth',block:'start'})}
-  else if(a.type==='open'){if(byId[a.id]){picks=[a.id];save();go('ss')}}}
+  else if(a.type==='open'){if(byId[a.id]){picks=[a.id];save();goCmp('week')}}}
 
 /* ---------- boot ---------- */
 setW();header();
 $$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));
-['team','ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==tab);
-if(readSetup()){$$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));['team','ss','wv','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==tab)}
+['team','ss','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==tab);
+if(readSetup()){$$('.tabbar button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===tab));['team','ss','rank','def','how'].forEach(id=>$('#s-'+id).hidden=id!==tab)}
 render(tab);
 if(LG&&LG.id&&!LG.data)connectLeague(LG.id).then(()=>{if(LG&&LG.data&&LG.team!=null)renderTeam()});else refreshLeague(false);
 /* an open tab (phones restore them without reloading) checks for a newer version and reloads itself */
