@@ -1249,6 +1249,13 @@ for t_ in teams:
         gm = _fut[((_fut.home_team == t_) | (_fut.away_team == t_)) & (_fut.week == w)]
         row.append(None if gm.empty else (gm.away_team.iloc[0] if gm.home_team.iloc[0] == t_ else '@' + gm.home_team.iloc[0]))
     SCHED[t_] = row
+# every week's opponent, Weeks 1-18 ('@' = away), so charts can show who a player faced and faces next
+_sg = games[games.season == SEASON]
+SCHED_ALL = {t_: [None] * 18 for t_ in teams}
+for r in _sg.itertuples():
+    if 1 <= r.week <= 18:
+        if r.home_team in SCHED_ALL: SCHED_ALL[r.home_team][r.week - 1] = r.away_team
+        if r.away_team in SCHED_ALL: SCHED_ALL[r.away_team][r.week - 1] = '@' + r.home_team
 IMP_NOW = {t_: round(float(x), 1) for (s_, w_, t_), x in tg.set_index(['season', 'week', 'team']).imp.items()
            if s_ == SEASON and w_ == WEEK and pd.notna(x)}
 
@@ -1656,6 +1663,7 @@ for pid, g_ in cur_all.groupby('player_id'):
     season_tbl.append(dict(
         id=pid, name=cur_name.get(pid, g_.player_display_name.iloc[-1]), pos=pos, team=team, gp=gp,
         wp=weekly_list(g_, 'ppr'), ws=weekly_list(g_, 'std'), bye=team_bye.get(team, []), status=status_now.get(pid, ''),
+        wt=(lambda m_: [m_.get(w) if m_.get(w) != team else None for w in range(1, last_wk + 1)])(dict(zip(g_.week, g_.team))),
         u=dict(tgt=round(g_.targets.mean(), 1), car=round(g_.carries.mean(), 1), att=round(g_.attempts.mean(), 1),
                rec=round(g_.receptions.fillna(0).mean(), 1),
                yds=round((g_.passing_yards.fillna(0) + g_.rushing_yards.fillna(0) + g_.receiving_yards.fillna(0)).mean(), 1),
@@ -1705,7 +1713,7 @@ for e in out:
 for e in waiver:
     if e['pos'] != 'DST' and e['id'] in GSIS2ESPN:
         e['espn'] = GSIS2ESPN[e['id']]
-payload = json.dumps(dict(players=out, defense=defense, sched=SCHED, logos=LOGOS, wx=WX, imp=IMP_NOW, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
+payload = json.dumps(dict(players=out, defense=defense, sched=SCHED, sched_all=SCHED_ALL, logos=LOGOS, wx=WX, imp=IMP_NOW, waiver=waiver, season=season_tbl, meta=meta), separators=(',', ':'), default=float)
 open(os.path.join(OUT, 'data.json'), 'w').write(payload)
 open(os.path.join(OUT, 'data.js'), 'w').write('window.SS_DATA=' + payload + ';\n')
 print(f'wrote {len(out)} players, {len(payload)//1024} KB')

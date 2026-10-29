@@ -592,6 +592,16 @@ footer .linkish{font-size:14px}
 .wc.big .avg span{position:absolute;left:2px;bottom:2px;font:700 10px var(--display);color:var(--muted);background:color-mix(in srgb,var(--surface-2) 80%,transparent);padding:0 3px;border-radius:3px}
 .wc-key .k.beat{background:var(--up)}.wc-key .k.miss{background:color-mix(in srgb,var(--down) 78%,transparent)}.wc-key .k.avgk{width:14px;height:0;border-top:1.5px dashed color-mix(in srgb,var(--ink) 55%,transparent);border-radius:0}.wc-key .k.pjk{height:3px;width:12px;border-radius:2px;background:var(--ink)}
 .wc.big{grid-template-rows:170px auto}
+.wc.big .wc-o{grid-column:2;display:grid;grid-template-columns:repeat(18,1fr);gap:2px;margin-top:5px}
+.wc-o .oc{position:relative;display:grid;place-items:center;aspect-ratio:1;border-radius:4px;background:var(--surface);border:1px solid var(--line);min-width:0;overflow:hidden;cursor:pointer}
+.wc-o .oc img{width:84%;height:84%;object-fit:contain}
+.wc-o .oc b{font:800 7.5px/1 var(--display);color:var(--ink-2);letter-spacing:-.02em}
+.wc-o .oc i{font:800 10px var(--display);font-style:normal;color:var(--faint)}
+.wc-o .oc.past img{opacity:.55;filter:grayscale(.4)}
+.wc-o .oc.cur{outline:1.5px solid var(--ink);outline-offset:1px}
+.wc-key .sos{gap:2px}.wc-key .sos .k{width:9px;height:9px;border-radius:2px}
+.wc-key .k.sh{background:color-mix(in srgb,var(--down) 60%,transparent)}.wc-key .k.sm{background:var(--surface);border:1px solid var(--line-2)}.wc-key .k.se{background:color-mix(in srgb,var(--up) 60%,transparent);margin-right:4px}
+.wc-read .mw{display:block;font-weight:600;color:var(--muted)}.wc-read .mw.up{color:var(--up)}.wc-read .mw.dn{color:var(--down)}
 .wc-read{font-size:14px;margin:-2px 0 0;min-height:21px}
 .wc-read .up,.li .ch.vp.up b{color:var(--up)}.wc-read .dn,.li .ch.vp.dn b{color:var(--down)}
 .wc-read small{color:var(--faint);font-weight:600}
@@ -1187,8 +1197,17 @@ let _seaById=null,_seaSrc=null;
 const seaOf=id=>{if(_seaSrc!==DATA.season){_seaSrc=DATA.season;_seaById=Object.fromEntries(SEA().map(s=>[s.id,s]))}return _seaById[id]};
 function ppScale(s){if(S==='proj')return 1;let a=0,b=0;s.wp.forEach((x,i)=>{if(x!=null&&s.ws[i]!=null){a+=x;b+=s.ws[i]}});const r=a>0?b/a:1;return S==='std'?r:(1+r)/2}
 const yCap=pos=>pos==='K'?20:pos==='DST'?24:40;
+/* strength of schedule: each week's opponent and how that defense treats his position this season.
+   z > 0 = allows more than expected (easier), z < 0 = tougher. Rank 1 = easiest of 32. */
+let _dz=null,_dzSrc=null;
+function defZ(pos,team){if(_dzSrc!==DATA.defense){_dzSrc=DATA.defense;_dz={};Object.entries(DATA.defense||{}).forEach(([q,rows])=>{_dz[q]={};rows.forEach((r,i)=>_dz[q][r.team]={z:r.z,rk:i+1,n:rows.length})})}
+  return (_dz[pos]||{})[team]||null}
+function oppOf(id,wk){const s=seaOf(id),o=byId[id]||wById[id]||s;if(!o)return null;const t=(s&&s.wt&&s.wt[wk-1])||o.team;const v=((DATA.sched_all||{})[t]||[])[wk-1];return v||null}
+const rkTxt=n=>n+(n%10===1&&n!==11?'st':n%10===2&&n!==12?'nd':n%10===3&&n!==13?'rd':'th');
+function muWord(d,pos){if(!d)return '';const pl=pos+'s';if(Math.abs(d.z)<.4)return `an average matchup for ${pl} (${rkTxt(d.rk)}-easiest of ${d.n})`;return d.rk<=Math.ceil(d.n/2)?`${d.rk===1?'the':rkTxt(d.rk)}-easiest matchup for ${pl}`:`${d.n-d.rk+1===1?'the':rkTxt(d.n-d.rk+1)}-toughest matchup for ${pl}`}
 function weekSeries(id){
   const s=seaOf(id), p=byId[id], w=wById[id], pts=s?wkPts(s):[], k=s?ppScale(s):1, out=[];
+  const pos_=(p||w||s||{}).pos;
   const byes=new Set([...(s?s.bye:[]),...(p&&p.bye?[M.week]:[])]);
   for(let wk=1;wk<=NWK;wk++){const o={wk};
     if(wk<M.week){
@@ -1200,6 +1219,7 @@ function weekSeries(id){
       else o.t='none'}
     else{const x=w?w.wk[wk-M.week]:undefined;
       if(x==null)o.t=byes.has(wk)?'bye':w&&x===null?'out':'none';else{o.t='next';o.pj=x*wsc(w)}}
+    o.opp=oppOf(id,wk);o.dz=o.opp&&['QB','RB','WR','TE'].includes(pos_)?defZ(pos_,o.opp.replace('@','')):null;o.pos=pos_;
     out.push(o)}
   return out}
 /* which weeks a view is about: the sorted metric's own window when it has one, else the period's */
@@ -1231,14 +1251,19 @@ function weekChart(ser,o){
   const nPast=ser.filter(c=>c.wk<M.week).length, avgLine=avg!=null&&nPast?`<i class="avg" style="bottom:${Y(avg)}%;width:${nPast/ser.length*100}%"></i>`:'';
   return `<div class="wc big" role="img" aria-label="${esc(o.label||'Points by week')}"><div class="wc-y">${ticks.map(v=>`<span style="bottom:${Y(v)}%">${v}</span>`).join('')}</div>
     <div class="wc-plot">${ticks.map(v=>`<i class="gl" style="bottom:${Y(v)}%"></i>`).join('')}${avgLine}${cells}</div>
-    <div class="wc-x">${ser.map(c=>`<span class="${c.wk===M.week?'cur':''}">${c.wk===M.week||c.wk===1||c.wk%3===0?c.wk:''}</span>`).join('')}</div></div>`}
+    <div class="wc-x">${ser.map(c=>`<span class="${c.wk===M.week?'cur':''}">${c.wk===M.week||c.wk===1||c.wk%3===0?c.wk:''}</span>`).join('')}</div>
+    ${ser.some(c=>c.opp)?`<div class="wc-o">${ser.map(c=>{const t=c.opp?c.opp.replace('@',''):null;
+      return `<span class="oc${c.wk<M.week?' past':''}${c.wk===M.week?' cur':''}" data-w="${c.wk}" ${c.dz?`style="${zColor(c.dz.z)}"`:''} title="${t?`Week ${c.wk} ${c.opp.startsWith('@')?'at':'vs'} ${TEAMN[t]||t}`:`Week ${c.wk}: bye`}">${t?(logoSrc(t)?`<img src="${logoSrc(t)}" alt="${esc(t)}" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'${esc(t)}'}))">`:`<b>${esc(t)}</b>`):'<i>B</i>'}</span>`}).join('')}</div>`:''}</div>`}
 function readout(c,p){
-  const d=c.pj!=null&&c.act!=null?c.act-c.pj:null, opp=c.wk===M.week&&p&&p.opp?` ${vs(p)}`:'';
+  const d=c.pj!=null&&c.act!=null?c.act-c.pj:null, opp=c.opp?` ${c.opp.startsWith('@')?'@':'vs'} ${c.opp.replace('@','')}`:c.wk===M.week&&p&&p.opp?` ${vs(p)}`:'';
+  const mw=c.dz?` <small class="mw ${c.dz.z>=.4?'up':c.dz.z<=-.4?'dn':''}">${muWord(c.dz,c.pos)}</small>`:'';
+  return readout0(c,p,d,opp)+mw}
+function readout0(c,p,d,opp){
   if(c.t==='past')return `<b>Week ${c.wk}</b>${opp}: scored <b>${fmt(c.act)}</b>${c.pj!=null?`, projected ${fmt(c.pj)} <span class="${d>=0?'up':'dn'}">(${d>=0?'+':'−'}${fmt(Math.abs(d))})</span>${c.src===0?' <small>model, reconstructed</small>':''}`:''}`;
   if(c.t==='now')return `<b>Week ${c.wk}</b>${opp}: projected <b>${fmt(c.pj)}</b>${c.hi!=null?`, likely ${fmt(c.lo,0)}–${fmt(c.hi,0)}`:''}`;
-  if(c.t==='next')return `<b>Week ${c.wk}</b>: projected <b>${fmt(c.pj)}</b>`;
+  if(c.t==='next')return `<b>Week ${c.wk}</b>${opp}: projected <b>${fmt(c.pj)}</b>`;
   return `<b>Week ${c.wk}</b>: ${c.t==='bye'?'bye':c.t==='out'?"didn't play":'no data'}`}
-const KEY=`<div class="wc-key"><span><i class="k beat"></i>Beat projection</span><span><i class="k miss"></i>Fell short</span><span><i class="k pjk"></i>Pre-game projection</span><span><i class="k now"></i>Week ${M.week}</span><span><i class="k fut"></i>Projected</span></div>`;
+const KEY=`<div class="wc-key"><span class="sos"><i class="k sh"></i><i class="k sm"></i><i class="k se"></i>Opponent: tougher to easier vs his position</span><span><i class="k beat"></i>Beat projection</span><span><i class="k miss"></i>Fell short</span><span><i class="k pjk"></i>Pre-game projection</span><span><i class="k now"></i>Week ${M.week}</span><span><i class="k fut"></i>Projected</span></div>`;
 function vsProj(ser){const d=ser.filter(c=>c.t==='past'&&c.pj!=null).map(c=>c.act-c.pj);return d.length?{n:d.length,beat:d.filter(x=>x>=0).length,avg:sum(d)/d.length}:null}
 
 /* ---------- ranking metrics ----------
@@ -1285,11 +1310,13 @@ const MET=[
     {id:'rosg',l:'Rest-of-year per game',s:'ROS/g',em:'future',v:x=>x.w?x.w.ppg*wsc(x.w):null,f:f1},
     {id:'n4',l:'Next 4 weeks',s:'Next 4',em:'n4',v:x=>x.w?nextN(x.w,4):null,f:f0,d:'Projected points over the next four weeks.'},
     {id:'vor',l:'Value over waivers',s:'Value',em:'future',v:x=>x.w?vorT(x.w):null,f:sg0,d:'Points above the best player nobody in a league your size would start at his position (uses your connected league, else 12 teams). Compares across positions, so use it for trades.'},
+    {id:'sos4',l:'Schedule, next 4',s:'Sched',em:'n4',v:x=>{if(!SKILL(x))return null;const f=x.ser.filter(c=>c.wk>=M.week&&c.dz).slice(0,4);return f.length?sum(f.map(c=>c.dz.z))/f.length:null},f:sg1,d:'How easy his next 4 opponents are for his position, in standard deviations. Positive is easier.'},
+    {id:'sosr',l:'Schedule, rest of year',s:'Sched ROS',em:'future',v:x=>{if(!SKILL(x))return null;const f=x.ser.filter(c=>c.wk>=M.week&&c.dz);return f.length?sum(f.map(c=>c.dz.z))/f.length:null},f:sg1,d:'How easy his remaining opponents are for his position. Positive is easier.'},
     {id:'gl',l:'Games left',s:'Games',em:'future',v:x=>x.w?gamesLeft(x.w):null,f:f0},
     {id:'own',l:'Rostered',s:'Rost.',em:'future',v:x=>x.w&&x.w.own!=null?x.w.own:null,f:pc,d:'Share of leagues that roster him.'}]]];
 const METS=Object.fromEntries(MET.flatMap(([g,l])=>l.map(m=>[m.id,{...m,g}])));
 let x_pos='';   // set per row so rank-style formats can show the position
-const RK_DEF={week:{m:['proj','ceil','edge'],s:0},season:{m:['ppg','vsp','xfp'],s:0},ros:{m:['ros','n4','vor'],s:0}};
+const RK_DEF={week:{m:['proj','ceil','edge'],s:0},season:{m:['ppg','vsp','xfp'],s:0},ros:{m:['ros','vor','sos4'],s:0}};
 let rkM=store.get('ss_rkm',null);
 if(!rkM||typeof rkM!=='object')rkM={};
 ['week','season','ros'].forEach(k=>{const c=rkM[k];if(!c||!Array.isArray(c.m)||!c.m.length||!c.m.every(id=>METS[id]))rkM[k]=JSON.parse(JSON.stringify(RK_DEF[k]));rkM[k].s=Math.min(rkM[k].s||0,rkM[k].m.length-1)});
@@ -1304,7 +1331,7 @@ function rkPool(){
   else ids=W.filter(fitPos).map(p=>p.id);
   return ids.map(ctx)}
 const rowName=(n,mx=15)=>{if(n.length<=mx||n.endsWith(' D/ST'))return n;const w=n.split(' ');return w.length>1?w[0][0]+'. '+w.slice(1).join(' '):n};
-const TONE=new Set(['edge','oppd','gap','vsp','over','l3d','sntr','vor']);
+const TONE=new Set(['sos4','sosr','edge','oppd','gap','vsp','over','l3d','sntr','vor']);
 function metaLine(x,showPos,pr){
   const p=x.p,bits=[];bits.push(`<span class="pos">${x.pos}${pr&&showPos?pr:''}</span>`);
   if(rkView==='week'&&p)bits.push(`<span>${vs(p)||x.team}${p.final?' · final':live(p)?' '+fmtTime(p).replace(/:00(?=[ap]$)/,''):''}</span>`);
@@ -1357,7 +1384,7 @@ function renderRank(){
   $$('#s-rank [data-tr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.tr;tr.give=tr.give.filter(x=>x!==id);if(!tr.get.includes(id))tr.get=[...tr.get,id].slice(-3);store.set('ss_tr',tr);goCmp('trade')});
   $$('#s-rank .detail').forEach(r=>r.onclick=e=>e.stopPropagation());
   const dc=$('#s-rank .detail .wc.big');if(dc){const id=rkOpen,ser=weekSeries(id),out=$('#s-rank .detail .wc-read');
-    dc.querySelectorAll('.c').forEach(c=>c.onclick=()=>{dc.querySelectorAll('.c.sel').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');out.innerHTML=readout(ser[+c.dataset.w-1],byId[id])})}
+    dc.querySelectorAll('.c,.oc').forEach(c=>c.onclick=()=>{const w_=c.dataset.w;dc.querySelectorAll('.c.sel').forEach(x=>x.classList.remove('sel'));const col=dc.querySelector(`.c[data-w="${w_}"]`);if(col)col.classList.add('sel');out.innerHTML=readout(ser[+w_-1],byId[id])})}
 }
 /* metric picker: grouped chips, up to 3, the order is the column order; a 4th pick replaces the last */
 function openMetrics(){
