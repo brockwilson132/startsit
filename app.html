@@ -584,6 +584,14 @@ footer .linkish{font-size:14px}
 .wc.big .rg{width:2px}
 .wc.big .wc-x{grid-column:2;display:grid;grid-template-columns:repeat(18,1fr);gap:2px;margin-top:4px;font:700 10.5px var(--display);color:var(--faint);text-align:center}
 .wc.big .wc-x .cur{color:var(--ink)}
+.wc .b.act.beat{background:var(--up)}.wc .b.act.miss{background:color-mix(in srgb,var(--down) 78%,transparent)}
+.wc .pj{position:absolute;left:50%;transform:translate(-50%,50%);width:min(100%,20px);height:3px;border-radius:2px;background:var(--ink);opacity:.85;font-style:normal;z-index:1}
+.wc .vl{position:absolute;left:50%;transform:translateX(-50%);font:800 10px/1 var(--display);font-style:normal;color:var(--ink-2);white-space:nowrap;pointer-events:none}
+.wc .c.dim .vl{opacity:.6}
+.wc.big .avg{position:absolute;left:0;height:0;border-top:1.5px dashed color-mix(in srgb,var(--ink) 45%,transparent);font-style:normal;pointer-events:none;z-index:0}
+.wc.big .avg span{position:absolute;left:2px;bottom:2px;font:700 10px var(--display);color:var(--muted);background:color-mix(in srgb,var(--surface-2) 80%,transparent);padding:0 3px;border-radius:3px}
+.wc-key .k.beat{background:var(--up)}.wc-key .k.miss{background:color-mix(in srgb,var(--down) 78%,transparent)}.wc-key .k.avgk{width:14px;height:0;border-top:1.5px dashed color-mix(in srgb,var(--ink) 55%,transparent);border-radius:0}.wc-key .k.pjk{height:3px;width:12px;border-radius:2px;background:var(--ink)}
+.wc.big{grid-template-rows:170px auto}
 .wc-read{font-size:14px;margin:-2px 0 0;min-height:21px}
 .wc-read .up,.li .ch.vp.up b{color:var(--up)}.wc-read .dn,.li .ch.vp.dn b{color:var(--down)}
 .wc-read small{color:var(--faint);font-weight:600}
@@ -608,23 +616,35 @@ footer .linkish{font-size:14px}
 .mpick span i{font-style:normal;color:var(--faint);margin:0 5px}
 .mpick em{font:700 13px var(--body);font-style:normal;color:var(--turf-hi);flex:none}
 .rk-list{overflow:visible}
-.rc-head{position:sticky;top:var(--tbh,64px);z-index:5;display:grid;grid-template-columns:22px 1fr;align-items:center;gap:8px;padding:6px 12px 6px 8px;background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);border-radius:var(--r) var(--r) 0 0}
-.rc-hl{font:700 12px var(--body);color:var(--muted)}
-.rc-m{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:left}
-.rc-head .mh{border:0;background:none;padding:6px 0;font:700 12px var(--body);color:var(--muted);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:2px solid transparent}
+.rc-head{position:sticky;top:var(--tbh,64px);z-index:5;display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:8px;padding:4px 10px 4px 8px;background:color-mix(in srgb,var(--surface) 94%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);border-radius:var(--r) var(--r) 0 0}
+.rc-hl{font:700 12px var(--body);color:var(--muted);text-align:center}
+.rc-edit{justify-self:start;display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px 0 8px;border:1px solid var(--line-2);border-radius:999px;background:var(--surface);font:700 12.5px var(--body);color:var(--ink-2)}
+.rc-edit .ic{width:15px;height:15px;color:var(--muted)}
+.rc-m{display:grid;grid-auto-flow:column;grid-auto-columns:50px;gap:2px;text-align:right}
+.rc-head .mh{border:0;background:none;padding:8px 0 6px;font:700 12px var(--body);color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:2px solid transparent;min-height:36px}
 .rc-head .mh.on{color:var(--ink);border-bottom-color:var(--yellow)}
 .rc-head .mh i{font-style:normal;font-size:9px;margin-left:2px}
-.li.rc{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:22px 1fr;grid-template-areas:"rk id" ". m" ". ch";gap:8px 8px;align-items:center;padding:12px 12px 12px 8px;content-visibility:auto;contain-intrinsic-size:auto 140px}
-.li.rc .rk{grid-area:rk;font-size:16px}
-.rc-id{grid-area:id;display:flex;align-items:center;gap:10px;min-width:0}
-.rc-id .nm{font:700 15.5px/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.li.rc>.rc-m{grid-area:m}
-.li.rc .wc{grid-area:ch}
-.rc-m .m b{display:block;font:800 20px/1 var(--display);color:var(--muted);font-variant-numeric:tabular-nums}
-.rc-m .m.on b{font-size:26px;color:var(--ink)}
+.li.rc{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 10px 9px 8px;min-height:56px;content-visibility:auto;contain-intrinsic-size:auto 58px}
+.li.rc .rk{font-size:15px}
+.li.rc.open{box-shadow:inset 3px 0 0 var(--yellow)}
+.rc-id{display:flex;align-items:center;gap:8px;min-width:0}
+.rc-id .crest{flex:none}
+.rc-tx{display:flex;flex-direction:column;min-width:0;gap:2px}
+.rc-tx .nm{display:flex;align-items:center;gap:6px;min-width:0;font:700 15px/1.15 var(--body)}
+.rc-tx .nmt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.rc-tx .nm .tag{flex:none;font-size:10.5px;padding:1px 5px}
+.rc-tx .sub{font-size:12px;color:var(--muted);display:flex;flex-wrap:nowrap;gap:6px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.rc-tx .sub .pos{font:800 11.5px var(--display);letter-spacing:.03em;color:var(--ink-2)}
+.rc-tx .sub .tag{font-size:10.5px;padding:1px 5px}
+.rc-m .m b{display:block;font:700 15px/1 var(--display);color:var(--muted);font-variant-numeric:tabular-nums}
+.rc-m .m.on b{font:900 21px/1 var(--display);color:var(--ink)}
+.rc-m .m b.up{color:var(--up)}.rc-m .m b.dn{color:var(--down)}
 .rc-m .m b.na{color:var(--faint);font-weight:600}
-.li.rc.ax{display:grid;grid-template-columns:22px 1fr;grid-template-areas:none;padding:6px 12px 4px 8px;min-height:0;contain-intrinsic-size:auto 20px;background:var(--surface-2)}
-.li.rc.ax .wc-ax{grid-column:2}
+.rc-tier{display:flex;align-items:center;gap:8px;padding:5px 12px 4px 38px;background:var(--surface-2);border-top:1px solid var(--line);font:800 11px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.rc-tier::after{content:"";flex:1;height:1px;background:var(--line)}
+.rc-tier + .li{border-top:0}
+.rk-sub{margin:10px 4px 8px;font-size:12.5px;color:var(--muted)}
+@media (max-width:360px){.rc-m{grid-auto-columns:44px}.rc-edit span{display:none}.rc-head .mh{font-size:11px}}
 .mdefs{display:grid;gap:4px;margin:12px 2px 0;font-size:12.5px;color:var(--muted)}.mdefs b{color:var(--ink-2);font-weight:700}
 .mchips{display:flex;flex-wrap:wrap;gap:6px}
 .mchip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:600 14px var(--body)}
@@ -733,9 +753,10 @@ function inj(p){
   if(p.status==='Suspended')return {lvl:'out',tag:'SUSPENDED',txt:`Suspended${p.ret?', expected back around '+shortDate(p.ret):''}.`};
   if(p.status==='Exempt')return {lvl:'out',tag:'NOT ACTIVE',txt:`On the league's exempt list. Counted out for 4 games; updates within the hour of his reinstatement.`};
   if(p.status==='Out')return {lvl:'out',tag:'OUT',txt:`Ruled out${p.injury?' ('+p.injury+')':''}. Don't start him.${p.ret?' Expected back around '+shortDate(p.ret)+'.':''}`};
-  if(p.status==='Doubtful')return {lvl:'bad',tag:'DOUBTFUL',txt:`Doubtful${p.injury?' ('+p.injury+')':''}. Unlikely to play.`};
+  const ifp=p.if_plays!=null?` Projected ${fmt(p.if_plays*scale(p))} if he plays; the projection shown counts the chance he sits.`:'';
+  if(p.status==='Doubtful')return {lvl:'bad',tag:'DOUBTFUL',txt:`Doubtful${p.injury?' ('+p.injury+')':''}. Doubtful players almost never play (about 1 in 100).${ifp}`};
   const pr=(p.practice||'').startsWith('Did Not')?"didn't practice":(p.practice||'').startsWith('Limited')?'limited in practice':'';
-  if(p.status==='Questionable')return {lvl:'warn',tag:'QUESTIONABLE',txt:`Questionable${p.injury?' ('+p.injury+')':''}${pr?', '+pr:''}. Check before kickoff.`};
+  if(p.status==='Questionable')return {lvl:'warn',tag:'QUESTIONABLE',txt:`Questionable${p.injury?' ('+p.injury+')':''}${pr?', '+pr:''}.${p.play!=null?` Players in his spot play about ${p.play}% of the time.`:''}${ifp} Check before kickoff.`};
   if(p.upd&&!/IR|Released|Suspended|exempt|Not on/.test(p.upd.what))return null;
   if(p.miss&&pr)return {lvl:'warn',tag:'INJURY',txt:`Missed last week and ${pr} this week. Check his status.`};
   if(p.miss)return {lvl:'warn',tag:'CHECK',txt:`Didn't play last week. Check his status.`};
@@ -743,7 +764,7 @@ function inj(p){
   if(pr==="didn't practice")return {lvl:'warn',tag:'PRACTICE',txt:`Didn't practice this week. Could be rest or an injury.`};
   return null}
 const SHORTTAG={OUT:'Out',IR:'IR','FREE AGENT':'FA',SUSPENDED:'Susp.','NOT ACTIVE':'Inactive',DOUBTFUL:'Doubtful',QUESTIONABLE:'Q',INJURY:'Injury',CHECK:'Check','NO GAMES':'New',PRACTICE:'DNP'};
-const injTag=p=>{const i=p&&inj(p);return i?`<span class="tag ${i.lvl}" title="${esc(i.txt)}">${SHORTTAG[i.tag]||i.tag}</span>`:''};
+const injTag=p=>{const i=p&&inj(p);return i?`<span class="tag ${i.lvl}" title="${esc(i.txt)}">${SHORTTAG[i.tag]||i.tag}${i.tag==='QUESTIONABLE'&&p.play!=null?` ${p.play}%`:''}</span>`:''};
 function experts(p){if(p.ecr==null||p.rank==null)return null;const gap=p.ecr-p.rank;return {gap,big:Math.abs(gap)>=12}}
 
 /* ---------- shell ---------- */
@@ -966,7 +987,17 @@ const wsc=p=>S==='std'?p.rs:S==='half'?p.rh:1;
 const gamesLeft=p=>p.wk.filter(x=>x!=null).length;
 const nextN=(p,n)=>p.wk.slice(0,n).reduce((a,x)=>a+(x||0),0)*wsc(p);
 const rosT=p=>p.ros*wsc(p);
-const vorT=p=>rosT(p)-((M.ros_backtest&&M.ros_backtest.repl||{})[p.pos]||0)*gamesLeft(p)*wsc(p);
+/* replacement level = the best player nobody in YOUR league starts: (teams x starters at that position) deep,
+   counting flex spots by how often each position fills them. Falls back to a 12-team, 1-QB default. */
+const REPL_PER={QB:[[0,1],[7,.5]],RB:[[2,1],[3,.5],[23,.45]],WR:[[4,1],[3,.5],[5,.5],[23,.45]],TE:[[6,1],[5,.5],[23,.1]],K:[[17,1]],DST:[[16,1]]};
+const DEF_SLOTS={0:1,2:2,4:2,6:1,23:1,16:1,17:1};
+let _rp=null,_rpKey='';
+function replLevel(pos){const L=LG&&LG.data,n=L&&L.teams.length?L.teams.length:12,sl=L&&L.slots&&L.slots.length?Object.fromEntries(L.slots):DEF_SLOTS,key=n+JSON.stringify(sl)+W.length;
+  if(_rpKey!==key){_rp={};Object.entries(REPL_PER).forEach(([p,fs])=>{const dem=fs.reduce((a,[k,f])=>a+(sl[k]||0)*f,0),v=W.filter(x=>x.pos===p).map(x=>x.ppg).sort((a,b)=>b-a);
+    _rp[p]=v.length&&dem>0?v[Math.min(v.length,Math.max(1,Math.round(n*dem)))-1]:((M.ros_backtest&&M.ros_backtest.repl)||{})[p]||0});_rpKey=key}
+  return _rp[pos]||0}
+const leagueSize=()=>LG&&LG.data&&LG.data.teams.length?LG.data.teams.length:12;
+const vorT=p=>rosT(p)-replLevel(p.pos)*gamesLeft(p)*wsc(p);
 const byeWk=p=>{const i=p.wk.findIndex(x=>x==null);return i<0?null:M.week+i};
 const ownTxt=p=>p.own==null?'rarely rostered':`${p.own}% rostered`;
 function bestAvailable(pos){return W.filter(p=>(p.own==null?p.vor<0:p.own<50)&&(pos!=='ALL'||!['K','DST'].includes(p.pos))&&p.id!==wv.drop&&(pos==='ALL'||p.pos===pos))
@@ -1173,22 +1204,26 @@ function emphFor(view,em,ser){
   if(em==='l3'){const l=ser.filter(c=>c.t==='past').slice(-3).map(c=>c.wk);return c=>l.includes(c.wk)}
   return c=>c.wk<M.week||(c.wk===M.week&&c.t==='past')}
 function weekChart(ser,o){
+  /* past weeks: one solid bar = what he scored, green when he beat his pre-game projection, red when short,
+     with a dark tick at the projection. This week: yellow projection with its likely range. Later: hatched projections.
+     A dashed line marks his average in games played. Values print on top so the chart reads without tapping. */
   const ym=o.ymax, Y=v=>Math.max(0,Math.min(100,v/ym*100)), emph=o.emph||(()=>true), big=!!o.big;
+  const pastV=ser.filter(c=>c.t==='past').map(c=>c.act), avg=pastV.length?sum(pastV)/pastV.length:null;
+  const lab=(v,top)=>big?`<em class="vl" style="bottom:calc(${Math.min(top,100)}% + 2px)">${fmt(v,0)}</em>`:'';
   const cells=ser.map(c=>{let h='';
-    if(c.t==='past'){const a=Math.max(0,c.act);
-      if(c.pj==null)h=`<i class="b act" style="height:${Math.max(a>0?3:1,Y(a))}%"></i>`;
-      else if(a>=c.pj)h=`<i class="b act" style="height:${Math.max(2,Y(c.pj))}%"></i><i class="b gain" style="bottom:${Y(c.pj)}%;height:${Y(a)-Y(c.pj)}%"></i>`;
-      else h=`<i class="b act" style="height:${Math.max(a>0?2:0,Y(a))}%"></i><i class="b short" style="bottom:${Y(a)}%;height:${Y(c.pj)-Y(a)}%"></i>`;
+    if(c.t==='past'){const a=Math.max(0,c.act),cls=c.pj==null?'':a>=c.pj?' beat':' miss';
+      h=`<i class="b act${cls}" style="height:${Math.max(a>0?2:1,Y(a))}%"></i>${c.pj!=null?`<i class="pj" style="bottom:${Y(c.pj)}%"></i>`:''}${lab(c.act,cls===' miss'?Y(a):Math.max(Y(a),c.pj!=null?Y(c.pj):0))}`;
       if(a>ym)h+=`<i class="over"></i>`}
-    else if(c.t==='now')h=(c.hi!=null?`<i class="rg" style="bottom:${Y(c.lo)}%;height:${Y(c.hi)-Y(c.lo)}%"></i>`:'')+`<i class="b now" style="height:${Math.max(3,Y(c.pj))}%"></i>`;
+    else if(c.t==='now')h=(c.hi!=null?`<i class="rg" style="bottom:${Y(c.lo)}%;height:${Y(c.hi)-Y(c.lo)}%"></i>`:'')+`<i class="b now" style="height:${Math.max(3,Y(c.pj))}%"></i>${lab(c.pj,c.hi!=null?Y(c.hi):Y(c.pj))}`;
     else if(c.t==='next')h=`<i class="b fut" style="height:${Math.max(2,Y(c.pj))}%"></i>`;
     else if(c.t==='bye')h=`<i class="mk">${big?'B':''}</i>`;
     else if(c.t==='out')h=`<i class="mk out">${big?'×':''}</i>`;
     return `<span class="c${emph(c)?'':' dim'}${c.wk===M.week?' cur':''}${o.sel===c.wk?' sel':''}" data-w="${c.wk}">${h}</span>`}).join('');
   if(!big)return `<div class="wc" aria-hidden="true">${cells}</div>`;
   const ticks=[];for(let v=0;v<=ym;v+=ym>24?10:5)ticks.push(v);
+  const nPast=ser.filter(c=>c.wk<M.week).length, avgLine=avg!=null&&nPast?`<i class="avg" style="bottom:${Y(avg)}%;width:${nPast/ser.length*100}%"></i>`:'';
   return `<div class="wc big" role="img" aria-label="${esc(o.label||'Points by week')}"><div class="wc-y">${ticks.map(v=>`<span style="bottom:${Y(v)}%">${v}</span>`).join('')}</div>
-    <div class="wc-plot">${ticks.map(v=>`<i class="gl" style="bottom:${Y(v)}%"></i>`).join('')}${cells}</div>
+    <div class="wc-plot">${ticks.map(v=>`<i class="gl" style="bottom:${Y(v)}%"></i>`).join('')}${avgLine}${cells}</div>
     <div class="wc-x">${ser.map(c=>`<span class="${c.wk===M.week?'cur':''}">${c.wk===M.week||c.wk===1||c.wk%3===0?c.wk:''}</span>`).join('')}</div></div>`}
 function readout(c,p){
   const d=c.pj!=null&&c.act!=null?c.act-c.pj:null, opp=c.wk===M.week&&p&&p.opp?` ${vs(p)}`:'';
@@ -1196,13 +1231,13 @@ function readout(c,p){
   if(c.t==='now')return `<b>Week ${c.wk}</b>${opp}: projected <b>${fmt(c.pj)}</b>${c.hi!=null?`, likely ${fmt(c.lo,0)}–${fmt(c.hi,0)}`:''}`;
   if(c.t==='next')return `<b>Week ${c.wk}</b>: projected <b>${fmt(c.pj)}</b>`;
   return `<b>Week ${c.wk}</b>: ${c.t==='bye'?'bye':c.t==='out'?"didn't play":'no data'}`}
-const KEY=`<div class="wc-key"><span><i class="k act"></i>Scored</span><span><i class="k gain"></i>Above pre-game projection</span><span><i class="k short"></i>Short of it</span><span><i class="k now"></i>Week ${M.week}</span><span><i class="k fut"></i>Projected</span></div>`;
+const KEY=`<div class="wc-key"><span><i class="k beat"></i>Beat projection</span><span><i class="k miss"></i>Fell short</span><span><i class="k pjk"></i>Pre-game projection</span><span><i class="k now"></i>Week ${M.week}</span><span><i class="k fut"></i>Projected</span></div>`;
 function vsProj(ser){const d=ser.filter(c=>c.t==='past'&&c.pj!=null).map(c=>c.act-c.pj);return d.length?{n:d.length,beat:d.filter(x=>x>=0).length,avg:sum(d)/d.length}:null}
 
 /* ---------- ranking metrics ----------
    Every metric reads from one context per player (this week, season, rest of year). Pick up to 3; one sorts.
    low: lower is better (sorted ascending). em: the weeks the chart highlights when this metric sorts. */
-const f1=n=>fmt(n,1), f0=n=>fmt(n,0), sg1=n=>(n>=0?'+':'−')+fmt(Math.abs(n),1), sg0=n=>(n>=0?'+':'−')+fmt(Math.abs(n),0), pc=n=>fmt(n,0)+'%';
+const f1=n=>fmt(n,1), f0=n=>fmt(n,0), sg1=n=>{const r=Math.round(n*10)/10;return (r>0?'+':r<0?'−':'')+fmt(Math.abs(r),1)}, sg0=n=>{const r=Math.round(n);return (r>0?'+':r<0?'−':'')+fmt(Math.abs(r),0)}, pc=n=>fmt(n,0)+'%';
 const SKILL=x=>['QB','RB','WR','TE'].includes(x.pos), LIVE=x=>x.p&&live(x.p);
 const MET=[
   ['This week',[
@@ -1242,7 +1277,7 @@ const MET=[
     {id:'ros',l:'Rest-of-year points',s:'ROS',em:'future',v:x=>x.w?rosT(x.w):null,f:f0,d:'Projected points from this week through Week 18.'},
     {id:'rosg',l:'Rest-of-year per game',s:'ROS/g',em:'future',v:x=>x.w?x.w.ppg*wsc(x.w):null,f:f1},
     {id:'n4',l:'Next 4 weeks',s:'Next 4',em:'n4',v:x=>x.w?nextN(x.w,4):null,f:f0,d:'Projected points over the next four weeks.'},
-    {id:'vor',l:'Value over waivers',s:'Value',em:'future',v:x=>x.w?vorT(x.w):null,f:sg0,d:'Points above a waiver-level player at his position. Compares across positions, so use it for trades.'},
+    {id:'vor',l:'Value over waivers',s:'Value',em:'future',v:x=>x.w?vorT(x.w):null,f:sg0,d:'Points above the best player nobody in a league your size would start at his position (uses your connected league, else 12 teams). Compares across positions, so use it for trades.'},
     {id:'gl',l:'Games left',s:'Games',em:'future',v:x=>x.w?gamesLeft(x.w):null,f:f0},
     {id:'own',l:'Rostered',s:'Rost.',em:'future',v:x=>x.w&&x.w.own!=null?x.w.own:null,f:pc,d:'Share of leagues that roster him.'}]]];
 const METS=Object.fromEntries(MET.flatMap(([g,l])=>l.map(m=>[m.id,{...m,g}])));
@@ -1261,9 +1296,11 @@ function rkPool(){
   else if(rkView==='season'){const s=st.filter(r=>fitPos(r.p)&&r.gp>0),minG=Math.max(1,Math.floor(Math.max(...s.map(r=>r.gp),1)/2));ids=s.filter(r=>r.gp>=minG).map(r=>r.p.id)}
   else ids=W.filter(fitPos).map(p=>p.id);
   return ids.map(ctx)}
-function metaLine(x,showPos){
-  const p=x.p,bits=[];if(showPos)bits.push(`<span class="pos">${x.pos}</span>`);
-  if(rkView==='week'&&p)bits.push(`<span>${vs(p)||x.team}${p.final?' · final':live(p)?' · '+fmtTime(p):''}</span>`);
+const rowName=(n,mx=15)=>{if(n.length<=mx||n.endsWith(' D/ST'))return n;const w=n.split(' ');return w.length>1?w[0][0]+'. '+w.slice(1).join(' '):n};
+const TONE=new Set(['edge','oppd','gap','vsp','over','l3d','sntr','vor']);
+function metaLine(x,showPos,pr){
+  const p=x.p,bits=[];bits.push(`<span class="pos">${x.pos}${pr&&showPos?pr:''}</span>`);
+  if(rkView==='week'&&p)bits.push(`<span>${vs(p)||x.team}${p.final?' · final':live(p)?' '+fmtTime(p).replace(/:00(?=[ap]$)/,''):''}</span>`);
   else if(rkView==='season'&&x.st)bits.push(`<span>${x.team} · ${x.st.gp} games</span>`);
   else{const bw=x.w&&byeWk(x.w);bits.push(`<span>${x.team}${bw?` · bye ${bw}`:''}</span>`)}
   return bits.join('')}
@@ -1276,20 +1313,30 @@ function renderRank(){
   const pool=rkPool(), vals=new Map(pool.map(x=>[x.id,mets.map(m=>{x_pos=x.pos;const v=m.v(x);return v==null||isNaN(v)?null:v})]));
   const dir=sm.low?1:-1;
   const list=pool.slice().sort((a,b)=>{const va=vals.get(a.id)[cfg.s],vb=vals.get(b.id)[cfg.s];if(va==null&&vb==null)return 0;if(va==null)return 1;if(vb==null)return -1;return (va-vb)*dir}).slice(0,100);
-  const rows=list.map((x,i)=>{const v=vals.get(x.id),open=rkOpen===x.id;x_pos=x.pos;
-    return `<div class="li rc${open?' open':''}" data-id="${x.id}" role="button" tabindex="0" aria-expanded="${open}" style="${tc(x.team)}">${holo(x.team)}
-      <span class="rk">${i+1}</span><div class="rc-id">${crest(x.team,26)}<span style="min-width:0"><div class="nm">${esc(x.name)} ${injTag(x.p)}</div><div class="sub">${metaLine(x,showPos)}</div></span></div>
-      <div class="rc-m">${mets.map((m,k)=>`<span class="m${k===cfg.s?' on':''}"><b class="${v[k]==null?'na':''}">${v[k]==null?'—':m.f(v[k])}</b></span>`).join('')}</div>
-      ${weekChart(x.ser,{ymax,emph:emphFor(rkView,sm.em,x.ser)})}</div>${open?`<div class="detail">${detailHTML(x.id,x.ser)}</div>`:''}`}).join('');
-  const head=`<div class="rc-head" id="rcHead"><span class="rc-hl">#</span><div class="rc-m">${mets.map((m,k)=>`<button class="mh${k===cfg.s?' on':''}" data-sort="${k}" aria-pressed="${k===cfg.s}" title="${esc(m.l)}">${esc(m.s)}${k===cfg.s?`<i>${m.low?'▲':'▼'}</i>`:''}</button>`).join('')}</div></div>`;
+  /* tiers: a break wherever the gap to the next player is much bigger than the typical gap near the top */
+  const sv=list.map(x=>vals.get(x.id)[cfg.s]), tierAt=new Set();
+  {const dif=[];for(let i=1;i<Math.min(sv.length,48);i++)if(sv[i]!=null&&sv[i-1]!=null)dif.push(Math.abs(sv[i-1]-sv[i]));
+   const md=dif.length?dif.slice().sort((a,b)=>a-b)[Math.floor(dif.length/2)]:0, span=sv[0]!=null&&sv[Math.min(sv.length,48)-1]!=null?Math.abs(sv[0]-sv[Math.min(sv.length,48)-1]):0;
+   const thr=Math.max(md*3,span*.06);let last=0;
+   if(thr>0)for(let i=1;i<sv.length&&tierAt.size<9;i++){if(sv[i]==null||sv[i-1]==null)continue;const g=Math.abs(sv[i-1]-sv[i]);
+     if(g>=thr&&(i-last>=3||g>=2*thr)){tierAt.add(i);last=i}}}
+  const posN={};let tier=1;
+  const rows=list.map((x,i)=>{const v=vals.get(x.id),open=rkOpen===x.id;x_pos=x.pos;posN[x.pos]=(posN[x.pos]||0)+1;
+    const brk=tierAt.has(i)?`<div class="rc-tier" aria-hidden="true"><span>Tier ${++tier}</span></div>`:'';
+    return `${brk}<div class="li rc${open?' open':''}" data-id="${x.id}" role="button" tabindex="0" aria-expanded="${open}" style="${tc(x.team)}">
+      <span class="rk">${i+1}</span><div class="rc-id">${crest(x.team,24)}<span class="rc-tx"><span class="nm"><span class="nmt">${esc(rowName(x.name,injTag(x.p)?11:15))}</span>${injTag(x.p)}</span><span class="sub">${metaLine(x,showPos,posN[x.pos])}</span></span></div>
+      <div class="rc-m">${mets.map((m,k)=>{const n=v[k],tone=TONE.has(m.id)&&n!=null&&Math.abs(n)>=(m.f===sg0?.5:.05)?(n>0?' up':' dn'):'';return `<span class="m${k===cfg.s?' on':''}"><b class="${n==null?'na':''}${tone}">${n==null?'—':m.f(n)}</b></span>`}).join('')}</div>
+      </div>${open?`<div class="detail">${detailHTML(x.id,x.ser)}</div>`:''}`}).join('');
+  const head=`<div class="rc-head" id="rcHead"><span class="rc-hl">#</span><button class="rc-edit" id="mpick" aria-label="Change columns">${ic('bar')}<span>Columns</span></button><div class="rc-m">${mets.map((m,k)=>`<button class="mh${k===cfg.s?' on':''}" data-sort="${k}" aria-pressed="${k===cfg.s}" title="Sort by ${esc(m.l)}">${esc(m.s)}${k===cfg.s?`<i>${m.low?'▲':'▼'}</i>`:''}</button>`).join('')}</div></div>`;
   const defs=mets.filter(m=>m.d).map(m=>`<div><b>${esc(m.l)}</b> ${esc(m.d)}</div>`).join('');
   const teams=rkView==='week'?[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort():[];
   const byes=rkView==='week'?P.filter(p=>p.bye&&fitPos(p)).sort((a,b)=>b.base-a.base):[];
+  const sub={week:`Week ${M.week} projections. Tap a column to sort, tap a player for his weekly chart.`,season:'Season so far, players with at least half a season of games.',ros:`Week ${M.week} through 18${LG&&LG.data?`, value set for your ${leagueSize()}-team league`:''}.`}[rkView];
   $('#s-rank').innerHTML=`<div class="seg" role="group" aria-label="Ranking period" style="margin-top:8px">${[['season','Season'],['week',`Week ${M.week}`],['ros','Rest of year']].map(([k,l])=>`<button data-v="${k}" aria-pressed="${k===rkView}">${l}</button>`).join('')}</div>
     <div class="rk-tools"><div class="chips">${['ALL','QB','RB','WR','TE','FLEX','K','DST'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('')}</div></div>
-    <button class="mpick" id="mpick">${ic('bar')}<span><small>Showing</small>${mets.map((m,k)=>`<b class="${k===cfg.s?'on':''}">${esc(m.l)}</b>`).join('<i>·</i>')}</span><em>Change</em></button>
-    <div class="list rk-list">${head}${rows?`<div class="li rc ax" aria-hidden="true"><span></span><span class="wc-ax">${Array.from({length:NWK},(_,i)=>`<span class="${i+1===M.week?'cur':''}">${i+1===1||i+1===NWK?i+1:i+1===M.week?'W'+(i+1):''}</span>`).join('')}</span></div>`+rows:'<div class="cap" style="padding:16px">No players for this filter yet.</div>'}</div>
-    ${KEY}${defs?`<div class="mdefs">${defs}</div>`:''}
+    <p class="rk-sub">${sub}</p>
+    <div class="list rk-list">${head}${rows||'<div class="cap" style="padding:16px">No players for this filter yet.</div>'}</div>
+    ${defs?`<div class="mdefs">${defs}</div>`:''}
     ${teams.length?`<div class="sec-h"><h3>On bye in Week ${M.week}</h3><small>${teams.join(', ')}</small></div><div class="bye-pills">${byes.slice(0,24).map(p=>`<button data-open="${p.id}">${badge(p.team)}${esc(p.name)}</button>`).join('')}</div>`:''}`;
   const tb=$('#topbar');if(tb)document.documentElement.style.setProperty('--tbh',tb.offsetHeight+'px');
   $$('#s-rank [data-v]').forEach(b=>b.onclick=()=>{rkView=b.dataset.v;store.set('ss_rkview',rkView);rkOpen=null;renderRank()});
@@ -1332,7 +1379,7 @@ function detailHTML(id,ser){
   if(st&&st.gp)tiles.push(tile('Season',fmt(st.ppg),`${pos}${st.rkPpg} · ${st.gp} games`));
   if(vp)tiles.push(tile('vs projection',(vp.avg>=0?'+':'−')+fmt(Math.abs(vp.avg)),`beat it ${vp.beat} of ${vp.n}`,vp.avg>=1?'up':vp.avg<=-1?'dn':''));
   if(w){const rk=W.filter(x=>x.pos===pos).sort((a,b)=>rosT(b)-rosT(a)).findIndex(x=>x.id===id)+1;tiles.push(tile('Rest of year',fmt(rosT(w),0),`${pos}${rk} · next 4: ${fmt(nextN(w,4),0)}`))}
-  let h=`<div class="dt">${weekChart(ser,{ymax:ym,big:true,sel:M.week,label:`${(p||s||w).name}: points by week`})}<p class="wc-read">${readout(cur,p)}</p>
+  let h=`<div class="dt">${weekChart(ser,{ymax:ym,big:true,sel:M.week,label:`${(p||s||w).name}: points by week`})}<p class="wc-read">${readout(cur,p)}</p>${KEY.replace('</div>',(()=>{const v=ser.filter(c=>c.t==='past').map(c=>c.act);return v.length?`<span><i class="k avgk"></i>Average ${fmt(sum(v)/v.length)}</span></div>`:'</div>'})())}
     <div class="tiles">${tiles.join('')}</div>`;
   if(p&&p.news)h+=`<div><span class="k">Latest${p.news_date?', '+shortDate(p.news_date):''}</span><span>${esc(p.news)}</span></div>`;
   const i_=p&&inj(p);if(i_)h+=`<div><span class="k">Status</span><span>${i_.txt}</span></div>`;
@@ -1418,6 +1465,8 @@ baseline(){
   <div class="chips" id="bpos">${['QB','RB','WR','TE'].map(q=>`<button data-p="${q}" aria-pressed="${q===howPos}">${q}</button>`).join('')}</div>
   <div class="split"><div class="split-u" style="width:${tu*100}%"><span>Usage ${Math.round(tu*100)}%</span></div><div class="split-p"><span>Points ${Math.round((1-tu)*100)}%</span></div></div>
   <p class="cap">${howPos==='RB'?'Running back workloads are the most stable thing in fantasy, so their baseline is almost all usage.':howPos==='WR'?'Receivers split it evenly: targets matter, but talent turns targets into points at very different rates.':howPos==='QB'?'Quarterbacks lean on usage, which for them is mostly rushing and pass volume.':'Tight ends lean on targets; their touchdowns are especially streaky.'}</p>
+  <h3>Where a player starts</h3>
+  <p>Early in the season the baseline leans on last season, then this season takes over game by game. A rookie starts from what past rookies at his position and draft round averaged as rookies, so a third-round starter isn't treated like an undrafted backup. A player who missed all of last season starts from the season before. And a Questionable or Doubtful player's projection counts the chance he sits: about 52% of players who missed practice all week play, 75% who were limited, 88% who were full, and 1% of Doubtful players.</p>
   <p>Usage here means targets, carries, air yards and red-zone looks. If a player's snap share is climbing, the model gives him extra credit before the points show up.</p>
   <p>Recent games count more: a game five weeks ago counts half as much as last week's. And when a regular is ruled out, on injured reserve or suspended, about three-quarters of his targets and carries are handed to his teammates, in proportion to their current roles. The card says when that's happening.</p>
   <p>Past points also get blended with last season, so a hot three-week start counts, but doesn't take over.</p>`},

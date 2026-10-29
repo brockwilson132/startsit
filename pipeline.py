@@ -122,12 +122,63 @@ posavg = d[d.season >= SEASON - 2].groupby(['season', 'week', 'team', 'position'
 UCOLS = ['targets', 'carries', 'attempts', 'receiving_air_yards', 'rz_tgt', 'rz_car', 'snap']
 K_PRIOR, K_NEW, K_USE = 4.0, 3.0, 2.5
 HALF_LIFE = 5.0   # games; recent games count more (best of 3/5/8/none on the held-out season)
+K_TWO = float(os.environ.get('K_TWO', 1.0))   # weight of a two-seasons-ago prior (player missed all of last season), relative to K_PRIOR
+
+# Rookie prior by draft capital. A first-round starter and an undrafted practice-squad call-up used to share one
+# prior (the 35th percentile of every player who touched the ball last season, about a WR5), which dragged good
+# rookies down for most of their first year. Now each rookie starts from what past rookies at his position and
+# draft tier actually averaged per game in their first season.
+_dp = pd.read_csv(fetch(f'{NV}/draft_picks/draft_picks.csv', 'draft_picks.csv'), low_memory=False)
+_dp = _dp[_dp.gsis_id.notna()]
+DRAFT = {g_: (int(s_), int(r_)) for g_, s_, r_ in zip(_dp.gsis_id, _dp.season, _dp['round'])}
+RAW_PRIOR = bool(os.environ.get('RAW_PRIOR'))   # experiment switch: old single replacement-level prior
+DECAY_GAMES = os.environ.get('DECAY_GAMES', '0') == '1'
+PRI_HL = float(os.environ.get('PRI_HL', 0))
+
+
+def _pmean(pri, col):
+    if PRI_HL and 'pw' in pri:
+        return (pri[col] * pri.pw).groupby(pri.player_id).sum() / pri.pw.groupby(pri.player_id).sum()
+    return pri.groupby('player_id')[col].mean()
+#   # experiment switch: old single replacement-level prior
+
+
+def _tier(rnd):
+    return 'R1' if rnd == 1 else 'R2' if rnd == 2 else 'R3' if rnd == 3 else 'R4-5' if rnd <= 5 else 'R6+'
+
+
+_RP = {}
+def rookie_prior(season, col):
+    """(position, tier) -> first-season per-game mean of rookies drafted before `season`, shrunk to the position mean."""
+    if (season, col) in _RP:
+        return _RP[(season, col)]
+    r = d[d.season < season].copy()
+    r['dr'] = r.player_id.map(DRAFT)
+    r = r[r.dr.notna()]
+    r = r[[dr_[0] == s_ for dr_, s_ in zip(r.dr, r.season)]]
+    pm_ = r.groupby('player_id').agg(m=(col, 'mean'), p=('position', 'last'), dr=('dr', 'first'))
+    pm_['t'] = [_tier(x[1]) for x in pm_.dr]
+    out_ = {}
+    for p_, g_ in pm_.groupby('p'):
+        pos_m = g_.m.mean()
+        for t_, h_ in g_.groupby('t'):
+            out_[(p_, t_)] = (h_.m.sum() + 6 * pos_m) / (len(h_) + 6)
+        out_[(p_, 'UDFA')] = min(out_.get((p_, 'R6+'), pos_m), g_[g_.t == 'R6+'].m.mean() if (g_.t == 'R6+').any() else pos_m)
+    _RP[(season, col)] = out_
+    return out_
 
 
 def asof(season, week):
     cur = d[(d.season == season) & (d.week < week)].copy()
     pri = d[d.season == season - 1]
-    cur['w'] = 0.5 ** ((week - 1 - cur.week) / HALF_LIFE)
+    pr2 = d[d.season == season - 2]
+    if DECAY_GAMES:
+        # age in games played, not calendar weeks: missing four weeks injured shouldn't fade a player's last good games
+        cur['w'] = 0.5 ** (cur.sort_values('week', ascending=False).groupby('player_id').cumcount().reindex(cur.index) / HALF_LIFE)
+    else:
+        cur['w'] = 0.5 ** ((week - 1 - cur.week) / HALF_LIFE)
+    if PRI_HL:
+        pri = pri.assign(pw=0.5 ** (pri.sort_values('week', ascending=False).groupby('player_id').cumcount().reindex(pri.index) / PRI_HL))
     n = cur.groupby('player_id').size()
     pos = pd.concat([pri, cur]).groupby('player_id').position.last()
     idx = pos.index
@@ -136,16 +187,30 @@ def asof(season, week):
     out['n_cur'] = n.reindex(idx).fillna(0)
     nw = cur.groupby('player_id').w.sum().reindex(idx).fillna(0)
     np_ = pri.groupby('player_id').size().reindex(idx).fillna(0)
+    np2 = pr2.groupby('player_id').size().reindex(idx).fillna(0)
     for col in ['ppr', 'std', 'half']:
         repl = pri.groupby('player_id').agg(m=(col, 'mean'), p=('position', 'last')).groupby('p').m.quantile(.35)
         cs = (cur[col] * cur.w).groupby(cur.player_id).sum().reindex(idx).fillna(0)
-        pm = pri.groupby('player_id')[col].mean().reindex(idx)
-        kp = np.where(pm.notna(), K_PRIOR * np.minimum(np_, 17) / 17, K_NEW)
-        prior = pm.fillna(out.position.map(repl))
+        pm = _pmean(pri, col).reindex(idx)
+        if RAW_PRIOR:
+            kp = np.where(pm.notna(), K_PRIOR * np.minimum(np_, 17) / 17, K_NEW)
+            prior = pm.fillna(out.position.map(repl))
+        else:
+            # missed all of last season (injury, suspension): fall back to the season before, at reduced weight
+            pm2 = pr2.groupby('player_id')[col].mean().reindex(idx)
+            use2 = pm.isna() & pm2.notna()
+            # nobody on record: a rookie by draft tier, else an undrafted/unknown player at the old replacement level
+            rp = rookie_prior(season, col)
+            new = [rp.get((p_, _tier(DRAFT[i_][1]) if i_ in DRAFT and DRAFT[i_][0] == season else 'UDFA' if i_ not in DRAFT else None),
+                          np.nan) for i_, p_ in zip(idx, out.position)]
+            new = pd.Series(new, index=idx).fillna(out.position.map(repl))
+            prior = pm.where(pm.notna(), pm2.where(use2, new))
+            kp = np.where(pm.notna(), K_PRIOR * np.minimum(np_, 17) / 17,
+                          np.where(use2, K_TWO * K_PRIOR * np.minimum(np2, 17) / 17, K_NEW))
         out['base_' + col] = (cs + kp * prior) / (nw + kp)
     for col in UCOLS:
         cs = (cur[col] * cur.w).groupby(cur.player_id).sum().reindex(idx).fillna(0)
-        pm = pri.groupby('player_id')[col].mean().reindex(idx)
+        pm = _pmean(pri, col).reindex(idx)
         cm = cs / nw.replace(0, np.nan)
         out['u_' + col] = (cs + K_USE * pm.fillna(cm).fillna(0)) / (nw + K_USE)
     # role trend: last 2 games snap share vs this player's blended snap share
@@ -1100,6 +1165,22 @@ for e in out:
     e['experts_adj'] = round(new - e['proj'], 2)
     for f_ in ('proj', 'std', 'half', 'lo', 'hi'):
         e[f_] = round(e[f_] * k_, 2)
+
+# Chance to play, from the game designation and that week's practice reports. Measured on 2023-25 regulars
+# (played the week before), relative to undesignated players: Doubtful 1%, Questionable after no practice
+# all week 52%, limited 75%, full 88%. A projection used to ignore this, so a Doubtful player ranked as if healthy.
+# The projection is now the expected score; `if_plays` keeps what he scores if active.
+P_PLAY_Q = {'Did Not Participate In Practice': .52, 'Limited Participation in Practice': .75, 'Full Participation in Practice': .88}
+for e in out:
+    if e['final'] or e['bye'] or e['status'] in OUT_SET or e['proj'] <= 0:
+        continue
+    p_ = .02 if e['status'] == 'Doubtful' else P_PLAY_Q.get(e.get('practice') or '', .72) if e['status'] == 'Questionable' else None
+    if p_ is None:
+        continue
+    e['play'], e['if_plays'] = round(p_ * 100), e['proj']
+    for f_ in ('proj', 'std', 'half'):
+        e[f_] = round(e[f_] * p_, 2)
+    e['lo'] = 0.0
 out.sort(key=lambda x: -x['proj'])
 rk = {}
 for e in out:
@@ -1235,6 +1316,10 @@ ros_bt = dict(close_naive=pairs(rb, 'naive', 3)[0] * 100, close_model=pairs(rb, 
               mae_naive=float(np.mean(abs(rb.ppr - rb.naive))), mae_model=float(np.mean(abs(rb.ppr - rb.proj))), n=int(len(rb)))
 ros_bt['sd'] = float(np.std(rb.ppr - rb.proj))
 print('ROS backtest', {k: round(v, 2) for k, v in ros_bt.items()})
+if os.environ.get('EXP'):
+    print('live', {k: (round(v, 3) if isinstance(v, float) else v) for k, v in (live or {}).items()})
+    print('bypos close', {p: [round(x, 1) for x in v] for p, v in bt['bypos'].items()})
+    sys.exit(0)
 
 # project every rostered-caliber player, including teams on bye this week
 # last-known rostered %: players on bye or injured drop out of the weekly rankings, so remember them
@@ -1276,7 +1361,7 @@ def zero_out(wk, pid):
             if x is not None and n < IR_WEEKS:
                 wk[i] = 0.0
                 n += 1
-    elif st in ('Out', 'Suspended') and wk and wk[0] is not None:
+    elif st in ('Out', 'Suspended', 'Doubtful') and wk and wk[0] is not None:   # Doubtful players almost never play (1%)
         wk[0] = 0.0
     return wk
 
@@ -1406,7 +1491,7 @@ for e in out:
     e['vegas_bench'] = None if v is None else round(0.0 if e['status'] in OUT_SET else v, 2)
 
 # snapshot: only games not yet played are written; started games keep the numbers saved before kickoff
-snap = pd.DataFrame([dict(id=p['id'], pos=p['pos'], model=p.get('model', p['proj']), fp_pts=p['fp'], vegas=p['vegas_bench'], blend=p['proj']) for p in out
+snap = pd.DataFrame([dict(id=p['id'], pos=p['pos'], model=p.get('model', p['proj']), fp_pts=p['fp'], vegas=p['vegas_bench'], blend=p.get('if_plays', p['proj'])) for p in out
                      if not p['final'] and not p['bye']])
 snap_path = os.path.join(HIST, f'ecr_{SEASON}_{WEEK}.csv')
 if os.path.exists(snap_path):
