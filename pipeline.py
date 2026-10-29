@@ -120,8 +120,10 @@ posavg = d[d.season >= SEASON - 2].groupby(['season', 'week', 'team', 'position'
 
 # ---------------------------------------------------------------- as-of features
 UCOLS = ['targets', 'carries', 'attempts', 'receiving_air_yards', 'rz_tgt', 'rz_car', 'snap']
-K_PRIOR, K_NEW, K_USE = 4.0, 3.0, 2.5
-HALF_LIFE = 5.0   # games; recent games count more (best of 3/5/8/none on the held-out season)
+# rookie prior weight (K_NEW, in games): 3 -> 5 once draft-tier priors made the prior worth trusting (2025 test and live 2026 both improved)
+K_PRIOR, K_NEW, K_USE = float(os.environ.get('K_PRIOR', 4.0)), float(os.environ.get('K_NEW', 5.0)), float(os.environ.get('K_USE', 2.5))
+TEAMCHG = float(os.environ.get('TEAMCHG', 1.0))   # prior weight for players on a new team this season (experiment)
+HALF_LIFE = float(os.environ.get('HALF_LIFE', 5.0))   # games; recent games count more (best of 3/5/8/none on the held-out season)
 K_TWO = float(os.environ.get('K_TWO', 1.0))   # weight of a two-seasons-ago prior (player missed all of last season), relative to K_PRIOR
 
 # Rookie prior by draft capital. A first-round starter and an undrafted practice-squad call-up used to share one
@@ -188,6 +190,9 @@ def asof(season, week):
     nw = cur.groupby('player_id').w.sum().reindex(idx).fillna(0)
     np_ = pri.groupby('player_id').size().reindex(idx).fillna(0)
     np2 = pr2.groupby('player_id').size().reindex(idx).fillna(0)
+    _ct = cur.sort_values('week').groupby('player_id').team.last()
+    _pt = pri.sort_values('week').groupby('player_id').team.last().reindex(_ct.index)
+    moved = _pt.notna() & (_ct != _pt)
     for col in ['ppr', 'std', 'half']:
         repl = pri.groupby('player_id').agg(m=(col, 'mean'), p=('position', 'last')).groupby('p').m.quantile(.35)
         cs = (cur[col] * cur.w).groupby(cur.player_id).sum().reindex(idx).fillna(0)
@@ -207,6 +212,8 @@ def asof(season, week):
             prior = pm.where(pm.notna(), pm2.where(use2, new))
             kp = np.where(pm.notna(), K_PRIOR * np.minimum(np_, 17) / 17,
                           np.where(use2, K_TWO * K_PRIOR * np.minimum(np2, 17) / 17, K_NEW))
+            if TEAMCHG != 1.0:
+                kp = kp * np.where(moved.reindex(idx).fillna(False).values, TEAMCHG, 1.0)
         out['base_' + col] = (cs + kp * prior) / (nw + kp)
     for col in UCOLS:
         cs = (cur[col] * cur.w).groupby(cur.player_id).sum().reindex(idx).fillna(0)
@@ -397,6 +404,14 @@ USE = {
 }
 
 
+INTERCEPT = os.environ.get('INTERCEPT') == '1'
+# snap share as a usage input for RB/WR/TE: rest-of-season close calls 64.7% -> 65.2%, weekly 59.2% -> 59.3% (2025), live 2026 62.9% -> 63.0%
+USE_SNAP = os.environ.get('USE_SNAP', '1') == '1'
+if USE_SNAP:
+    for _p in ('RB', 'WR', 'TE'):
+        USE[_p] = USE[_p] + ['u_snap']
+
+
 class Model:
     def fit(self, f):
         self.W, self.C, self.Q = {}, {}, {}
@@ -408,7 +423,12 @@ class Model:
             self.W[p] = lstsq(Xs, f.loc[a, 'ppr'], rcond=None)[0]
             f.loc[a, 'xfp'] = Xs @ self.W[p]
             X3 = np.c_[f.loc[a, 'base_ppr'], f.loc[a, 'xfp'], f.loc[a, 'base_ppr'] * f.loc[a, 'x_imp']]
+            if INTERCEPT:
+                X3 = np.c_[X3, np.ones(a.sum())]
             self.C[p] = lstsq(X3, f.loc[a, 'ppr'], rcond=None)[0]
+            if not INTERCEPT:
+                self.C[p] = np.r_[self.C[p], 0.0]
+                X3 = np.c_[X3, np.zeros(a.sum())]
             f.loc[a, 'res'] = f.loc[a, 'ppr'] - X3 @ self.C[p]
         mx = (f.base_ppr * f.x_def).values
         self.cm = max(0.0, float(np.dot(mx, f.res) / np.dot(mx, mx)))
@@ -436,7 +456,7 @@ class Model:
                 continue
             c = self.C[p]
             f.loc[a, 'xfp'] = self.xfp(f[a], p)
-            f.loc[a, 'c_form'] = c[0] * f.loc[a, 'base_ppr']
+            f.loc[a, 'c_form'] = c[0] * f.loc[a, 'base_ppr'] + c[3]
             f.loc[a, 'c_usage'] = c[1] * f.loc[a, 'xfp']
             f.loc[a, 'c_vegas'] = c[2] * f.loc[a, 'base_ppr'] * f.loc[a, 'x_imp']
             f.loc[a, 'c_match'] = self.cm * f.loc[a, 'base_ppr'] * f.loc[a, 'x_def']
@@ -1152,10 +1172,11 @@ for r in universe_wk[universe_wk.team.isin(bye_teams)].itertuples():
              cv=0.0, gp=0)
     out.append(e)
 
-# Blend with the FantasyPros consensus. On this season's saved snapshots (weeks 4-6, ~700 player-weeks)
-# 60% model / 40% experts beat both alone: average miss 5.33 (model 5.47, experts 5.30) and close calls
-# 58.8% (model 58.6%, experts 57.5%). The live scoreboard keeps scoring the raw model, experts and blend.
-BLEND = 0.6
+# Blend with the FantasyPros consensus. First set at 60% model on weeks 4-6. Re-checked on weeks 4-7
+# (1,067 skill player-weeks): 40% model / 60% experts has the lower average miss (4.65 vs 4.68 at 60%,
+# model alone 4.82, experts alone 4.66) and orders players better (74.1% vs 73.7% of pairs).
+# The live scoreboard keeps scoring the raw model, experts and blend, so this stays checkable.
+BLEND = float(os.environ.get('BLEND', 0.4))
 for e in out:
     e['model'] = e['proj']
     if e.get('src') == 'experts' or e['final'] or e['bye'] or e['status'] in OUT_SET or e['proj'] <= 0 or e.get('fp') is None:
@@ -1281,7 +1302,7 @@ def ros(season, week, mdl, players, absent=None, back=None):
         c = mdl.C[p]
         if absent is not None:
             sub = absorb(pd.concat([sub, vacated(season, week, sub, absent)], axis=1))
-        core = c[0] * sub.base_ppr + c[1] * mdl.xfp(sub, p)
+        core = c[0] * sub.base_ppr + c[1] * mdl.xfp(sub, p) + c[3]
         for (_, r), cv in zip(sub.iterrows(), core):
             wk = []
             for w in range(week, 19):
