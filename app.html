@@ -658,7 +658,14 @@ footer .linkish{font-size:14px}
 .holo img{position:absolute;inset:26px;width:138px;height:138px;object-fit:contain;transform:rotateY(-34deg) rotateX(14deg) rotateZ(-4deg);transform-origin:80% 50%;opacity:.11;filter:saturate(1.3) drop-shadow(0 0 8px var(--tc))}
 .holo img.ghost{opacity:.12;filter:brightness(0) invert(1);mix-blend-mode:overlay;translate:4px -2px}
 .holo::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 2px,var(--surface) 2px 3.5px);opacity:.9}
+.li.rc{position:relative;isolation:isolate;overflow:hidden}
+.li.rc .holo{right:-52px;top:-58px;width:168px;height:168px}
+.li.rc .holo img{inset:22px;width:124px;height:124px}
 .li.rc.open .holo img{opacity:.16}
+.detail{position:relative;isolation:isolate;overflow:hidden}
+.holo.lg{right:-70px;top:-40px;width:300px;height:300px}
+.holo.lg img{inset:40px;width:220px;height:220px;opacity:.09}
+.holo.lg img.ghost{opacity:.1}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .holo img{opacity:.15}:root:not([data-theme="light"]) .holo img.ghost{opacity:.16;mix-blend-mode:screen;filter:brightness(0) invert(1) drop-shadow(0 0 2px var(--tc2))}}
 :root[data-theme="dark"] .holo img{opacity:.15}
 </style>
@@ -1304,8 +1311,8 @@ function metaLine(x,showPos,pr){
   else if(rkView==='season'&&x.st)bits.push(`<span>${x.team} · ${x.st.gp} games</span>`);
   else{const bw=x.w&&byeWk(x.w);bits.push(`<span>${x.team}${bw?` · bye ${bw}`:''}</span>`)}
   return bits.join('')}
-function holo(t){const u=logoSrc(t);if(!u)return '';const big=u.replace(/w=96&h=96/,'w=240&h=240');
-  return `<div class="holo" aria-hidden="true"><img src="${big}" alt="" loading="lazy" decoding="async" onerror="this.parentNode.remove()"><img class="ghost" src="${big}" alt="" loading="lazy" decoding="async"></div>`}
+function holo(t,cls=''){const u=logoSrc(t);if(!u)return '';const big=u.replace(/w=96&h=96/,'w=240&h=240');
+  return `<div class="holo${cls?' '+cls:''}" aria-hidden="true"><img src="${big}" alt="" loading="lazy" decoding="async" onerror="this.parentNode.remove()"><img class="ghost" src="${big}" alt="" loading="lazy" decoding="async"></div>`}
 
 function renderRank(){
   const showPos=rankPos==='ALL'||rankPos==='FLEX', cfg=rkM[rkView], mets=cfg.m.map(id=>METS[id]), sm=mets[cfg.s];
@@ -1323,10 +1330,10 @@ function renderRank(){
   const posN={};let tier=1;
   const rows=list.map((x,i)=>{const v=vals.get(x.id),open=rkOpen===x.id;x_pos=x.pos;posN[x.pos]=(posN[x.pos]||0)+1;
     const brk=tierAt.has(i)?`<div class="rc-tier" aria-hidden="true"><span>Tier ${++tier}</span></div>`:'';
-    return `${brk}<div class="li rc${open?' open':''}" data-id="${x.id}" role="button" tabindex="0" aria-expanded="${open}" style="${tc(x.team)}">
+    return `${brk}<div class="li rc${open?' open':''}" data-id="${x.id}" role="button" tabindex="0" aria-expanded="${open}" style="${tc(x.team)}">${holo(x.team)}
       <span class="rk">${i+1}</span><div class="rc-id">${crest(x.team,24)}<span class="rc-tx"><span class="nm"><span class="nmt">${esc(rowName(x.name,injTag(x.p)?11:15))}</span>${injTag(x.p)}</span><span class="sub">${metaLine(x,showPos,posN[x.pos])}</span></span></div>
       <div class="rc-m">${mets.map((m,k)=>{const n=v[k],tone=TONE.has(m.id)&&n!=null&&Math.abs(n)>=(m.f===sg0?.5:.05)?(n>0?' up':' dn'):'';return `<span class="m${k===cfg.s?' on':''}"><b class="${n==null?'na':''}${tone}">${n==null?'—':m.f(n)}</b></span>`}).join('')}</div>
-      </div>${open?`<div class="detail">${detailHTML(x.id,x.ser)}</div>`:''}`}).join('');
+      </div>${open?`<div class="detail" style="${tc(x.team)}">${holo(x.team,'lg')}${detailHTML(x.id,x.ser)}</div>`:''}`}).join('');
   const head=`<div class="rc-head" id="rcHead"><span class="rc-hl">#</span><button class="rc-edit" id="mpick" aria-label="Change columns">${ic('bar')}<span>Columns</span></button><div class="rc-m">${mets.map((m,k)=>`<button class="mh${k===cfg.s?' on':''}" data-sort="${k}" aria-pressed="${k===cfg.s}" title="Sort by ${esc(m.l)}">${esc(m.s)}${k===cfg.s?`<i>${m.low?'▲':'▼'}</i>`:''}</button>`).join('')}</div></div>`;
   const defs=mets.filter(m=>m.d).map(m=>`<div><b>${esc(m.l)}</b> ${esc(m.d)}</div>`).join('');
   const teams=rkView==='week'?[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort():[];
