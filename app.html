@@ -657,7 +657,7 @@ footer .linkish{font-size:14px}
 @media (max-width:360px){.rc-m{grid-auto-columns:44px}.rc-edit span{display:none}.rc-head .mh{font-size:11px}}
 .mdefs{display:grid;gap:4px;margin:12px 2px 0;font-size:12.5px;color:var(--muted)}.mdefs b{color:var(--ink-2);font-weight:700}
 .mchips{display:flex;flex-wrap:wrap;gap:6px}
-.mchip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:600 14px var(--body)}
+.mchip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:16px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:600 13.5px var(--body)}
 .mchip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .mchip i{font:800 11px/18px var(--display);font-style:normal;width:18px;height:18px;border-radius:50%;background:var(--yellow);color:#141414;text-align:center}
 .mchip:disabled{opacity:.38}
@@ -669,8 +669,37 @@ footer .linkish{font-size:14px}
 .holo img.ghost{opacity:.12;filter:brightness(0) invert(1);mix-blend-mode:overlay;translate:4px -2px}
 .holo::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 2px,var(--surface) 2px 3.5px);opacity:.9}
 .li.rc{position:relative;isolation:isolate;overflow:hidden}
-.li.rc .holo{right:-52px;top:-58px;width:168px;height:168px}
-.li.rc .holo img{inset:22px;width:124px;height:124px}
+/* rows: the hologram sits on the left behind rank and name (it replaces the round logo), turned toward the row */
+.li.rc .holo{left:-38px;right:auto;top:-46px;width:150px;height:150px;
+  -webkit-mask-image:radial-gradient(closest-side at 46% 50%,#000 36%,transparent 100%);mask-image:radial-gradient(closest-side at 46% 50%,#000 36%,transparent 100%)}
+.li.rc .holo img{inset:20px;width:110px;height:110px;transform:rotateY(32deg) rotateX(10deg) rotateZ(3deg);transform-origin:20% 50%;opacity:.2}
+.li.rc .holo img.ghost{opacity:.16;translate:-4px -2px}
+.li.rc .holo::before{opacity:.75}
+.li.rc .rk{position:relative;text-shadow:0 0 6px var(--surface),0 0 2px var(--surface)}
+.rc-tx .nmt,.rc-tx .sub span{text-shadow:0 0 8px var(--surface),0 0 2px var(--surface)}
+.li.rc.pin{box-shadow:inset 0 -2px 0 var(--yellow)}
+.rk-pre{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:10px -16px 0;padding:0 16px}
+.rk-pre::-webkit-scrollbar{display:none}
+.rk-pre button{flex:none;height:30px;padding:0 12px;border-radius:999px;border:1px dashed var(--line-2);background:none;font:600 13px var(--body);color:var(--muted);white-space:nowrap}
+.rk-pre button[aria-pressed="true"]{border-style:solid;border-color:var(--ink-2);color:var(--ink);background:var(--surface)}
+.rk-sub b{color:var(--ink-2);font-weight:700}
+.mdefs small{font-weight:700;color:var(--faint);margin-right:2px}
+.ms-pre{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ms-pre button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);text-align:left;color:var(--ink)}
+.ms-pre button b{font:700 14px var(--body)}.ms-pre button small{font-size:12px;color:var(--muted)}
+.ms-pre button[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.ms-slots{display:grid;gap:6px}
+.ms-slot{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:4px 4px 4px 0}
+.ms-slot.on{border-color:var(--yellow);box-shadow:inset 3px 0 0 var(--yellow)}
+.ms-slot.empty{border-style:dashed;background:none;padding:10px 12px;gap:10px;color:var(--faint);font-size:13.5px}
+.ms-sort{flex:1;display:flex;align-items:center;gap:10px;border:0;background:none;padding:6px 10px;text-align:left;color:var(--ink);min-width:0}
+.ms-sort span{display:flex;flex-direction:column;min-width:0}.ms-sort b{font:700 14.5px var(--body)}.ms-sort small{font-size:12px;color:var(--muted)}
+.ms-slot i,.ms-slot.empty i{flex:none;font:800 12px/22px var(--display);font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--surface-2);color:var(--ink-2);text-align:center;border:1px solid var(--line-2)}
+.ms-slot.on i{background:var(--yellow);color:#141414;border-color:var(--yellow)}
+.ms-x{flex:none;width:36px;height:36px;border:0;border-radius:10px;background:none;color:var(--muted);font-size:14px}
+.ms-x:disabled{opacity:.3}
+.ms-win{margin:22px 4px 0;padding-top:12px;border-top:1px solid var(--line);font:800 15px var(--display);letter-spacing:.02em;color:var(--ink)}
+.ms-done{position:sticky;bottom:0;display:flex;gap:8px;margin:18px -16px 0;padding:12px 16px 4px;background:linear-gradient(transparent,var(--bg) 30%)}
 .li.rc.open .holo img{opacity:.16}
 .detail{position:relative;isolation:isolate;overflow:hidden}
 .holo.lg{right:-70px;top:-40px;width:300px;height:300px}
@@ -719,7 +748,7 @@ footer .linkish{font-size:14px}
 <div class="sheet-bg" id="msheetBg" hidden></div>
 <div class="sheet" id="msheet" role="dialog" aria-modal="true" aria-labelledby="msTitle" hidden>
   <div class="grab"></div>
-  <div class="sh-top"><h3 id="msTitle">Metrics</h3><button class="close" id="msClose" aria-label="Close">✕</button></div>
+  <div class="sh-top"><h3 id="msTitle">Columns</h3><button class="close" id="msClose" aria-label="Close">✕</button></div>
   <div class="sh-list" id="msList"></div>
 </div>
 <script>
@@ -1164,7 +1193,7 @@ function renderTR(){
 }
 
 /* ---------- rankings ---------- */
-let rankPos='ALL', rkView=store.get('ss_rkview','week'), rkOpen=null;
+let rankPos='ALL', rkOpen=null;
 const SEA=()=>DATA.season||[];
 const wkPts=p=>p.wp.map((x,i)=>x==null?null:S==='std'?p.ws[i]:S==='half'?(x+p.ws[i])/2:x);
 const TIERS={QB:[[12,'QB1']],RB:[[12,'RB1'],[24,'RB2']],WR:[[12,'WR1'],[24,'WR2'],[36,'WR3']],TE:[[12,'TE1']],K:[[12,'K1']],DST:[[12,'DST1']]};
@@ -1266,119 +1295,145 @@ function readout0(c,p,d,opp){
 const KEY=`<div class="wc-key"><span class="sos"><i class="k sh"></i><i class="k sm"></i><i class="k se"></i>Opponent: tougher to easier vs his position</span><span><i class="k beat"></i>Beat projection</span><span><i class="k miss"></i>Fell short</span><span><i class="k pjk"></i>Pre-game projection</span><span><i class="k now"></i>Week ${M.week}</span><span><i class="k fut"></i>Projected</span></div>`;
 function vsProj(ser){const d=ser.filter(c=>c.t==='past'&&c.pj!=null).map(c=>c.act-c.pj);return d.length?{n:d.length,beat:d.filter(x=>x>=0).length,avg:sum(d)/d.length}:null}
 
-/* ---------- ranking metrics ----------
-   Every metric reads from one context per player (this week, season, rest of year). Pick up to 3; one sorts.
-   low: lower is better (sorted ascending). em: the weeks the chart highlights when this metric sorts. */
+/* ---------- ranking columns ----------
+   No period tabs: every column says which window it covers (this week, season so far, rest of year), and the
+   sorted column decides who is listed and what the row's subtitle shows. Pick up to 3 columns; tap a header to sort.
+   win: week | season | ros (the window a column belongs to). low: lower is better. em: weeks the chart highlights.
+   gp: needs a real sample (at least half the max games played). */
 const f1=n=>fmt(n,1), f0=n=>fmt(n,0), sg1=n=>{const r=Math.round(n*10)/10;return (r>0?'+':r<0?'−':'')+fmt(Math.abs(r),1)}, sg0=n=>{const r=Math.round(n);return (r>0?'+':r<0?'−':'')+fmt(Math.abs(r),0)}, pc=n=>fmt(n,0)+'%';
 const SKILL=x=>['QB','RB','WR','TE'].includes(x.pos), LIVE=x=>x.p&&live(x.p);
+const wkIdx=w=>w-M.week;
+const rangeSum=(w,a,b)=>{if(!w)return null;let t=0,n=0;for(let k=a;k<=b;k++){const i=wkIdx(k);if(i<0||i>=w.wk.length)continue;if(w.wk[i]!=null){t+=w.wk[i];n++}}return n?t*wsc(w):null};
+const sosOver=(x,a,b)=>{if(!SKILL(x))return null;const f=x.ser.filter(c=>c.wk>=a&&c.wk<=b&&c.dz);return f.length?sum(f.map(c=>c.dz.z))/f.length:null};
+const PO=[15,17];   // fantasy playoff weeks (most leagues)
 const MET=[
-  ['This week',[
-    {id:'proj',l:'Projection',s:'Proj',em:'week',v:x=>LIVE(x)?val(x.p):null,f:f1,d:'Projected points this week.'},
-    {id:'ceil',l:'Ceiling',s:'Ceiling',em:'week',v:x=>LIVE(x)?x.p.hi*scale(x.p):null,f:f1,d:'A top-10% outcome this week.'},
-    {id:'floor',l:'Floor',s:'Floor',em:'week',v:x=>LIVE(x)?x.p.lo*scale(x.p):null,f:f1,d:'A bottom-10% outcome this week.'},
-    {id:'edge',l:'Matchup edge',s:'Matchup',em:'week',v:x=>LIVE(x)?((x.p.matchup||0)+(x.p.vegas||0))*scale(x.p):null,f:sg1,d:'Points the opponent and the Vegas line add to his usual output.'},
-    {id:'oppd',l:'Defense vs position',s:'Opp D',em:'week',v:x=>LIVE(x)&&SKILL(x)?x.p.xdef:null,f:n=>(n>=0?'+':'−')+pc(Math.abs(n)),d:'How much more (or less) than normal this opponent allows to his position.'},
-    {id:'tt',l:'Team total',s:'Team pts',em:'week',v:x=>LIVE(x)&&x.pos!=='DST'?x.p.imp:null,f:f1,d:"His team's Vegas-implied points this week."},
-    {id:'ecr',l:'Experts rank',s:'Experts',em:'week',low:1,v:x=>LIVE(x)&&x.p.ecr!=null?x.p.ecr:null,f:n=>x_pos+n,d:'FantasyPros consensus rank at his position (lower is better).'},
-    {id:'gap',l:'Model vs experts',s:'vs Exp',em:'week',v:x=>LIVE(x)&&x.p.ecr!=null&&x.p.rank!=null?x.p.ecr-x.p.rank:null,f:sg0,d:'How many spots higher the model ranks him than the experts do.'}]],
-  ['Scoring',[
-    {id:'ppg',l:'Points per game',s:'Pts/g',em:'past',v:x=>x.st&&x.st.gp?x.st.ppg:null,f:f1,d:'Average points in games played.'},
-    {id:'tot',l:'Total points',s:'Total',em:'past',v:x=>x.st&&x.st.gp?x.st.tot:null,f:f0,d:'Season total.'},
-    {id:'l3',l:'Last 3 games',s:'Last 3',em:'l3',v:x=>x.st&&x.st.gp?x.st.l3:null,f:f1,d:'Points a game over his last 3 games.'},
-    {id:'best',l:'Best week',s:'Best',em:'past',v:x=>x.st&&x.st.gp?Math.max(...x.st.w.filter(v=>v!=null)):null,f:f1,d:'His highest-scoring game.'},
-    {id:'t12',l:'Top-12 weeks',s:'Top 12',em:'past',v:x=>x.st&&x.st.gp?x.st.fin.filter(f=>f!=null&&f<=12).length:null,f:f0,d:'Games he finished top 12 at his position.'},
-    {id:'swing',l:'Weekly swing',s:'Swing',em:'past',low:1,v:x=>{const g=x.st?x.st.w.filter(v=>v!=null):[];if(g.length<3)return null;const m=sum(g)/g.length;return Math.sqrt(sum(g.map(v=>(v-m)**2))/(g.length-1))},f:f1,d:'Standard deviation of his weekly points. Lower is steadier.'},
-    {id:'vsp',l:'vs pre-game projection',s:'vs Proj',em:'past',v:x=>{const q=vsProj(x.ser);return q&&q.n>=3?q.avg:null},f:sg1,d:'Average points above or below what was projected before each game.'},
-    {id:'beat',l:'Beat projection',s:'Beat %',em:'past',v:x=>{const q=vsProj(x.ser);return q&&q.n>=3?q.beat/q.n*100:null},f:pc,d:'Share of games he scored at or above his pre-game projection.'}]],
-  ['Workload',[
-    {id:'xfp',l:'Workload value',s:'Work',em:'past',v:x=>x.p&&x.p.xfp!=null&&SKILL(x)?x.p.xfp*scale(x.p):null,f:f1,d:'What his targets, carries and red-zone chances are worth a game for an average player.'},
-    {id:'over',l:'Scoring vs workload',s:'vs Work',em:'past',v:x=>x.p&&x.p.xfp!=null&&SKILL(x)&&x.st&&x.st.gp?x.st.ppg-x.p.xfp*scale(x.p):null,f:sg1,d:'Points a game above his workload value. Big positive numbers tend to cool off.'},
-    {id:'tgt',l:'Targets per game',s:'Tgt/g',em:'past',v:x=>x.s&&['RB','WR','TE'].includes(x.pos)?x.s.u.tgt:null,f:f1},
-    {id:'ts',l:'Target share',s:'Tgt %',em:'past',v:x=>x.s&&['WR','TE','RB'].includes(x.pos)&&x.s.u.ts?x.s.u.ts:null,f:pc,d:"Share of his team's targets."},
-    {id:'car',l:'Carries per game',s:'Car/g',em:'past',v:x=>x.s&&['RB','QB'].includes(x.pos)?x.s.u.car:null,f:f1},
-    {id:'att',l:'Pass attempts per game',s:'Att/g',em:'past',v:x=>x.s&&x.pos==='QB'?x.s.u.att:null,f:f1},
-    {id:'snap',l:'Snap share',s:'Snaps',em:'past',v:x=>x.s&&SKILL(x)&&x.s.u.snap?x.s.u.snap:null,f:pc},
-    {id:'rz',l:'Red-zone chances per game',s:'RZ/g',em:'past',v:x=>x.s&&SKILL(x)?x.s.u.rz:null,f:f1,d:'Targets and carries inside the 20.'},
-    {id:'yds',l:'Yards per game',s:'Yds/g',em:'past',v:x=>x.s&&SKILL(x)?x.s.u.yds:null,f:f0},
-    {id:'td',l:'Touchdowns',s:'TD',em:'past',v:x=>x.s&&x.s.u.td!=null?x.s.u.td:null,f:f0}]],
-  ['Trend',[
+  ['week',`This week`,[
+    {id:'proj',l:'Projection',s:'Proj',v:x=>LIVE(x)?val(x.p):null,f:f1,d:'Projected points this week, counting the chance he sits if he is Questionable or Doubtful.'},
+    {id:'ifp',l:'If he plays',s:'If plays',v:x=>LIVE(x)?(x.p.if_plays!=null?x.p.if_plays*scale(x.p):val(x.p)):null,f:f1,d:'Projected points if he is active.'},
+    {id:'play',l:'Chance to play',s:'Play %',v:x=>LIVE(x)?(x.p.play!=null?x.p.play:100):null,f:pc,d:'From his injury designation and practice reports, measured on past seasons.'},
+    {id:'ceil',l:'Ceiling',s:'Ceiling',v:x=>LIVE(x)?x.p.hi*scale(x.p):null,f:f1,d:'A top-10% outcome this week.'},
+    {id:'floor',l:'Floor',s:'Floor',v:x=>LIVE(x)?x.p.lo*scale(x.p):null,f:f1,d:'A bottom-10% outcome this week.'},
+    {id:'edge',l:'Matchup edge',s:'Matchup',v:x=>LIVE(x)?((x.p.matchup||0)+(x.p.vegas||0))*scale(x.p):null,f:sg1,d:'Points the opponent and the Vegas line add to his usual output.'},
+    {id:'oppd',l:'Defense vs position',s:'Opp D',v:x=>LIVE(x)&&SKILL(x)?x.p.xdef:null,f:n=>(n>=0?'+':'−')+pc(Math.abs(n)),d:'How much more (or less) than normal this opponent allows to his position.'},
+    {id:'tt',l:'Team total',s:'Team pts',v:x=>LIVE(x)&&x.pos!=='DST'?x.p.imp:null,f:f1,d:"His team's Vegas-implied points this week."},
+    {id:'ecr',l:'Experts rank',s:'Experts',low:1,v:x=>LIVE(x)&&x.p.ecr!=null?x.p.ecr:null,f:n=>x_pos+n,d:'FantasyPros consensus rank at his position.'},
+    {id:'gap',l:'Model vs experts',s:'vs Exp',v:x=>LIVE(x)&&x.p.ecr!=null&&x.p.rank!=null?x.p.ecr-x.p.rank:null,f:sg0,d:'How many spots higher the model ranks him than the experts do.'}]],
+  ['season','Season so far',[
+    {id:'ppg',l:'Points per game',s:'Pts/g',gp:1,v:x=>x.st&&x.st.gp?x.st.ppg:null,f:f1,d:'Average points in games played.'},
+    {id:'tot',l:'Total points',s:'Total',v:x=>x.st&&x.st.gp?x.st.tot:null,f:f0,d:'Season total.'},
+    {id:'l3',l:'Last 3 games',s:'Last 3',em:'l3',wt:'last 3 games',v:x=>x.st&&x.st.gp?x.st.l3:null,f:f1,d:'Points a game over his last 3 games.'},
     {id:'l3d',l:'Last 3 vs season',s:'Trend',em:'l3',v:x=>x.st&&x.st.gp>=4?x.st.l3-x.st.ppg:null,f:sg1,d:'Last-3 average minus season average.'},
-    {id:'sntr',l:'Snap share change',s:'Snap Δ',em:'l3',v:x=>{const q=x.p||x.w;return q&&SKILL(x)&&q.trend!=null?q.trend:null},f:sg0,d:'Recent snap share minus his earlier snap share, in points.'},
-    {id:'adds',l:'Adds in 24 hours',s:'Adds',em:'future',v:x=>x.w&&x.w.adds?x.w.adds:null,f:compact,d:'Sleeper adds in the last day.'}]],
-  ['Rest of year',[
-    {id:'ros',l:'Rest-of-year points',s:'ROS',em:'future',v:x=>x.w?rosT(x.w):null,f:f0,d:'Projected points from this week through Week 18.'},
-    {id:'rosg',l:'Rest-of-year per game',s:'ROS/g',em:'future',v:x=>x.w?x.w.ppg*wsc(x.w):null,f:f1},
-    {id:'n4',l:'Next 4 weeks',s:'Next 4',em:'n4',v:x=>x.w?nextN(x.w,4):null,f:f0,d:'Projected points over the next four weeks.'},
-    {id:'vor',l:'Value over waivers',s:'Value',em:'future',v:x=>x.w?vorT(x.w):null,f:sg0,d:'Points above the best player nobody in a league your size would start at his position (uses your connected league, else 12 teams). Compares across positions, so use it for trades.'},
-    {id:'sos4',l:'Schedule, next 4',s:'Sched',em:'n4',v:x=>{if(!SKILL(x))return null;const f=x.ser.filter(c=>c.wk>=M.week&&c.dz).slice(0,4);return f.length?sum(f.map(c=>c.dz.z))/f.length:null},f:sg1,d:'How easy his next 4 opponents are for his position, in standard deviations. Positive is easier.'},
-    {id:'sosr',l:'Schedule, rest of year',s:'Sched ROS',em:'future',v:x=>{if(!SKILL(x))return null;const f=x.ser.filter(c=>c.wk>=M.week&&c.dz);return f.length?sum(f.map(c=>c.dz.z))/f.length:null},f:sg1,d:'How easy his remaining opponents are for his position. Positive is easier.'},
-    {id:'gl',l:'Games left',s:'Games',em:'future',v:x=>x.w?gamesLeft(x.w):null,f:f0},
-    {id:'own',l:'Rostered',s:'Rost.',em:'future',v:x=>x.w&&x.w.own!=null?x.w.own:null,f:pc,d:'Share of leagues that roster him.'}]]];
-const METS=Object.fromEntries(MET.flatMap(([g,l])=>l.map(m=>[m.id,{...m,g}])));
+    {id:'t12',l:'Top-12 weeks',s:'Top 12',v:x=>x.st&&x.st.gp?x.st.fin.filter(f=>f!=null&&f<=12).length:null,f:f0,d:'Games he finished top 12 at his position.'},
+    {id:'best',l:'Best week',s:'Best',v:x=>x.st&&x.st.gp?Math.max(...x.st.w.filter(v=>v!=null)):null,f:f1,d:'His highest-scoring game.'},
+    {id:'swing',l:'Weekly swing',s:'Swing',low:1,gp:1,v:x=>{const g=x.st?x.st.w.filter(v=>v!=null):[];if(g.length<3)return null;const m=sum(g)/g.length;return Math.sqrt(sum(g.map(v=>(v-m)**2))/(g.length-1))},f:f1,d:'Standard deviation of his weekly points. Lower is steadier.'},
+    {id:'vsp',l:'vs pre-game projection',s:'vs Proj',v:x=>{const q=vsProj(x.ser);return q&&q.n>=3?q.avg:null},f:sg1,d:'Average points above or below what was projected before each game.'},
+    {id:'beat',l:'Beat projection',s:'Beat %',v:x=>{const q=vsProj(x.ser);return q&&q.n>=3?q.beat/q.n*100:null},f:pc,d:'Share of games he scored at or above his pre-game projection.'}]],
+  ['season','Usage',[
+    {id:'xfp',l:'Workload value',s:'Work',v:x=>x.p&&x.p.xfp!=null&&SKILL(x)&&x.p.xfp>0?x.p.xfp*scale(x.p):null,f:f1,d:'What his targets, carries and red-zone chances are worth a game for an average player.'},
+    {id:'over',l:'Scoring vs workload',s:'vs Work',gp:1,v:x=>x.p&&x.p.xfp>0&&SKILL(x)&&x.st&&x.st.gp?x.st.ppg-x.p.xfp*scale(x.p):null,f:sg1,d:'Points a game above his workload value. Big positive numbers tend to cool off; big negative ones tend to bounce back.'},
+    {id:'ts',l:'Target share',s:'Tgt %',v:x=>x.s&&['WR','TE','RB'].includes(x.pos)&&x.s.u.ts?x.s.u.ts:null,f:pc,d:"Share of his team's targets."},
+    {id:'tgt',l:'Targets per game',s:'Tgt/g',v:x=>x.s&&['RB','WR','TE'].includes(x.pos)?x.s.u.tgt:null,f:f1},
+    {id:'car',l:'Carries per game',s:'Car/g',v:x=>x.s&&['RB','QB'].includes(x.pos)?x.s.u.car:null,f:f1},
+    {id:'att',l:'Pass attempts per game',s:'Att/g',v:x=>x.s&&x.pos==='QB'?x.s.u.att:null,f:f1},
+    {id:'snap',l:'Snap share',s:'Snaps',v:x=>x.s&&SKILL(x)&&x.s.u.snap?x.s.u.snap:null,f:pc},
+    {id:'sntr',l:'Snap share change',s:'Snap Δ',em:'l3',v:x=>{const q=x.p||x.w;return q&&SKILL(x)&&q.trend!=null?q.trend:null},f:sg0,d:'Recent snap share minus his earlier snap share, in points. Rising roles show up here first.'},
+    {id:'rz',l:'Red-zone chances per game',s:'RZ/g',v:x=>x.s&&SKILL(x)?x.s.u.rz:null,f:f1,d:'Targets and carries inside the 20.'},
+    {id:'yds',l:'Yards per game',s:'Yds/g',v:x=>x.s&&SKILL(x)?x.s.u.yds:null,f:f0},
+    {id:'td',l:'Touchdowns',s:'TD',v:x=>x.s&&x.s.u.td!=null?x.s.u.td:null,f:f0}]],
+  ['ros','Rest of year',[
+    {id:'ros',l:'Rest-of-year points',s:'ROS',v:x=>x.w?rosT(x.w):null,f:f0,d:`Projected points from Week ${M.week} through 18, with bye and injury weeks at zero.`},
+    {id:'rosg',l:'Rest-of-year per game',s:'ROS/g',v:x=>x.w?x.w.ppg*wsc(x.w):null,f:f1,d:'Projected points per game he plays.'},
+    {id:'n4',l:'Next 4 weeks',s:'Next 4',em:'n4',wt:'next 4 weeks',v:x=>x.w?nextN(x.w,4):null,f:f0,d:'Projected points over the next four weeks.'},
+    {id:'po',l:'Playoff points',s:'PO pts',em:'po',wt:`Weeks ${PO[0]}–${PO[1]}`,v:x=>M.week<=PO[1]?rangeSum(x.w,PO[0],PO[1]):null,f:f0,d:`Projected points in fantasy playoff weeks ${PO[0]}–${PO[1]}.`},
+    {id:'vor',l:'Value over waivers',s:'Value',v:x=>x.w?vorT(x.w):null,f:sg0,d:'Rest-of-year points above the best player nobody in a league your size would start at his position. Compares across positions, so use it for trades.'},
+    {id:'gl',l:'Games left',s:'Games',v:x=>x.w?gamesLeft(x.w):null,f:f0}]],
+  ['ros','Schedule',[
+    {id:'sos4',l:'Next 4 opponents',s:'Sched 4',em:'n4',wt:'next 4 weeks',v:x=>sosOver(x,M.week,M.week+3),f:sg1,d:'How easy his next 4 opponents are for his position, in standard deviations. Positive is easier.'},
+    {id:'sosr',l:'Rest-of-year opponents',s:'Sched',v:x=>sosOver(x,M.week,18),f:sg1,d:'How easy his remaining opponents are for his position. Positive is easier.'},
+    {id:'sosp',l:'Playoff opponents',s:'PO sched',em:'po',wt:`Weeks ${PO[0]}–${PO[1]}`,v:x=>M.week<=PO[1]?sosOver(x,PO[0],PO[1]):null,f:sg1,d:`How easy his Week ${PO[0]}–${PO[1]} opponents are for his position. Positive is easier.`},
+    {id:'bye',l:'Bye week',s:'Bye',low:1,wt:'remaining',v:x=>x.w?byeWk(x.w):null,f:n=>'W'+n,d:'His remaining bye week.'}]],
+  ['ros','Market',[
+    {id:'own',l:'Rostered',s:'Rost.',low:1,wt:'right now',v:x=>x.w&&x.w.own!=null?x.w.own:null,f:pc,d:'Share of leagues that roster him. Sort low to high to find waiver targets.'},
+    {id:'adds',l:'Adds in 24 hours',s:'Adds',wt:'last 24 hours',v:x=>x.w&&x.w.adds?x.w.adds:null,f:compact,d:'Sleeper adds in the last day.'}]]];
+const METS=Object.fromEntries(MET.flatMap(([win,g,l])=>l.map(m=>[m.id,{...m,g,win,em:m.em||(win==='week'?'week':win==='season'?'past':'future')}])));
+const PRESETS=[
+  {id:'start',l:'Start or sit',m:['proj','ceil','edge']},
+  {id:'trade',l:'Trade value',m:['vor','ros','sosr']},
+  {id:'waiver',l:'Waiver targets',m:['n4','own','sntr'],s:0},
+  {id:'play',l:'Playoff push',m:['po','sosp','vor']},
+  {id:'usage',l:'Usage',m:['xfp','ts','snap']},
+  {id:'review',l:'Season review',m:['ppg','vsp','t12']}];
 let x_pos='';   // set per row so rank-style formats can show the position
-const RK_DEF={week:{m:['proj','ceil','edge'],s:0},season:{m:['ppg','vsp','xfp'],s:0},ros:{m:['ros','vor','sos4'],s:0}};
-let rkM=store.get('ss_rkm',null);
-if(!rkM||typeof rkM!=='object')rkM={};
-['week','season','ros'].forEach(k=>{const c=rkM[k];if(!c||!Array.isArray(c.m)||!c.m.length||!c.m.every(id=>METS[id]))rkM[k]=JSON.parse(JSON.stringify(RK_DEF[k]));rkM[k].s=Math.min(rkM[k].s||0,rkM[k].m.length-1)});
-const saveRkM=()=>store.set('ss_rkm',rkM);
-/* the player pool for a period, as metric contexts */
+const RK_DEF={m:['proj','ros','vor'],s:0};
+let rkC=store.get('ss_rk2',null);
+if(!rkC||!Array.isArray(rkC.m)||!rkC.m.length||!rkC.m.every(id=>METS[id])){const o=store.get('ss_rkm',null),v=store.get('ss_rkview','week');
+  const old=o&&o[v]&&Array.isArray(o[v].m)?o[v].m.filter(id=>METS[id]):[];rkC=old.length?{m:old.slice(0,3),s:Math.min(o[v].s||0,old.length-1)}:JSON.parse(JSON.stringify(RK_DEF))}
+rkC.s=Math.min(rkC.s||0,rkC.m.length-1);
+const saveRkC=()=>store.set('ss_rk2',rkC);
+const WIN_TXT=()=>({week:`Week ${M.week}`,season:'season so far',ros:`Weeks ${M.week}–18`});
+const winOf=m=>m.wt||WIN_TXT()[m.win];
+/* everyone the app knows about at this position filter, as metric contexts */
+let _ctx=null,_ctxKey='';
 function rkPool(){
+  const key=S+'|'+rankPos+'|'+P.length+'|'+W.length+'|'+SEA().length;if(_ctx&&_ctxKey===key)return _ctx;
   const st=seasonStats(), stById=Object.fromEntries(st.map(r=>[r.p.id,r]));
-  const ctx=id=>{const p=byId[id],s=seaOf(id),w=wById[id],o=p||s||w;return {id,p,s,w,st:stById[id],pos:o.pos,team:(p||w||s).team,name:o.name,ser:weekSeries(id)}};
-  let ids;
-  if(rkView==='week')ids=P.filter(p=>!p.bye&&!inactive(p)&&fitPos(p)).map(p=>p.id);
-  else if(rkView==='season'){const s=st.filter(r=>fitPos(r.p)&&r.gp>0),minG=Math.max(1,Math.floor(Math.max(...s.map(r=>r.gp),1)/2));ids=s.filter(r=>r.gp>=minG).map(r=>r.p.id)}
-  else ids=W.filter(fitPos).map(p=>p.id);
-  return ids.map(ctx)}
+  const ids=new Set([...P.filter(fitPos).map(p=>p.id),...st.filter(r=>fitPos(r.p)).map(r=>r.p.id),...W.filter(fitPos).map(p=>p.id)]);
+  _ctx=[...ids].map(id=>{const p=byId[id],s=seaOf(id),w=wById[id],o=p||s||w;return {id,p,s,w,st:stById[id],pos:o.pos,team:(p||w||s).team,name:o.name,ser:weekSeries(id)}});
+  _ctxKey=key;return _ctx}
+const minGames=pool=>Math.max(1,Math.floor(Math.max(1,...pool.map(x=>x.st?x.st.gp:0))/2));
 const rowName=(n,mx=15)=>{if(n.length<=mx||n.endsWith(' D/ST'))return n;const w=n.split(' ');return w.length>1?w[0][0]+'. '+w.slice(1).join(' '):n};
-const TONE=new Set(['sos4','sosr','edge','oppd','gap','vsp','over','l3d','sntr','vor']);
-function metaLine(x,showPos,pr){
-  const p=x.p,bits=[];bits.push(`<span class="pos">${x.pos}${pr&&showPos?pr:''}</span>`);
-  if(rkView==='week'&&p)bits.push(`<span>${vs(p)||x.team}${p.final?' · final':live(p)?' '+fmtTime(p).replace(/:00(?=[ap]$)/,''):''}</span>`);
-  else if(rkView==='season'&&x.st)bits.push(`<span>${x.team} · ${x.st.gp} games</span>`);
+const TONE=new Set(['sos4','sosr','sosp','edge','oppd','gap','vsp','over','l3d','sntr','vor']);
+/* subtitle follows the sorted column's window: this week's game, season games, or the bye still to come */
+function metaLine(x,showPos,pr,win){
+  const p=x.p,bits=[`<span class="pos">${x.pos}${pr&&showPos?pr:''}</span>`];
+  if(win==='week'&&p)bits.push(`<span>${x.team} ${vs(p)}${p.final?' · final':live(p)?' '+fmtTime(p).replace(/:00(?=[ap]$)/,''):''}</span>`);
+  else if(win==='season'&&x.st)bits.push(`<span>${x.team} · ${x.st.gp} game${x.st.gp===1?'':'s'}</span>`);
   else{const bw=x.w&&byeWk(x.w);bits.push(`<span>${x.team}${bw?` · bye ${bw}`:''}</span>`)}
   return bits.join('')}
 function holo(t,cls=''){const u=logoSrc(t);if(!u)return '';const big=u.replace(/w=96&h=96/,'w=240&h=240');
   return `<div class="holo${cls?' '+cls:''}" aria-hidden="true"><img src="${big}" alt="" loading="lazy" decoding="async" onerror="this.parentNode.remove()"><img class="ghost" src="${big}" alt="" loading="lazy" decoding="async"></div>`}
 
+function rankRow(x,i,v,mets,showPos,pr,win,pinned){
+  const open=rkOpen===x.id;x_pos=x.pos;
+  return `<div class="li rc${open?' open':''}${pinned?' pin':''}" data-id="${x.id}" role="button" tabindex="0" aria-expanded="${open}" style="${tc(x.team)}">${holo(x.team)}
+      <span class="rk">${pinned?'·':i+1}</span><div class="rc-id"><span class="rc-tx"><span class="nm"><span class="nmt">${esc(rowName(x.name,injTag(x.p)?12:17))}</span>${injTag(x.p)}</span><span class="sub">${metaLine(x,showPos,pr,win)}</span></span></div>
+      <div class="rc-m">${mets.map((m,k)=>{const n=v[k],tone=TONE.has(m.id)&&n!=null&&Math.abs(n)>=(m.f===sg0?.5:.05)?(n>0?' up':' dn'):'';return `<span class="m${k===rkC.s?' on':''}"><b class="${n==null?'na':''}${tone}">${n==null?'—':m.f(n)}</b></span>`}).join('')}</div>
+      </div>${open?`<div class="detail" style="${tc(x.team)}">${holo(x.team,'lg')}${detailHTML(x.id,x.ser)}</div>`:''}`}
 function renderRank(){
-  const showPos=rankPos==='ALL'||rankPos==='FLEX', cfg=rkM[rkView], mets=cfg.m.map(id=>METS[id]), sm=mets[cfg.s];
-  const ymax=yCap(['K','DST'].includes(rankPos)?rankPos:'QB');
+  const showPos=rankPos==='ALL'||rankPos==='FLEX', mets=rkC.m.map(id=>METS[id]), sm=mets[rkC.s], win=sm.win;
   const pool=rkPool(), vals=new Map(pool.map(x=>[x.id,mets.map(m=>{x_pos=x.pos;const v=m.v(x);return v==null||isNaN(v)?null:v})]));
-  const dir=sm.low?1:-1;
-  const list=pool.slice().sort((a,b)=>{const va=vals.get(a.id)[cfg.s],vb=vals.get(b.id)[cfg.s];if(va==null&&vb==null)return 0;if(va==null)return 1;if(vb==null)return -1;return (va-vb)*dir}).slice(0,100);
+  const mg=sm.gp?minGames(pool):0, dir=sm.low?1:-1;
+  const list=pool.filter(x=>vals.get(x.id)[rkC.s]!=null&&(!mg||(x.st&&x.st.gp>=mg))).sort((a,b)=>(vals.get(a.id)[rkC.s]-vals.get(b.id)[rkC.s])*dir).slice(0,120);
   /* tiers: a break wherever the gap to the next player is much bigger than the typical gap near the top */
-  const sv=list.map(x=>vals.get(x.id)[cfg.s]), tierAt=new Set();
-  {const dif=[];for(let i=1;i<Math.min(sv.length,48);i++)if(sv[i]!=null&&sv[i-1]!=null)dif.push(Math.abs(sv[i-1]-sv[i]));
-   const md=dif.length?dif.slice().sort((a,b)=>a-b)[Math.floor(dif.length/2)]:0, span=sv[0]!=null&&sv[Math.min(sv.length,48)-1]!=null?Math.abs(sv[0]-sv[Math.min(sv.length,48)-1]):0;
+  const sv=list.map(x=>vals.get(x.id)[rkC.s]), tierAt=new Set();
+  {const n=Math.min(sv.length,48),dif=[];for(let i=1;i<n;i++)dif.push(Math.abs(sv[i-1]-sv[i]));
+   const md=dif.length?dif.slice().sort((a,b)=>a-b)[Math.floor(dif.length/2)]:0, span=n>1?Math.abs(sv[0]-sv[n-1]):0;
    const thr=Math.max(md*3,span*.06);let last=0;
-   if(thr>0)for(let i=1;i<sv.length&&tierAt.size<9;i++){if(sv[i]==null||sv[i-1]==null)continue;const g=Math.abs(sv[i-1]-sv[i]);
-     if(g>=thr&&(i-last>=3||g>=2*thr)){tierAt.add(i);last=i}}}
+   if(thr>0&&!['own','bye','gl','play','ecr'].includes(sm.id))for(let i=1;i<sv.length&&tierAt.size<9;i++){const g=Math.abs(sv[i-1]-sv[i]);if(g>=thr&&(i-last>=3||g>=2*thr)){tierAt.add(i);last=i}}}
   const posN={};let tier=1;
-  const rows=list.map((x,i)=>{const v=vals.get(x.id),open=rkOpen===x.id;x_pos=x.pos;posN[x.pos]=(posN[x.pos]||0)+1;
-    const brk=tierAt.has(i)?`<div class="rc-tier" aria-hidden="true"><span>Tier ${++tier}</span></div>`:'';
-    return `${brk}<div class="li rc${open?' open':''}" data-id="${x.id}" role="button" tabindex="0" aria-expanded="${open}" style="${tc(x.team)}">${holo(x.team)}
-      <span class="rk">${i+1}</span><div class="rc-id">${crest(x.team,24)}<span class="rc-tx"><span class="nm"><span class="nmt">${esc(rowName(x.name,injTag(x.p)?11:15))}</span>${injTag(x.p)}</span><span class="sub">${metaLine(x,showPos,posN[x.pos])}</span></span></div>
-      <div class="rc-m">${mets.map((m,k)=>{const n=v[k],tone=TONE.has(m.id)&&n!=null&&Math.abs(n)>=(m.f===sg0?.5:.05)?(n>0?' up':' dn'):'';return `<span class="m${k===cfg.s?' on':''}"><b class="${n==null?'na':''}${tone}">${n==null?'—':m.f(n)}</b></span>`}).join('')}</div>
-      </div>${open?`<div class="detail" style="${tc(x.team)}">${holo(x.team,'lg')}${detailHTML(x.id,x.ser)}</div>`:''}`}).join('');
-  const head=`<div class="rc-head" id="rcHead"><span class="rc-hl">#</span><button class="rc-edit" id="mpick" aria-label="Change columns">${ic('bar')}<span>Columns</span></button><div class="rc-m">${mets.map((m,k)=>`<button class="mh${k===cfg.s?' on':''}" data-sort="${k}" aria-pressed="${k===cfg.s}" title="Sort by ${esc(m.l)}">${esc(m.s)}${k===cfg.s?`<i>${m.low?'▲':'▼'}</i>`:''}</button>`).join('')}</div></div>`;
-  const defs=mets.filter(m=>m.d).map(m=>`<div><b>${esc(m.l)}</b> ${esc(m.d)}</div>`).join('');
-  const teams=rkView==='week'?[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort():[];
-  const byes=rkView==='week'?P.filter(p=>p.bye&&fitPos(p)).sort((a,b)=>b.base-a.base):[];
-  const sub={week:`Week ${M.week} projections. Tap a column to sort, tap a player for his weekly chart.`,season:'Season so far, players with at least half a season of games.',ros:`Week ${M.week} through 18${LG&&LG.data?`, value set for your ${leagueSize()}-team league`:''}.`}[rkView];
-  $('#s-rank').innerHTML=`<div class="seg" role="group" aria-label="Ranking period" style="margin-top:8px">${[['season','Season'],['week',`Week ${M.week}`],['ros','Rest of year']].map(([k,l])=>`<button data-v="${k}" aria-pressed="${k===rkView}">${l}</button>`).join('')}</div>
-    <div class="rk-tools"><div class="chips">${['ALL','QB','RB','WR','TE','FLEX','K','DST'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('')}</div></div>
+  let rows=list.map((x,i)=>{posN[x.pos]=(posN[x.pos]||0)+1;
+    return (tierAt.has(i)?`<div class="rc-tier" aria-hidden="true"><span>Tier ${++tier}</span></div>`:'')+rankRow(x,i,vals.get(x.id),mets,showPos,posN[x.pos],win)}).join('');
+  /* a player opened from elsewhere (bye list, search) who isn't in this sort's list is pinned on top */
+  if(rkOpen&&!list.some(x=>x.id===rkOpen)){const x=pool.find(q=>q.id===rkOpen);if(x)rows=rankRow(x,0,vals.get(x.id),mets,showPos,null,win,true)+rows}
+  const head=`<div class="rc-head" id="rcHead"><span class="rc-hl">#</span><button class="rc-edit" id="mpick" aria-label="Change columns">${ic('bar')}<span>Columns</span></button><div class="rc-m">${mets.map((m,k)=>`<button class="mh${k===rkC.s?' on':''}" data-sort="${k}" aria-pressed="${k===rkC.s}" title="Sort by ${esc(m.l)}">${esc(m.s)}${k===rkC.s?`<i>${m.low?'▲':'▼'}</i>`:''}</button>`).join('')}</div></div>`;
+  const defs=mets.map(m=>`<div><b>${esc(m.l)}</b> <small>${winOf(m)}</small>${m.d?' '+esc(m.d):''}</div>`).join('');
+  const teams=win==='week'?[...new Set(P.filter(p=>p.bye).map(p=>p.team))].sort():[];
+  const byes=win==='week'?P.filter(p=>p.bye&&fitPos(p)).sort((a,b)=>b.base-a.base):[];
+  const pre=PRESETS.find(q=>q.m.join()===rkC.m.join());
+  const sub=`Sorted by <b>${esc(sm.l)}</b>, ${winOf(sm)}${sm.id==='vor'&&LG&&LG.data?` in your ${leagueSize()}-team league`:''}${mg?`, ${mg}+ games`:''}.`;
+  $('#s-rank').innerHTML=`<div class="rk-tools"><div class="chips">${['ALL','QB','RB','WR','TE','FLEX','K','DST'].map(p=>`<button data-p="${p}" aria-pressed="${p===rankPos}">${p==='ALL'?'All':p}</button>`).join('')}</div></div>
+    <div class="rk-pre" role="group" aria-label="Column presets">${PRESETS.map(q=>`<button data-pre="${q.id}" aria-pressed="${pre&&pre.id===q.id}">${esc(q.l)}</button>`).join('')}</div>
     <p class="rk-sub">${sub}</p>
-    <div class="list rk-list">${head}${rows||'<div class="cap" style="padding:16px">No players for this filter yet.</div>'}</div>
-    ${defs?`<div class="mdefs">${defs}</div>`:''}
+    <div class="list rk-list">${head}${rows||'<div class="cap" style="padding:16px">No players have this column yet.</div>'}</div>
+    <div class="mdefs">${defs}</div>
     ${teams.length?`<div class="sec-h"><h3>On bye in Week ${M.week}</h3><small>${teams.join(', ')}</small></div><div class="bye-pills">${byes.slice(0,24).map(p=>`<button data-open="${p.id}">${badge(p.team)}${esc(p.name)}</button>`).join('')}</div>`:''}`;
   const tb=$('#topbar');if(tb)document.documentElement.style.setProperty('--tbh',tb.offsetHeight+'px');
-  $$('#s-rank [data-v]').forEach(b=>b.onclick=()=>{rkView=b.dataset.v;store.set('ss_rkview',rkView);rkOpen=null;renderRank()});
   $$('#s-rank .chips button').forEach(b=>b.onclick=()=>{rankPos=b.dataset.p;rkOpen=null;renderRank()});
-  $$('#s-rank [data-sort]').forEach(b=>b.onclick=()=>{cfg.s=+b.dataset.sort;saveRkM();rkOpen=null;renderRank()});
+  $$('#s-rank [data-pre]').forEach(b=>b.onclick=()=>{const q=PRESETS.find(z=>z.id===b.dataset.pre);rkC={m:q.m.slice(),s:q.s||0};saveRkC();rkOpen=null;renderRank()});
+  $$('#s-rank [data-sort]').forEach(b=>b.onclick=()=>{rkC.s=+b.dataset.sort;saveRkC();rkOpen=null;renderRank()});
   $('#mpick').onclick=openMetrics;
-  $$('#s-rank .li.rc:not(.ax)').forEach(r=>{const f=()=>{rkOpen=rkOpen===r.dataset.id?null:r.dataset.id;renderRank();const el=$(`#s-rank .li[data-id="${CSS.escape(r.dataset.id)}"]`);if(el&&rkOpen)el.scrollIntoView({block:'nearest',behavior:'smooth'})};r.onclick=f;r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}});
-  $$('#s-rank [data-open]').forEach(b=>b.onclick=()=>{rkView='season';store.set('ss_rkview',rkView);rkOpen=b.dataset.open;rankPos=byId[b.dataset.open]?.pos||rankPos;renderRank()});
+  $$('#s-rank .li.rc').forEach(r=>{const f=()=>{rkOpen=rkOpen===r.dataset.id?null:r.dataset.id;renderRank();const el=$(`#s-rank .li[data-id="${CSS.escape(r.dataset.id)}"]`);if(el&&rkOpen)el.scrollIntoView({block:'nearest',behavior:'smooth'})};r.onclick=f;r.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}});
+  $$('#s-rank [data-open]').forEach(b=>b.onclick=()=>{rkOpen=b.dataset.open;renderRank();const el=$('#s-rank .li.pin');if(el)el.scrollIntoView({block:'center'})});
   $$('#s-rank [data-cmp]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggle(b.dataset.cmp);goCmp('week')});
   $$('#s-rank [data-wv]').forEach(b=>b.onclick=e=>{e.stopPropagation();wv.add=b.dataset.wv;store.set('ss_wv',wv);goCmp('waiver')});
   $$('#s-rank [data-tr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.tr;tr.give=tr.give.filter(x=>x!==id);if(!tr.get.includes(id))tr.get=[...tr.get,id].slice(-3);store.set('ss_tr',tr);goCmp('trade')});
@@ -1386,21 +1441,33 @@ function renderRank(){
   const dc=$('#s-rank .detail .wc.big');if(dc){const id=rkOpen,ser=weekSeries(id),out=$('#s-rank .detail .wc-read');
     dc.querySelectorAll('.c,.oc').forEach(c=>c.onclick=()=>{const w_=c.dataset.w;dc.querySelectorAll('.c.sel').forEach(x=>x.classList.remove('sel'));const col=dc.querySelector(`.c[data-w="${w_}"]`);if(col)col.classList.add('sel');out.innerHTML=readout(ser[+w_-1],byId[id])})}
 }
-/* metric picker: grouped chips, up to 3, the order is the column order; a 4th pick replaces the last */
+/* column picker: presets, your 3 columns (tap to sort, ✕ to remove), then every column grouped by window */
 function openMetrics(){
   const bg=$('#msheetBg'),sh=$('#msheet');bg.hidden=false;sh.hidden=false;requestAnimationFrame(()=>{bg.classList.add('on');sh.classList.add('on')});document.body.style.overflow='hidden';drawMetrics()}
 function closeMetrics(){const bg=$('#msheetBg'),sh=$('#msheet');bg.classList.remove('on');sh.classList.remove('on');document.body.style.overflow='';setTimeout(()=>{bg.hidden=true;sh.hidden=true},280);renderRank()}
 function drawMetrics(){
-  const cfg=rkM[rkView], pool=rkPool();
+  const pool=rkPool(), cfg=rkC;
   const has=id=>pool.some(x=>{x_pos=x.pos;const v=METS[id].v(x);return v!=null&&!isNaN(v)});
-  $('#msList').innerHTML=`<p class="cap" style="margin:2px 4px 6px">Pick up to 3. Tap a column header in the list to sort by it.</p>`+MET.map(([g,l])=>`<div class="grp">${g}</div><div class="mchips">${l.map(m=>{const k=cfg.m.indexOf(m.id),ok=has(m.id);
-    return `<button class="mchip${k>=0?' on':''}" data-m="${m.id}" aria-pressed="${k>=0}" ${ok||k>=0?'':'disabled'}>${k>=0?`<i>${k+1}</i>`:''}${esc(m.l)}</button>`}).join('')}</div>`).join('')+
-    `<div style="display:flex;gap:8px;margin-top:18px"><button class="btn" id="msDone" style="flex:1">Done</button><button class="btn ghost" id="msReset">Reset</button></div>`;
+  const pre=PRESETS.find(q=>q.m.join()===cfg.m.join());
+  const slots=[0,1,2].map(k=>{const id=cfg.m[k],m=id&&METS[id];
+    return m?`<div class="ms-slot${k===cfg.s?' on':''}"><button class="ms-sort" data-s="${k}" aria-pressed="${k===cfg.s}"><i>${k+1}</i><span><b>${esc(m.l)}</b><small>${k===cfg.s?'Sorted · ':''}${winOf(m)}</small></span></button><button class="ms-x" data-x="${k}" aria-label="Remove ${esc(m.l)}" ${cfg.m.length<2?'disabled':''}>✕</button></div>`
+      :`<div class="ms-slot empty"><i>${k+1}</i><span>Pick a column below</span></div>`}).join('');
+  let lastWin='';
+  const groups=MET.map(([win,g,l])=>{const wl=win!==lastWin?`<div class="ms-win">${{week:`This week · Week ${M.week}`,season:'Season so far',ros:`Rest of year · Weeks ${M.week}–18`}[win]}</div>`:'';lastWin=win;
+    return `${wl}<div class="grp">${g==='This week'||g==='Season so far'||g==='Rest of year'?'Points':g}</div><div class="mchips">${l.map(m=>{const k=cfg.m.indexOf(m.id),ok=has(m.id);
+      return `<button class="mchip${k>=0?' on':''}" data-m="${m.id}" aria-pressed="${k>=0}" ${ok||k>=0?'':'disabled'} title="${esc(m.d||m.l)}">${k>=0?`<i>${k+1}</i>`:''}${esc(m.l)}</button>`}).join('')}</div>`}).join('');
+  $('#msList').innerHTML=`<div class="grp" style="margin-top:4px">Presets</div><div class="ms-pre">${PRESETS.map(q=>`<button data-pre="${q.id}" aria-pressed="${pre&&pre.id===q.id}"><b>${esc(q.l)}</b><small>${q.m.map(id=>METS[id].s).join(' · ')}</small></button>`).join('')}</div>
+    <div class="grp">Your columns</div><div class="ms-slots">${slots}</div>
+    <p class="cap" style="margin:6px 4px 0">Tap a column to sort by it. Picking a fourth replaces the last.</p>
+    ${groups}<div class="ms-done"><button class="btn" id="msDone" style="flex:1">Done</button><button class="btn ghost" id="msReset">Reset</button></div>`;
   $$('#msList [data-m]').forEach(b=>b.onclick=()=>{const id=b.dataset.m,k=cfg.m.indexOf(id);
-    if(k>=0){if(cfg.m.length>1){cfg.m.splice(k,1);if(cfg.s>=cfg.m.length||cfg.s===k)cfg.s=0}}
+    if(k>=0){if(cfg.m.length>1){cfg.m.splice(k,1);if(cfg.s>=cfg.m.length||cfg.s===k)cfg.s=0;else if(cfg.s>k)cfg.s--}}
     else if(cfg.m.length<3)cfg.m.push(id);else cfg.m[2]=id;
-    saveRkM();drawMetrics()});
-  $('#msDone').onclick=closeMetrics;$('#msReset').onclick=()=>{rkM[rkView]=JSON.parse(JSON.stringify(RK_DEF[rkView]));saveRkM();drawMetrics()}}
+    saveRkC();drawMetrics()});
+  $$('#msList [data-pre]').forEach(b=>b.onclick=()=>{const q=PRESETS.find(z=>z.id===b.dataset.pre);rkC={m:q.m.slice(),s:q.s||0};saveRkC();drawMetrics()});
+  $$('#msList [data-s]').forEach(b=>b.onclick=()=>{cfg.s=+b.dataset.s;saveRkC();drawMetrics()});
+  $$('#msList [data-x]').forEach(b=>b.onclick=()=>{const k=+b.dataset.x;if(cfg.m.length<2)return;cfg.m.splice(k,1);if(cfg.s===k||cfg.s>=cfg.m.length)cfg.s=0;else if(cfg.s>k)cfg.s--;saveRkC();drawMetrics()});
+  $('#msDone').onclick=closeMetrics;$('#msReset').onclick=()=>{rkC=JSON.parse(JSON.stringify(RK_DEF));saveRkC();drawMetrics()}}
 function detailHTML(id,ser){
   ser=ser||weekSeries(id);
   const p=byId[id], s=seaOf(id), w=wById[id], st=s?seasonStats().find(r=>r.p.id===id):null, pos=(p||s||w).pos;
